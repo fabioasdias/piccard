@@ -8,4 +8,4 @@ Prototype for the exploration and analysis of inconsistent region-based data. We
 
 
 
-- How about we call it “Piccard”. Jacques Piccard was the first person to explore the deepest part of the oceans (with Don Walsh).  As your tool provides a deep dive into data, it may be apropos. - Mark
+- How about we call it “Piccard”. [Jacques Piccard](https://en.wikipedia.org/wiki/Jacques_Piccard) was the first person to explore the deepest part of the oceans (with [Don Walsh](https://en.wikipedia.org/wiki/Don_Walsh)).  As your tool provides a deep dive into data, it may be apropos. - [Mark](http://www.eil.utoronto.ca/members/msf/)
