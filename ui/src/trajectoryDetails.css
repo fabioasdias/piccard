@@ -1,0 +1,76 @@
+.trajDet{
+    margin: 2px;
+    display: block;
+    width:1507px;
+    min-height: 100px;
+    height: fit-content;
+    float:left;
+    border: solid;
+    border-width: medium;
+    border-color:darkgray;
+}
+.horbox{
+    margin:auto;
+}
+
+.varPanel{
+    display: flex;
+    text-align: center;
+    margin: auto;
+    padding: 5px;
+    border:solid;
+    border-bottom: none;
+    border-width: thin;
+    border-color: darkgray;
+    
+}
+
+
+.mapSM{
+    width:298px;
+    height:250px;
+    border: solid;
+    margin: 0;
+    margin-left: 1px;
+    border-color: #a9a9a9;
+    border-width: thin;
+    float:left;
+  }
+.mapSM.leaflet-control-zoom{
+    width: 10px;
+    height: 10px;
+}
+.mapRow{
+    margin: auto 0;
+    height: fit-content;
+    width: fit-content;
+    display: flex;
+}
+.rv-xy-plot.horPlot {
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-top: 6px;
+}
+
+.ovPlotBlock{
+    vertical-align: middle;
+    font-size : smaller;
+    height: 18px;
+    margin: auto;
+    border: solid;
+    border-width: thin;
+    border-color: black;
+    margin-left: -1px;
+    margin-right: 0;
+    padding-top: 7px;    
+    background-color: lightgray;
+}
+
+.varRow{
+    text-align: center;
+    margin: auto;
+    height: fit-content;
+    width: fit-content;
+    display: flex;
+}
+

@@ -1,0 +1,21 @@
+.TransMat{
+    width: 382px;
+    height:340px;
+    border: solid;
+    margin: 1px;
+    display: block;
+    text-align: right;
+    padding: 5px;
+    /* font-size: small; */
+    border-color: darkgray;
+    border-width: medium;
+    float:left;
+  }
+  .transButton{
+    width: fit-content;
+    height: 1em;
+    padding: 2px;
+    margin:auto;
+    text-align: center;
+    vertical-align: middle;
+  }

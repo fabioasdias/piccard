@@ -1,0 +1,59 @@
+% General context + motivation
+\IEEEPARstart{U}{rban} sciences are blooming thanks to a renewed interest in
+understanding and improving the urban environment. Visual analytics is following
+this trend, fueled by new public datasets that encompass progressively more of
+our daily lives~\cite{Chen2017}. There is no shortage of methods to explore
+mobility patterns~\cite{VonLandesberger2016}, social media~\cite{Chen2017},
+traffic~\cite{chen2015survey}, and so on, providing experts, planners, policy
+makers, and the general population with deeper insights about their cities.
+
+
+These new datasets usually contain GPS coordinates for the records, leading to
+\emph{point-based} data. Combined with the corresponding timestamps, this data
+is easily suitable for longitudinal analysis. But most demographic datasets are
+\emph{region-based}, where the measurements are associated with pre-defined
+regions, not only for an additional level of privacy protection, but because
+some measurements only make sense over a defined area. Census data is a classic
+example of this format, with datasets available from 1790 onwards for the
+US~\cite{nhgis}. Despite this unmatched temporal availability, longitudinal
+analyses of census data are often restricted in time, especially when smaller
+tabulation areas are considered, such as census tracts (CT) or dissemination
+areas, which evolve to reflect changes in population density, leading to
+geographic inconsistencies across time, and the traditional time-series based
+approach is no longer viable. 
+
+
+However, these analyses are necessary to understand the urban environment.
+Indeed, two different regions can have similar average income for a given year,
+while one is experiencing a process of economic improvement and the other one
+impoverishment. Quite obviously, a single snapshot cannot be used to identify
+gentrification, migration, education changes, or any of the relevant processes
+that happen over time.
+
+
+To overcome these inconsistencies, the traditional approach is the
+\emph{geographical harmonization} of the data, the interpolation of the
+measurements into a common set of
+regions\cite{Logan2014,Hallisey2017,Allen2018}, so that each variable can be
+represented using time-series. This is laborious work that inevitably introduces
+some amount of error~\cite{Logan2016}, even when additional data is
+provided~\cite{eicher2001dasymetric}. Nevertheless, this step is considered
+mandatory in the current literature: \emph{"(...) tract-by-tract comparison is
+not possible unless data from 2000 is interpolated to 2010 boundaries
+(...)"}~\cite{Dmowska2017}.
+
+
+
+The main contribution of this application paper is an visualization-based
+alternative to the geographical harmonization, a combination of established
+graph based processing and information visualization techniques allowing
+tract-by-tract comparison, the identification and visualization of patterns of
+demographic evolution without geographic harmonization, effectively removing one
+of the most challenging problems in longitudinal demographic analysis. We also
+include illustrative scenarios and our prototype is available at
+\url{http://uoft.me/piccard}, including more than fourty regions in the US and
+Canada. 
+
+% We adopt census data as familiar operational
+% context, but the proposed methodology is suitable for most region based
+% measurements.

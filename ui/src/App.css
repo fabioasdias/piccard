@@ -1,0 +1,36 @@
+.App {
+  width: 1800px;
+  height: 1000px;
+  padding: 5px;
+  display: block;
+}
+
+
+
+.App-header {
+  background-color: #222;
+  height: 45px;
+  padding: 2px;
+  color: white;
+}
+.loading{
+  text-align: center;
+  width:20%;
+  height: fit-content;
+  position: absolute;
+  display: flex;
+  left: 40%;
+  top: 40%;
+  margin: 5px;
+  padding: 10px;
+  border: solid;
+  z-index: 30000;
+  background-color: white;
+  border-color: black;
+  border-width: medium;
+  box-shadow: 10px 10px 5px grey;
+}
+
+.App-title {
+  font-size: 18pt;
+}

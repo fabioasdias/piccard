@@ -1,0 +1,21 @@
+.nCluster {
+    width: 150px !important;
+  }
+  
+.configButton{
+    margin: 0 auto;
+    padding: 5;
+}
+.curConf {
+    width: fit-content;
+    display: block;
+    height: fit-content;
+    float:left;
+    position: relative;
+    border: none;
+    padding: 5px;
+    line-height: 0.75em;
+    font-size: small;
+    margin: 0 auto;
+    flex-grow: 0;
+}

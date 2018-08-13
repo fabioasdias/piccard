@@ -1,0 +1,462 @@
+\documentclass{article}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{tcolorbox}
+\usepackage{amssymb}
+
+\newcommand{\reply}[1]{\begin{tcolorbox}\noindent\textbf{Comment:}\\#1\hfill\end{tcolorbox}}
+\newcommand{\didThis}[1]{\underline{#1}\marginpar{\checkmark}}
+
+\title{Previous Reviews}
+
+\begin{document}
+\maketitle
+A previous version of this paper was submitted to IEEE VAST 2018. While the full
+text of the reviews is attached, we would like to overview the changes made,
+leveraging the summary review:
+
+
+\begin{itemize}
+    \item{Evaluation: no evaluation of the proposed clustering methods (R3), the details
+    of the domain expert interview are missing. (R1, R3)
+    
+    \reply{We did not introduce a new clustering method. The original paper
+    contains such evaluations, we added that explicitly on the text. All the
+    communication with the experts is included, verbatim, in the supplementary
+    material, with the exception of Patrick Adler, which is a member of the
+    Urban Genome Project, but did not collaborate directly in this work.}}
+
+    \item{Design: the consideration and final choice of design are not clearly discussed.
+    Specially, the color usage is confusing. (R2, R3, R4).
+    
+    }
+
+    \item{Motivation: the authors fail to clearly demonstrate the motivation of their
+    work, probably due to their writing style. (R2, R4)}
+
+    \item{Presentation: no technical contribution clearly stated, writing style not
+    qualified as a good research paper, paper organization can be improved (R2, R4)}
+\end{itemize}
+
+\section{Reviewer 1 - score 4/5}
+
+\begin{itemize}
+\item{\textbf{Paper type}\\Application}
+\item{\textbf{Expertise}\\Expert}
+\item{\textbf{Overall Rating}
+
+    4 - Accept
+    
+    The paper should be accepted with some minor
+    revisions.
+    
+    Once these have been completed it will meet the quality standard.}
+
+\item{\textbf{Supplemental Materials}\\Acceptable}
+
+\item{\textbf{Justification}
+
+    the paper presents an interesting work on visualizing demographic evolution using
+    geographically inconsistent census data. The strength of this paper is putting all
+    the interesting pieces to present something an application that does show some
+    useful insights into the data across time. The weakness of this paper is lack of
+    anything new in particular and focused on a very specific type of demographic
+    region (CT).
+}
+\item{\textbf{The Review}
+
+    the paper presents an interesting work on visualizing demographic evolution using
+    geographically inconsistent census data.
+
+    Overall the paper reads well and it is easy to read and follow all the technical
+    work. Most of the diagrams are useful. The paper tackles on a difficult problem of
+    visualizing temporal data where each temporal piece may not be consistent with
+    other pieces.
+
+    The strength of this paper is putting all the interesting pieces to present
+    something an application that does show some useful insights into the data across
+    time. The weakness of this paper is lack of anything new in particular and focused
+    on a very specific type of demographic region (CT). In summary, the work uses a
+    spatio-temporal graph based approach and perform clustering based on the
+    attributes of each node where each node represents a CT for a given year. The
+    edges are added based on neighboring CT's or if they are same CT's but different
+    years. This approach seems reasonable and has been adopted to model such problems
+    in the past. The authors then perform clustering an introduce trajectories which
+    all seems useful to the end-uses. Overall, the work seems useful to the community
+    as it put together many ideas in the same application and it seems to work well
+    with specific datasets and problem in hand.
+
+    The weakness of the paper is very limited evaluation as mostly it was feedback
+    from experts and the user-study lacked details. Also, most of the work is
+    performed using CT as the region in census data, it would have been nice to see if
+    this work is also applicable to other census regions as well.
+
+    \reply{The specific region used for the analysis is irrelevant to the
+    method, we could have used mixed regions for instance. We adopted CTs
+    because it is the most finely grained data available including more than
+    population count. Additionally, other census areas do not change as
+    frequently as CTs. }
+
+    \textbf{Revision Required:}
+    Figure 2: while useful could use more detail and better explanation of the
+    algorithm, it could do a better job in showing clustering and explaing the diagram
+    since this is the figure that explains the entire paper.
+}
+\end{itemize}
+
+\section{Reviewer 2 - score 2/5}
+\begin{itemize}
+
+\item{\textbf{Paper type}\\Application}
+
+\item{\textbf{Expertise}\\Knowledgeable}
+
+\item{\textbf{Overall Rating}
+
+    2 - Reject
+    
+    The paper is not ready for publication in VAST / TVCG.
+    
+    The work may have some value but the paper requires major revisions or
+    additional work that are beyond the scope of the conference review cycle to meet
+    the quality standard. Without this I am not going to be able to return a score of
+    '4 - Accept'.}
+
+\item{\textbf{Supplemental Materials}\\Acceptable}
+
+\item{\textbf{Justification}
+
+    In this paper, the authors propose a method for longitudinal data analysis that
+    avoids the geographical harmonization. The paper focuses on an interesting topic.
+    The weakness of the paper is that the motivation and design requirements are not
+    clearly demonstrated, and the design process is not justified.}
+
+\item{\textbf{The Review}
+
+    In this paper, the authors propose a method for longitudinal data analysis that
+    avoids the geographical harmonization. Specifically, they adopt an improved
+    clustering algorithm and a graph based visualization to help users identify
+    clusters and the demographical details of each cluster. Though this paper is
+    interesting to read, it still has several issues to be addressed. The authors fail
+    to clearly demonstrate the motivation and the design requirements of the proposed
+    work. A number of important details are also missing such as the discussion about
+    design choices. In addition, the paper is not easy to follow in many sections such
+    as the description of the teaser. I feel these issues can be hardly fully
+    addressed in a minor revision and I suggest the authors to keep improving the
+    work.
+
+    My first concern is that the authors fail to clearly demonstrate the motivation of
+    their work. The authors mentioned that longitudinal analysis of census data is
+    missing and its first step is geographical harmonization that is difficult.
+    Therefore, they propose a method that analyze geographical data without the need
+    of geographical harmonization. However, they fail to demonstrate that why the
+    longitudinal analysis of census data is needed and important. In addition, they
+    also fail to illustrate why it is important and challenging for omitting the
+    process of geographical harmonization in the data analysis. The authors need to
+    explicitly describe the motivation of the proposed work.
+
+    In addition, the authors are suggested to clearly discuss about the design
+    considerations. For example, “Details of the changes” is not clear enough. Many
+    questions can be asked: What kind of information the authors want to address for
+    the changes? The geographic information or the content information or both? The
+    authors need to clearly describe the design considerations.
+
+    Moreover, the design choices are also not discussed. The authors need to discuss
+    how they make the final design decisions and if there are any alternative design
+    choices. For example, the authors use stacked bar charts to encode the information
+    of each aspect, in which the rectangle width represents the percentage of the
+    corresponding variable. Many questions can be asked: Why the author choose the
+    stacked bar charts? Do they consider other design choices such as pie charts? Why
+    they use the length of rectangle to represent percentage? Do they consider color
+    saturation or hue? The authors need to clearly discuss the reasons they finalize
+    the current design.
+
+    The writings are hard to follow sometimes. For example, the description of the
+    teaser is really difficult to understand. Many questions can be asked: What does
+    each part represent in the figure? How to tell “While the whole city follows this
+    trend”? What regions are “these regions”? What are the “relevant clusters” and why
+    they are “visible”? The authors need to clearly explain the figures and improve
+    the writing.
+
+    In summary, the authors are suggested to revised the paper and improve their work
+    to address the above issues.
+}
+\end{itemize}
+
+\section{Reviewer 3 - score 3/5}
+\begin{itemize}
+
+\item{\textbf{Paper type}\\Application}
+
+\item{\textbf{Expertise}\\Expert}
+
+\item{\textbf{Overall Rating}
+
+    3.5 - Between Possible Accept and Accept}
+
+\item{\textbf{Supplemental Materials}\\Acceptable with minor revisions (specify
+revisions in The Review section)}
+
+\item{\textbf{Justification}
+
+    This paper targets an interesting research question on analyzing the evolution of
+    geographically inconsistent data. The major technical contributions of this paper
+    are
+    \begin{enumerate} 
+        \item{A graph based spatio-temporal clustering method;}
+        \item{an enhanced box plot visualization to better support comparison;}
+        \item{the heatmap-like map view showing the spatial information of clusters.}
+    \end{enumerate}
+    \noindent Another big bonus is that the authors provided an interactive demo
+    online. Still, there are several issues on 
+    \begin{enumerate} 
+        \item{the lack of evaluation of the proposed clustering method;} 
+        \item{the design choice, mainly for the color usage;}
+        \item{the lack of details of expert review process.}
+    \end{enumerate}
+    \noindent Detailed reviews can be found in the review section.}
+
+\item{\textbf{The Review}
+
+    In this paper, the authors proposed a visual analytics system to explore and
+    analyze the evolution of geographically inconsistent data. Several visualization
+    techniques, such as enhanced box plots, Sankey diagram, heatmap-like map
+    visualization with small multiple settings, are used in the system. In general,
+    the author tackles on an interesting and not easy research question, and the paper
+    is well written and easy to follow. The case studies and expert interviews have
+    clearly shown its usefulness and effectiveness.
+
+    The major contributions have been mentioned above in justification section, here
+    list the details of the major concerns.
+    \begin{enumerate}
+
+    \item{There is no proper evaluation of the proposed clustering methods. 
+
+    In Section 4.2, the authors proposed a graph based geographic content clustering,
+    which considers spatial, temporal, and similarity information among regions. Here,
+    it will be worth to conducting comparisons with some traditional methods, for
+    example, k-means purely based on histogram distances or weighted distance by
+    considering spatio-temporal information (specific for the first one, since I think
+    there is a high correlation of spatio-temporal information with the histogram
+    distance).
+    \reply{TODO}
+    }
+
+    \item{The color usage for the whole visual analytic system is sometimes confusing. 
+
+    In the application, the authors use colors in different ways across
+    visualizations. In the Sankey graph, the color is used to encode the categories.
+    In the map view, additional opacity is used here (and blending is optionally used)
+    together with the same color encoding as the one in the Sankey graph. From the
+    right figure in Figure 6, it is clear that the color is not distinguishable (this
+    is also related to the clustering itself since the three clusters are too small
+    compared to the others). What makes it worse is the color usage in the box plot
+    view to encode the relevance, which is very confusing even with the legend shown
+    on top since there is some color overlap with the categorical encoding (e.g., the
+    green and grape color).
+
+    \reply{Colour assignment was indeed challenge for this work, mostly because
+    it needs to be used, but there isn't a definitive way to actually do it.
+    That was also the reason for artificially limiting the maxium number of
+    clusters to eight. There is indeed overlap between the colours used for
+    relevance and the clusters, mostly because the clusters used virtually all
+    of the colour space. However, we believe that their different meanings are
+    clear, since none of the experts, nor the other reviewers, mentioned any
+    confusion in this specific aspect. It is not ideal, but we believe it is a
+    acceptable approximation.}}
+
+    \item{The details of the domain expert interview is missing in the paper.  
+    I really appreciate that the authors attached the detailed expert review comments
+    and the online demo is available. However, in the main paper, there is a very
+    little description of how the expert interviews were conducted. Since there are
+    still plenty of space, I would suggest the authors to add more details in Section
+    6.}
+    \end{enumerate}
+    \textbf{Minor issue}:
+    The demo video can be improved by providing a more comprehensive walkthrough of a
+    case study instead of fragmented videos to explain the functionalities.
+}
+\end{itemize}
+
+\section{Reviewer 4 - score 2/5}
+
+\begin{itemize}
+
+\item{\textbf{Paper type}\\Technique}
+
+\item{\textbf{Expertise}\\Expert}
+
+\item{\textbf{Overall Rating}
+
+    2 - Reject
+    
+    The paper is not ready for publication in VAST / TVCG.
+    
+    The work may have some value but the paper requires major revisions or
+    additional work that are beyond the scope of the conference review cycle to meet
+    the quality standard. Without this I am not going to be able to return a score of
+    '4 - Accept'.}
+
+\item{\textbf{Supplemental Materials}\\Acceptable with minor revisions (specify revisions in The Review section)}
+
+\item{\textbf{Justification}
+
+    This paper introduces a combined graph clustering and geospatial visualization
+    technique to illustrate the city census data that is potentially inconsistent over
+    the space dimension. The technique is generally OK, though not entirely new, and
+    can be said as appropriate for the problem attacked. The major strength is the
+    detailed case studies on two north American cities and it is appreciated that the
+    authors attach a full record of their expert study. On the other hand, the paper
+    in its current shape suffers significantly from presentation issues, i.e., beyond
+    minor grammar errors, most technical content would benefit from a thorough re-
+    written. There is no explicit contribution statement. It seems the contribution on
+    visualization is rather limited. The authors are also encouraged to re-submit to a
+    GIS venue.
+
+\item{\textbf{The Review}
+
+    This paper proposed a framework to visualize the spatiotemporal population
+    clusters detected from the census data. A graph representation is built where the
+    nodes are fine-grained census tracts (CT) and edges are computed from the
+    similarity of census attributes of related CTs. The graph is clustered by an
+    existing watershed cut algorithm and then undergo a minor refinement. The derived
+    spatiotemporal clusters are displayed on a geospatial map and their dynamics over
+    time are visualized in a standard Sankey diagram. The work is well evaluated with
+    census data in LA and Toronto. The feedbacks from five experts are also reported.
+    While the technical side of this work does have some merit, there are at least two
+    major flaws or technical incompleteness in the current presentation.
+
+    First, I missed the technical contribution in this paper. In the first paragraph
+    of Sec. 4, it is said ``beyond the main contributions'', what are these
+    contributions? In fact, I see rather limited contribution in the visualization
+    side. Besides the map design, the only ingredient of information visualization
+    seems to be the Sankey diagram. I look at this diagram multiple times and could
+    not sense what is different from a basic D3 example available on the website. The
+    analytics part is similar, the SMM algorithm is not new, and the graph
+    representation and clustering seems straightforward. There are little details
+    discussed (in fact, should be some!). For example, why to connect the adjacent or
+    overlapping CTs under different time affinities, how the clustering parameter is
+    chosen? What are the nature of the resulting clusters? To this end, what is the
+    specialized design for inconsistent census data?
+
+    \reply{Following the guidelines, an application paper doesn't need to
+    include new techniques. Indeed, the objective of this work was to leverage
+    "commonplace" VIS methods to provide a more efficient solution to a common
+    issue in another field. Indeed, we provide a viable alternative to time
+    consuming and challenging problem that was believed to be unavoidable.}}
+
+
+    Second, the writing style and paper organization is hardly a qualified
+    research paper on visualization. Many key technical content are missing. The
+    introduction and related work are fairly short, thus do not motivate this
+    work well. For example, in the intro, I would like to see, what is the
+    research problem, what are the challenges, and how you solve it with
+    exquisite designs and/or algorithms. The authors only write one plain
+    sentence there: ``We use a graph based spatio- temporal representation,
+    combined with an improved clustering algorithm'', could be used for 100+
+    papers on the similar topic. The related work cites an appropriate number of
+    literature, but fails to discuss their pros and cons in order to position
+    this work. The entire cluster of work by Andrienko et al. are missing while
+    it is said: ``it is reasonable to argue that the availability and quality of
+    the dataset provided by the Taxi and Limousine Commission of New York
+    contributed to its centrality in this field''. The most related work on
+    visualizing census data is also missing. In the visualization design part
+    (Section 4), the authors spend several paragraphs on the coloring choice,
+    which is good. Only one sentence is used to describe the Sankey diagram,
+    which might be the only information visualization design applied in this
+    work. Note that the graph representation has been the highlight of this
+    work. No design rationale is discussed here. For example, what if I use a
+    simple alternative of multiple/stacked line charts to represent the dynamics
+    of spatiotemporal clusters? In the evaluation part, while I appreciate the
+    detailed case study on LA and Toronto, the user feedback seems to be
+    problematic given that the users are only given the video, not the
+    interactive tool to try themselves! From the preview video, it is hard to
+    imagine a real system exists for this work.
+
+    \reply{Unfortunately the reviewer doesn't mention which is the "most related
+    work". I did review some works from Andrienko's group, after all they are
+    fairly known for this, but some were not included because they are not
+    relevant to the current problem. TODO I included more text expliciting
+    exactly what was accomplished in this work, which hopefully will make that
+    distinction clearer. \\ As the others reviewers mentioned, the tool was
+    available not only for the experts, but for the reviewers as well, on an
+    anonymous site.}
+
+    There are some other minor issues which the authors can address in any later
+    versions.
+
+    \begin{itemize}
+        \item{The design consideration of M1 \& M2 are too general, could be
+        said for most urban visual analytics methods}
+        \item{Last paragraph of Section 4.2, why augment two edges, any quantitative
+        evident/support from data?}
+        \item{Figure 4 could be put at page 4 for better viewing experience}
+        \item{Section 4.6, Sect. to Sec., on top left to on the top left}
+        \item{It will be helpful to put a sample census data in the paper, e.g., a table}
+        \item{The Sankey diagram in Figure 6 is cluttered, any solution?}
+    \end{itemize}
+
+    Overall, the authors have studied a valid problem with an appropriate
+    solution and well-conducted case study, but the contribution on
+    visualization is vague and many key technical content is missing. The
+    writing quality and depth still have much room to improve. For these
+    reasons, I return a reject score for now. A last point, if there is little
+    new contribution on visualization, would this paper fit better to a GIS
+    venue? 
+    
+    \reply{We considered a GIS venue for this work, but the technical part is
+    fairly advanced to a general public, requiring significant tangents to
+    explain all the involved concepts. Further publications on applied geography
+    and demographics venues are planned in the scope of the Urban Genome
+    Project, which will cite this publication for the technical details.}}
+
+\end{itemize}
+
+\subsection{The Summary Review}
+
+\textbf{Summary Rating}
+
+    Possible Accept
+    
+    The paper is not acceptable in its current state, but might be made
+    acceptable with significant revisions within the conference review cycle.
+    
+    If the specified revisions are addressed fully and effectively I may be able
+    to return a score of '4 - Accept'.
+
+\section{The Summary Review}
+    The reviewers have divided opinions on this paper.
+
+    On the positive side, all reviewers recognize that the authors studied an
+    interesting research problem and proposed appropriate/valid solutions to
+    that problem (R1, R2, R3, R4). Some finds the proposed techniques to have
+    enough contribution (R3), while some others comment these techniques as lack
+    of novelty (R1, R4). Most reviewers are convinced on the usefulness of the
+    approach as demonstrated in the application of the case studies (R1, R3,
+    R4). R3 especially likes the released online demo which helps to grasp the
+    main functionality of the technique.
+
+    On the negative side, several concerns are raised and suggestions for
+    revision are made, which the authors must address within the conference
+    cycle if the paper is conditionally accepted.
+
+    \begin{itemize}
+    \item{Evaluation: no evaluation of the proposed clustering methods (R3), the details
+    of the domain expert interview are missing. (R1, R3)}
+
+    \item{Design: the consideration and final choice of design are not clearly discussed.
+    Specially, the color usage is confusing. (R2, R3, R4)}
+
+    \item{Motivation: the authors fail to clearly demonstrate the motivation of their
+    work, probably due to their writing style. (R2, R4)}
+
+    \item{Presentation: no technical contribution clearly stated, writing style not
+    qualified as a good research paper, paper organization can be improved (R2, R4)}
+    \end{itemize}
+
+    More detailed comments can be found below.
+
+    After discussion, we conclude that a borderline summary rating is appropriate. We
+    do hope the authors can address all of our concerns in the conference cycle
+    through significant efforts.
+
+\end{document}

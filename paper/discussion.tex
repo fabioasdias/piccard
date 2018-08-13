@@ -1,0 +1,50 @@
+\section{Discussion and limitations}
+
+The objective of this work was to leverage a graph based data representation
+with visual tools to allow for the exploration of geographically inconsistent
+census data. While we successfully replicated and corroborated results from the
+literature, this method still has significant limitations. 
+
+Removing the geographical normalization/interpolation step greatly reduces the
+amount of work necessary, but the method still requires consistent variables
+across the years. Matching the fields of the public census can be trivial for
+some aspects, like Age, but challenging for others, like Income. The divulged
+income ranges vary over time, the actual value changes due to inflation and
+other factors, and so on. Moreover, some fields were not considered in earlier
+censuses, such as Race in Canada, or Hispanic population in the USA, hampering its
+use when they are available. We matched some aspects, but a deeper demographic
+analysis would greatly benefit from all available information.
+
+
+Another limitation is the lack of control on how much the geographical
+information will impact the clustering result. While the adopted method met our
+needs for this work, a configurable control would add another dimension to the
+exploration, allowing for more intra-cluster variance to obtain more 'compact'
+clusters. We explored changing the number of content based augmented edges, but
+this proved to be unreliable and hard to interpret. The~\emph{ClustGeo}
+method~\cite{Chavent2017} can be a viable option for this, allowing a graph
+based input and a hierarchical output, combined using a single mixing
+parameter. Alternatively, one could cluster the changes~\cite{bian2018survey}
+instead of the stable states.
+
+
+There are also technological limitations, such as memory use on the
+visualization client. To allow for changes on the CTs over the years, we use a
+geographic file that contains all possible intersections, which can grow rather
+large if the original city was expansive and contained several CTs, like NYC or
+LA. However, the most significant technological limitation relates to parameters
+that are not immediately interactive, such as the clustering configuration.
+Since the clustering is computationally expensive and performed on the server,
+which allows for cached results, some changes can take a few minutes to be
+considered, removing any possibility of a continuous exploration. 
+
+
+Indeed, the cognitive load on the user is already significant, as we compromised
+simplicity for accuracy. While other works labelled the clusters, as 'young
+urban', 'struggling', and so on~\cite{Delmelle2016,Delmelle2017}, we show the
+statistical characteristics of the clusters, which are harder to interpret, as
+the data may have subtle nuances that labels would otherwise hide. This also led
+to a crowded interface, mitigated somewhat the use of pop-up panels and collapsible
+sections. For some cities, especially if they are small and stable, the panels
+can appear redundant, but each provide a different way to interact with the
+information that can ease the exploration process for larger and dynamic cities.

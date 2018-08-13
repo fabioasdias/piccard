@@ -1,0 +1,140 @@
+\section{Related Work}
+
+Since our problem emcompasses several fields, we divided this section into
+specific subproblems: \emph{longitudinal demographic studies}, describing the
+traditional approach to perform longitudinal studies; \emph{data
+representation}, exploring how evolving geographic data can be represented for
+processing; \emph{Data clustering}, briefly reviewing existing clustering
+methods; and \emph{cluster characterization}, exploring how the clusters can be
+visually summarized.
+
+\subsection{Longitudinal demographic studies}
+Census data is used not only to discover demographic
+patterns~\cite{Firebaugh2016}, but to correlate demographic charateristics to
+other measurements~\cite{diez1997neighborhood}. However, longitudinal studies
+are rare: \emph{"(...) One of the most challenging and fascinating areas in
+spatial statistics is the synthesis of spatial data collected at different
+spatial scales(...)"}~\cite{gotway2002combining}.
+
+While CT level data is readily available for the US since 1910~\cite{nhgis},
+most studies consider the period between 1970 and 2010, using pre-harmonized
+data~\cite{Logan2014,nhgis}. Despite the inherent
+errors~\cite{Logan2016,Hallisey2017}, this dataset became the standard source
+for longitudinal demographic data, with similar efforts appearing in other
+countries~\cite{Liu2015,Lee2015,Allen2018}. This result was significant for the
+field, but it also restricts the useable data, since new datasets need to be
+similarly processed.
+
+
+Another option considers the use of grid data~\cite{Dmowska2017,Dmowska2018},
+where small rectangular areas are used, in an approach similar to satellite
+imagery. Beyond the increased spatial accuracy, this approach does not require
+complex harmonizations when new data is considered. However, demographic data is
+usually not available in this format, especially from older sources, and the
+conversion from tabulation areas can introduce significant errors.
+
+In the proposed methodology, we avoid the harmonization by considering each
+measurement using its actual geographic region. It does not require the regions
+to be consistent across time because they are already represented as different
+entities. 
+
+
+\subsection{Data representation}
+Most data is represented in tabular form, where the rows and columns have
+coherent definitions. For example, consider a table with rain measurements over
+time, with the rows representing different locations and the columns different
+times. This representation can also be interpreted as a collection of
+time-series, one for each location. Geographic data followed this format, only
+including an additional field that describes the associated geographic area.
+Following the example, the data would now represent the amount of rain for a
+given region and time. As long each region remains the same, the data is
+coherent and can be interpreted again as a collection of time-series.
+
+In the proposed method, we remove the requirement for consistency in the
+measurement regions by leveraging a graph-based representation, where each
+region in time corresponds to a different node. Instead of a collection of
+time-series, the data is represented as a dynamic graph. Graph based
+representation of geographic information is fairly well explored in the
+literature, as a basis for topological methods for event
+detection~\cite{Doraiswamy2014}, leveraging signal processing on
+graphs~\cite{shuman2013emerging,sandryhaila2013discrete} to find patterns and
+outliers~\cite{Valdivia2015,Dias2015,Alce2018}. Graphs are well suited to
+represent trajectories as
+well~\cite{VonLandesberger2016,Huang2016,chen2015survey}, allowing the use of
+graph visualization methods~\cite{Vehlow2015,Beck2014}. 
+
+Graphs were used to represent census data for clustering purposes
+before~\cite{Dias2015,Setiadi2017}, but these works did not explore temporal
+evolution, where graphs are particular powerful as they allow a natural
+representation of inconsistent regions, with both spatial and temporal
+connections. Note that there are other possible representations that have
+similar properties, but we adopted graphs to allow the use of the existing
+literature and methods.
+
+
+\subsection{Data clustering}
+Data clustering is one of the elementary processes for data analysis,
+simplifying the data into a smaller number of homogeneous sets that can be
+interpreted in the same way. While there is no shortage of contributions for
+this problem~\cite{Fahad2014}, most applications still rely on
+k-means~\cite{jain2010data,Delmelle2016} and, to a lesser extent, Self
+Organizing Maps~\cite{Delmelle2017,Ling2016}.
+
+However, a method for geographic data analysis should not ignore the geographic
+component of the data. One straightforward option, for agglomerative
+methods~\cite{han2001spatial}, is to consider only nearby clusters for
+merging~\cite{Chavent2017}, which can also be done for
+k-means~\cite{soor2018extending}. Alternatively, the spatial distance could be
+directly added to the inter-cluster metric~\cite{Chavent2017} via a mixing
+parameter, which adds flexibility to the method, but introduces the problem of
+finding the correct application-dependent values.
+
+Indeed, one crucial step in most clustering algorithms is the definition of the
+number of clusters. We sidestep this problem by considering hierarchical
+methods~\cite{soille2012morphological}, where the result is not a partition of
+the data, but a tree of partitions. This approach is interesting for interactive
+methods, because it allows the user to change the number of displayed clusters
+with minimal processing. Since our data is represented as a graph, one option
+would be the watershed cuts algorithm~\cite{Cousty2009}, inspired by the well
+known image processing segmentation and equally prone to oversegmentation.
+Considering that the processing time is also a relevant factor, we opted for an
+heuristic variation of the maximum weighted matching algorithm called
+\emph{sorted maximal matching}~\cite{markus2017}, which merges clusters based on
+the weights of the edges between pairs of clusters.
+
+
+
+\subsection{Cluster characterization}
+Visually representing evolving spatial data is a challenging old
+problem~\cite{monmonier1990strategies,andrienko2003exploratory,ferreira2015visual,Zheng2016}.
+Most geographic data is naturally bidimensional and maps work well in this
+case~\cite{Zheng2016,ward2015interactive}, but the temporal dimension cannot be
+so naturally represented. One straightforward option is to leverage
+tridimensional plots~\cite{andrienko2014visualization,Tominski2012a}, but this
+can lead to visual obstructions or scaling problems unless a tridimensional
+display device is used. Animation can also be explored in some specific
+cases~\cite{buschmann2014real}, but it is not a general approach. Glyphs can
+also be used~\cite{seebacher2017visual,Andrienko2017}, but this may lead to
+cluttering when many small regions are present. A simpler, well adopted, option
+is to display a map that corresponds to a subset of the temporal information,
+allowing the user to change the time with an associated
+control~\cite{Chen2017,Valdivia2015,Alce2018,Doraiswamy2014}. Small multiples
+can be used~\cite{VonLandesberger2016}, but only when there are few temporal
+snapshots. However, none of these options is suitable to represent many
+variables at the same time.
+
+
+Using data clustering, we can represent the region's cluster instead of all the
+its variables~\cite{Alce2018,Valdivia2015,VonLandesberger2016}. While this
+simplifies the geographic portion of the visualization, it introduces the
+problem of how to summarize the contents of each cluster. One traditional
+approach is to use parallel coordinates
+plot~\cite{ferreira2015urbane,LI2018,johansson2005revealing,guo2006visualization},
+but these they can get cluttered representing similar clusters over several
+variables. Further, for demographic applications, the clusters are usually
+strongly characterized by a small subset of
+values~\cite{Delmelle2016,Delmelle2017}. Therefore, in the proposed method, we
+identify the variables that are most relevant to the characterization of each
+cluster. The distribution of values on that variable is then represented using a
+boxplot, a well known statistical plot displaying basic properties of the
+distributions.

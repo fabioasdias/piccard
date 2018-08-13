@@ -1,0 +1,86 @@
+.Overview {
+    /* height: 130px; */
+    background-color: white;
+    width:fit-content;
+    height: fit-content;
+    border: solid;
+    text-align: left;
+    border-color: darkgrey;
+    border-width: medium;
+    float: left;
+    display: grid;
+    z-index: 2000;
+    margin: 1px;    
+    padding: 1px;
+    text-align: center;
+    align-content: flex-start;
+}
+.patts{    
+    height: fit-content;
+    width: 220px;
+    display: block;
+    float: left;
+    margin: 3px;
+    border: none;
+    text-align: center;
+}
+.pattColReduced{
+    width: 200px;
+    height: 120px;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 0;
+    padding-top: 0;
+    border: solid;
+    border-width: thin;
+    border-color: darkgray;
+    margin: auto;
+}
+
+.pattColExtended{
+    z-index: 9000;
+    background-color: white;
+    display: flex;
+    position: relative;
+    height: fit-content;
+    width: fit-content;
+    border: solid;
+    border-width: thin;
+    border-color: darkgray;
+}
+
+
+.fullDetails {
+    position: absolute;
+    display: flex;
+    left:10%;
+    top:5%;
+    width: fit-content;
+    height: fit-content; 
+    margin: 0 auto;
+    border: solid;
+    z-index: 10000;
+    background-color: white;
+    border-color: black;
+    border-width: medium;
+    text-align: center;
+}
+.colorBar {
+    height: 20px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.selectToolbox{
+    width: fit-content;
+    height: fit-content;
+    border: solid;
+    padding:10px;
+    border-width: thin;
+    border-color: lightgray;
+    place-content: space-between;    
+    display: flex;
+    margin:auto;
+    margin-top: 5px;
+    align-content: flex-start;
+}
