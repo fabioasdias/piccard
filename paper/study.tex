@@ -14,30 +14,146 @@ language, Household Income, Marital status, Occupation, Place of birth, and
 Religion.  While our method does not require geographic harmonization, it
 requires matching variables over time. The supplementary material contains the
 details of which census columns were used for each aspect. Income is slightly
-inaccurate, even though we did correct for inflation. We grouped the original ranges into
-three larger ranges, but they do not match precisely.
+inaccurate, even though we did correct for official inflation. We grouped the
+original ranges into three larger ranges, but they do not match precisely.
 
-% \subsection{Chicago}
-% \begin{figure*}
-%     \centering
-%  \includegraphics[width=0.85\linewidth]{newTeaser.pdf}
-%  \caption{Boxplot representation for some of the clusters found, characterized
-%  by White population (orange), high education (purple), and Black population
-%  (green). The trajectories plot represents the associated population, showing an
-%  increase in the purple cluster. The plot on the right compares the intra
-%  quantile ranges for \emph{Four or more years of College}. While there was an
-%  increase in the whole city (gray band), it was sharper in this
-%  region.\label{fig:teaser}}
-% \end{figure*}
+\subsection{Chicago}
+We selected a region loosely following the administrative borders. The
+demographic composition is well explored in the literature, with reports of
+racial divide and gentrification~\cite{Delmelle2016,Delmelle2017,Hwang2014}.
+While the definition of gentrification is still unclear and out of the scope of
+this paper, we associate gentrification with higher education and income levels.
 
 
+The initial state of the prototype is illustrated in Figure~\ref{fig:ui}, and
+its findings are explained in Section~\ref{sec:ui}, where the racial divide is
+clear. Starting from this initial state, the specific workflow used to identify
+the existence and details of the gentrification process are illustrated in
+Figure~\ref{fig:chiWorkflow}. For the users, the first step is to identify the
+compositions of each cluster from the boxplots, so orange is associated with
+majority of White population, green with majority Black, and purple with higher
+proportion of four years of college or more (high education level). The expanded
+version of the boxplots for the purple cluster shows a higher income level and
+majority of occupations in administrative jobs, therefore the purple cluster
+identifies gentrified regions. 
+
+The trajectories plot illustrates the process of gentrification, progressively
+absorbing regions from the orange cluster (White). This corroborates results
+from the literature reporting that Black neighborhoods are less likely to
+gentrify~\cite{Hwang2014}. Moreover, this process is unlikely to be reversed, as
+indicated by the limited number of trajectories leaving the purple stream. Next,
+we select the region that is gentrified in 2010, by clicking on the
+corresponding rectangle in the trajectories plot, updating the information on
+the maps and the details portion of the interface.
+
+The corresponding CTs are highlighted in the maps, where the spatial pattern is
+clear, corresponding exactly to previous findings in the
+literature~\cite{Hwang2014}. Further, we can also identify the regions that
+gentrified earlier, with an stronger purple hue, compared to newer regions,
+where the orange and green colors are still present. This also indicates from
+which clusters they belonged before gentrifying. In the details portion of the
+interface, the order of the aspects was updated to reflect the order of
+relevance considering only the selected region. The most relevant aspect is the
+Education, specifically "Four or more years of college", illustrated in the
+rightmost portion of Figure~\ref{fig:chiWorkflow}, which is increasing for the
+whole city (grey band), but faster and to a higher level in this region (black
+band). Indeed, while the IQR for the city goes from 11\% to 45\%, the IQR for
+this region goes from 55\% to 77\%. However, there are portions of this region
+with significantly lower or higher proportions, as indicated by the dotted black
+lines representing the minimum and maximum for the selected region.
 
 
-\subsection{Los Angeles}
-We selected a region around the metropolitan area of Los Angeles (LA). This
-region follows urban density, not administrative boundaries. The summary of the
-results using all aspects with equal weights and eight clusters is illustrated
-in Figure~\ref{fig:la}, while the statistical description of the clusters is
+
+\begin{figure*}
+    \centering
+ \includegraphics[width=0.85\linewidth]{newTeaser.pdf}
+ \caption{Worflow to discover gentrification in Chicago: the purple cluster
+ corresponds to high education / income. Its population is increasing over time,
+ absorbing from the majority White cluster (orange). By selecting the purple
+ cluster in 2010, the region is highlighted in the maps. The proportion of
+ people with 4+ years of college is increasing in the whole city (grey IQRs),
+ but significantly more in this region (black).\label{fig:chiWorkflow}}
+\end{figure*}
+
+
+
+\subsection{Toronto}
+
+We considered a region that is approximately the administrative border of the
+current city of Toronto and all seven available aspects with equal weights. The
+results are summarized in Figure~\ref{fig:to}, considering eight clusters.
+
+\begin{figure}
+    \centering 
+    \includegraphics[width=0.95\linewidth]{to.pdf}
+    \caption{Clustering results for Toronto, with eight clusters, including
+    clusters representing Jewish population, high and low income, low education,
+    and Asian immigration.\label{fig:to}}
+\end{figure}
+
+The population with low percentage of University degrees is represented in
+orange, mostly anglophone population in green, Asian immigrants in yellow, high
+percentage of income in the highest bracket in purple, high percentage of Jewish
+people in light green and brown, high percentage of Eastern Non-Christian
+religion in pink, and high concentration of single people in dark gray. From the
+trajectories plot, we can see that Toronto is more dynamic than Chicago, with
+one cluster constantly shrinking. In the 1970s, the city was divided into four
+clusters: low number of university degrees, Jewish population, majority
+anglophones, and high income. Interestingly, the more recent clusters that
+absorbed regions from the orange cluster have similar education profiles and are
+differentiated by other aspects. In this sense, the city is growing diverse,
+changing from a common low education profile to a higher level of education with
+more diversity in religion (pink) and immigration (yellow).
+
+
+Indeed, the influx of Asian population is visible starting in the 1980s and
+building thereafter, leading to the yellow and pink clusters. While both include
+a high percentage of people born in Asia, the pink is more defined by religion,
+with low percentage of university degrees, and contains the lowest percentage of
+people in the highest income bracket for these clusters; the yellow is less
+defined by religion, and has higher education and income, geographically
+corresponding to the Markham region, know for its Chinese population. A similar
+division also happens for the two Jewish clusters, where the light green cluster
+has lower education and income levels than the brown cluster. The purple cluster
+of high income is somewhat stable. This cluster includes the Bridle Path
+neighborhood, known for its wealthy population, until 2011. In 2011 it was
+classified into the yellow cluster of Asian immigration, since about 35\% of the
+population for this CT were then born in Asia. The income distribution did not
+change, with 85\% of the population with an income of 90k CAD or more.
+
+
+The most significant indicator of Toronto's dynamism is the presence of grey
+regions on the simplified color map; representing regions associated to three or
+more clusters over this five census period. Using the 'Add' mode for the
+trajectory selection, we select their trajectories, and a subset of the details
+is illustrated in Figure~\ref{fig:toVol}. These regions account for about 5\% of
+Toronto's population. The whole region was classified into the orange cluster in
+1971 (low level of university degrees). By 1991, most of the region was
+classified into the green cluster, representing anglophone population, mostly
+Canadian born, with a higher level of education. As the corresponding plot
+indicates, this trend in increasing education is city-wide, but this region has
+people with better education than most.
+
+\begin{figure}
+    \centering 
+    \includegraphics[width=0.95\linewidth]{toVol.pdf}
+    \caption{Details for some regions of Toronto that were classified into 3 or
+         more clusters over time.\label{fig:toVol}}
+\end{figure}
+
+In 2001, the purple cluster of high income annexes neighboring parts of the
+volatile region, and the Asian born population increases sharply, as illustrated
+by the appearance of the yellow cluster.  This cluster indicates well educated,
+higher income, and about 30\%-50\% Asian born population. By 2011, the yellow
+cluster increased considerably, annexing parts of the high income purple
+cluster, including the neighboring Bridle Path area.
+
+
+\subsection{Los Angeles}%TODO HERE
+We selected a region around the metropolitan area of Los Angeles (LA), following
+urban density, not administrative boundaries. The summary of the results using
+all aspects with equal weights and eight clusters is illustrated in
+Figure~\ref{fig:la}. The full statistical description of the clusters is
 illustrated in Figure~\ref{fig:laAll}, where the most relevant aspect of each
 cluster is highlighted. From the trajectories plot, we can see that there is a
 large but shrinking cluster, depicted in green, one increasing cluster in
@@ -139,92 +255,17 @@ considerably, the economic and educational aspects stayed the same.
 \end{figure}
 
 
-
-\subsection{Toronto}
-
-We considered a region that is approximately the administrative border of the
-current city of Toronto and all seven available aspects. The results are
-summarized in Figure~\ref{fig:to}, considering eight clusters.
-
-\begin{figure}
-    \centering 
-    \includegraphics[width=0.95\linewidth]{to.pdf}
-    \caption{Results for Toronto, with eight clusters.\label{fig:to}}
-\end{figure}
-
-The population with low percentage of University degrees is represented in
-orange, mostly anglophone population in green, Asian immigrants in yellow, high
-percentage of income in the highest bracket in purple, high percentage of Jewish
-people in light green and brown, high percentage of Eastern Non-Christian
-religion in pink, and high concentration of single people in dark gray. 
-
-
-From the trajectories plot, we can see that Toronto is more dynamic than both
-Chicago and LA, with one cluster constantly shrinking, and others growing more
-prominent. In the 1970s, the city was divided into four clusters: low number of
-university degrees, Jewish population, majority anglophones, and high income,
-with the latter being rather small. There is some variance in the other
-characteristics of the orange cluster, but none as significant as the education
-level, especially when compared to the other years. While the orange cluster
-persists until 2011, the other clusters present have similar education profiles
-to one another, leading the clustering method to use other aspects to
-characterize them.
-
-Toronto's dynamism also appears in that we see the influx of Asian population
-starting in the 1980s and building thereafter, as represented by the yellow and
-pink clusters. While both include a high percentage of people born in Asia, the
-pink region is more defined by religion, with low percentage of university
-degrees, and contains the lowest percentage  of people in the highest income
-bracket for these clusters; the yellow is less defined by religion, and has
-higher education and income, geographically corresponding to the Markham region,
-know for its Chinese population. A similar division also happens for the two
-Jewish clusters, where the light green cluster has lower education and income
-levels than the brown cluster. The purple cluster of high income is somewhat
-stable. This cluster includes until 2011 the Bridle Path neighborhood, known for
-its wealthy population.  In 2011, however, it was classified into the yellow
-cluster that includes Asian immigration, since about 35\% of the population for
-this CT were born in Asia.  It maintained its income profile, with 85\% with 90k
-CAD or more.
-
-
-The grey regions of the map are another indication of Toronto's volatility over
-this period. While there is a cluster that is painted dark grey, annotated by a
-red circle in Figure~\ref{fig:to}, the light gray regions on the north part of the
-city indicate volatility. Here the same region was classified into three or more
-clusters for this five census period. Using the 'Add' mode for the trajectory
-selection, we select these volatile regions. A subset of the details is
-illustrated in Figure~\ref{fig:toVol}. 
-
-\begin{figure}
-    \centering 
-    \includegraphics[width=0.95\linewidth]{toVol.pdf}
-    \caption{Details for some regions of Toronto that were classified into 3 or
-         more clusters over time.\label{fig:toVol}}
-\end{figure}
-
-These regions account for about 5\% of Toronto's population. The whole region
-was classified into the orange cluster in 1971 (low level of university degrees).
-By 1991, most of the region was classified into the green cluster, representing
-anglophone population, mostly Canadian born, with a higher level of education.
-As the corresponding plot indicates, this trend in increasing education is
-city-wide, but this region has people with better education than most.
-
-In 2001, the purple cluster of high income annexes neighboring parts of the
-volatile region, and the Asian born population increases sharply, as illustrated
-by the appearance of the yellow cluster.  This cluster, once again, indicates
-well educated, higher income, and about 30\%-50\% Asian born population. By
-2011, the yellow cluster increased considerably, annexing parts of the high
-income purple cluster, including the neighboring Bridle Path area.
-
-
 While Toronto is more dynamic than Los Angeles, possibly due to size
-differences, the volatile regions shown in Figure~\ref{fig:toVol} did not change as
-quickly or dramatically as the ones shown in Figure~\ref{fig:laVol}, which involved
-twice as many people. We found this trend to be related to the countries
-themselves, Canadian cities have larger areas undergoing slow, gradual changes,
-whereas American cities have more general stability, but quicker changes in
-smaller scales. The supplementary material contains brief summaries of all the
-regions accessible in this prototype.
+differences, the volatile regions shown in Figure~\ref{fig:toVol} did not change
+as quickly or dramatically as the ones shown in Figure~\ref{fig:laVol}, which
+involved twice as many people. We found this trend to be related to the
+countries themselves, Canadian cities have larger areas undergoing slow, gradual
+changes, whereas American cities have more general stability, but quicker
+changes in smaller scales. The supplementary material contains brief summaries
+of all the regions accessible in this prototype.
+
+
+
 
 \section{Expert feedback}
 %This could be a big step toward better understanding of evolving urban morphology.

@@ -9,7 +9,7 @@ proposed method.
 
 \begin{figure}
     \centering 
-    \includegraphics[width=0.95\linewidth]{overview.pdf}
+    \includegraphics[width=0.975\linewidth]{overview.pdf}
     \caption{Overview of the proposed method. A graph is generated combining the
         original census data, encoding the changing geographical information.
         The graph is partitioned into an hierarchy~\cite{markus2017}. The
@@ -209,14 +209,16 @@ interaction can be used to alleviate the shortcomings of both approaches.
 
 
 \subsection{User interface}
+\label{sec:ui}
 The initial interface is illustrated in Figure~\ref{fig:ui}. Since demographic
 data can be nuanced, with intricate interconnections, we decided against
-presenting the interface using synthetic data, considering instead data from the
-Chicago region between 1970 and 2010, using previous published studies as
-corroboration. This region is known for its entrenched racial divide and the
+validating the interface using a synthetic dataset, considering instead data
+from the Chicago region between 1970 and 2010, using previous published studies
+as corroboration. This region is known for its entrenched racial divide and the
 emergence of a \emph{'young urban'} population with a higher education
-level~\cite{Delmelle2016,Delmelle2017}. More details about this scenario are
-presented in Section~\ref{sec:study}.
+level~\cite{Delmelle2016,Delmelle2017}. More details about this dataset are
+presented in Section~\ref{sec:study}, with an workflow example in
+Figure~\ref{fig:chiWorkflow}.
 
 \begin{figure*}
     \centering 
@@ -230,14 +232,14 @@ presented in Section~\ref{sec:study}.
 
 
 The configuration panel, on top left in Figure~\ref{fig:ui}, displays which
-aspects were considered and their weights (following Equation~\ref{eq:dist}). It
-also includes other configuration options that can be altered without
-re-processing the data, such as the number of clusters and the color option. The
-gear button allows access to the other configuration options that do require
-further processing, such as changing location, aspects, and weights. This panel
-also includes the configuration of the selection mode for the trajectories,
-which allows the user to set, add, or remove the next selected trajectories to
-the current selection. This feature enables the analysis of complex sets of
+aspects were used and their weights (following Equation~\ref{eq:dist}). It also
+includes other configuration options that can be altered without re-processing
+the data, such as the number of clusters and the color option. The gear button
+allows access to the other configuration options that do require further
+processing, such as changing location, aspects, and weights. This panel also
+includes the configuration of the selection mode for the trajectories, which
+allows the user to set, add, or remove the next selected trajectories to the
+current selection. This feature enables the analysis of complex sets of
 trajectories.
 
 
@@ -262,23 +264,29 @@ the IQRs for the other clusters, in slightly larger and faded black rectangles.
 We also color the current IQR according to its relevance. While there might be
 some degree of similarity between the color schema for relevance and for
 trajectory identification, none of the experts consulted reported confusion.
-These simple changes allow the user to easily understand the composition of the
-cluster and how it relates to the others. Violin plots~\cite{hintze1998violin}
-could also be used, but with increased potential for cluttering the
-representation of the other clusters, hindering the comparisons.
+Indeed, one expert reported confusion regarding the grey rectangles that
+represent the IQRs for other distributions when they are not colored; when that
+variable is not relevant to the characterization of the cluster. These simple
+changes allow the user to easily understand the composition of the cluster and
+how it relates to the others. Violin plots~\cite{hintze1998violin} could also be
+used, providing more information about the shape of the distribution, but with
+increased potential for obstructing the representation of the other clusters.
 
 
-For instance, the boxplot that summarizes the purple cluster, detailed on
-Figure~\ref{fig:boxplot}, illustrates that this cluster is best defined by the
-proportion of the population with four or more years of college. The user can
-quickly see that this is relevant because the corresponding IQR is colored with
-the highest relevance present in the legend. It is also clear that, while this
-cluster includes CTs that have between 10\% to 90\% of people in this variable,
-approximately, half of them have about 60\% of the population with four or more
-years of college. Since all the other IQRs are well separated, this is a
-defining characteristic of this cluster. By clicking on the colored bar above
-the boxplot, the user can select all trajectories that contain this cluster at
-any point in time.
+For instance, the boxplot that summarizes the purple cluster illustrated in
+Figure~\ref{fig:ui}, detailed on Figure~\ref{fig:boxplot}, illustrates that this
+cluster is best defined by the proportion of the population with four or more
+years of college. The user can quickly see that this is relevant because the
+corresponding IQR is colored with the highest relevance present in the legend.
+It is also clear that, while this cluster includes CTs that have between 10\% to
+90\% of people in this variable, approximately, half of them have about 60\% of
+the population with four or more years of college. Since all the other IQRs are
+well separated, this is a defining characteristic of this cluster. Conversely,
+the proportion of the population with one to three years of college is not
+relevant, as indicated by black fill in the rectangle representing the IQR of
+this cluster, in overlapping position with the rectangles of the other clusters.
+By clicking on the colored bar above the boxplot, the user can select all
+trajectories that contain this cluster at any point in time.
 
 \begin{figure}
     \centering 
