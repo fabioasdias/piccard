@@ -2,7 +2,7 @@
   "name": "uievo",
   "version": "0.1.0",
   "private": true,
-  "homepage": "http://142.1.190.14/~diasf/Piccard/",
+  "homepage": "https://fabioasdias.github.io/piccard/",
   "dependencies": {
     "@turf/bbox": "^5.1.5",
     "@turf/clone": "^5.1.5",
@@ -14,6 +14,7 @@
     "d3-selection": "^1.3.0",
     "d3-selection-multi": "^1.0.1",
     "es6-promise": "^4.2.4",
+    "gh-pages": "^1.2.0",
     "import": "0.0.6",
     "isomorphic-fetch": "^2.2.1",
     "leaflet": "^1.3.1",
@@ -26,7 +27,7 @@
     "react-leaflet-control": "^1.4.1",
     "react-mapbox-gl": "^3.8.0",
     "react-redux": "^5.0.7",
-    "react-scripts": "1.0.14",
+    "react-scripts": "^1.1.4",
     "react-vis": "^1.8.3",
     "reactjs-mappletooltip": "^1.4.63",
     "redux": "^3.7.2",
@@ -36,7 +37,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build" 
   },
   "devDependencies": {
     "redux-devtools": "^3.4.1"

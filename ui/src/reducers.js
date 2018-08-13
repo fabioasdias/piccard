@@ -2,9 +2,7 @@ import chroma from 'chroma-js';
 import clone from '@turf/clone';
 
 const baseURL=()=>{
-    //return('http://142.1.190.188:8080/');
     //return('http://localhost:8080/');
-    //return('http://138.197.139.94/ct/');//alpha
     return('http://142.1.190.14/ct/');// clr
 }
 
