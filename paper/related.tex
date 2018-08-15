@@ -1,7 +1,7 @@
 \section{Related Work}
 
-Since our problem emcompasses several fields, we divided this section into
-specific subproblems: \emph{longitudinal demographic studies}, describing the
+Since our problem encompasses several fields, we divided this section into
+specific sub problems: \emph{longitudinal demographic studies}, describing the
 traditional approach to perform longitudinal studies; \emph{data
 representation}, exploring how evolving geographic data can be represented for
 processing; \emph{Data clustering}, briefly reviewing existing clustering
@@ -10,7 +10,7 @@ visually summarized.
 
 \subsection{Longitudinal demographic studies}
 Census data is used not only to discover demographic
-patterns~\cite{Firebaugh2016}, but to correlate demographic charateristics to
+patterns~\cite{Firebaugh2016}, but to correlate demographic characteristics to
 other measurements~\cite{diez1997neighborhood}. However, longitudinal studies
 are rare: \emph{"(...) One of the most challenging and fascinating areas in
 spatial statistics is the synthesis of spatial data collected at different
@@ -22,14 +22,14 @@ data~\cite{Logan2014,nhgis}. Despite the inherent
 errors~\cite{Logan2016,Hallisey2017}, this dataset became the standard source
 for longitudinal demographic data, with similar efforts appearing in other
 countries~\cite{Liu2015,Lee2015,Allen2018}. This result was significant for the
-field, but it also restricts the useable data, since new datasets need to be
+field, but it also restricts the usable data, since new datasets need to be
 similarly processed.
 
 
 Another option considers the use of grid data~\cite{Dmowska2017,Dmowska2018},
 where small rectangular areas are used, in an approach similar to satellite
 imagery. Beyond the increased spatial accuracy, this approach does not require
-complex harmonizations when new data is considered. However, demographic data is
+complex harmonization when new data is considered. However, demographic data is
 usually not available in this format, especially from older sources, and the
 conversion from tabulation areas can introduce significant errors.
 
@@ -96,7 +96,7 @@ the data, but a tree of partitions. This approach is interesting for interactive
 methods, because it allows the user to change the number of displayed clusters
 with minimal processing. Since our data is represented as a graph, one option
 would be the watershed cuts algorithm~\cite{Cousty2009}, inspired by the well
-known image processing segmentation and equally prone to oversegmentation.
+known image processing segmentation and equally prone to over segmentation.
 Considering that the processing time is also a relevant factor, we opted for an
 heuristic variation of the maximum weighted matching algorithm called
 \emph{sorted maximal matching}~\cite{markus2017}, which merges clusters based on
@@ -107,7 +107,7 @@ the weights of the edges between pairs of clusters.
 \subsection{Cluster characterization}
 Visually representing evolving spatial data is a challenging old
 problem~\cite{monmonier1990strategies,andrienko2003exploratory,ferreira2015visual,Zheng2016}.
-Most geographic data is naturally bidimensional and maps work well in this
+Most geographic data is naturally bi dimensional and maps work well in this
 case~\cite{Zheng2016,ward2015interactive}, but the temporal dimension cannot be
 so naturally represented. One straightforward option is to leverage
 tridimensional plots~\cite{andrienko2014visualization,Tominski2012a}, but this

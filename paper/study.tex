@@ -67,7 +67,7 @@ lines representing the minimum and maximum for the selected region.
 \begin{figure*}
     \centering
  \includegraphics[width=0.85\linewidth]{newTeaser.pdf}
- \caption{Worflow to discover gentrification in Chicago: the purple cluster
+ \caption{Workflow to discover gentrification in Chicago: the purple cluster
  corresponds to high education / income. Its population is increasing over time,
  absorbing from the majority White cluster (orange). By selecting the purple
  cluster in 2010, the region is highlighted in the maps. The proportion of
@@ -149,18 +149,18 @@ cluster increased considerably, annexing parts of the high income purple
 cluster, including the neighboring Bridle Path area.
 
 
-\subsection{Los Angeles}%TODO HERE
+\subsection{Los Angeles}
 We selected a region around the metropolitan area of Los Angeles (LA), following
-urban density, not administrative boundaries. The summary of the results using
-all aspects with equal weights and eight clusters is illustrated in
-Figure~\ref{fig:la}. The full statistical description of the clusters is
-illustrated in Figure~\ref{fig:laAll}, where the most relevant aspect of each
-cluster is highlighted. From the trajectories plot, we can see that there is a
-large but shrinking cluster, depicted in green, one increasing cluster in
-purple, an almost constant orange cluster, a smaller but increasing pink
-cluster, and three other small clusters. The corresponding map illustrates where
-these clusters are located, and that they are somewhat geographically stable,
-with some movement between the green, orange, and purple clusters.
+urban density. The summary of the results using all aspects with equal weights
+and eight clusters is illustrated in Figure~\ref{fig:la}. The full statistical
+description of the clusters is illustrated in Figure~\ref{fig:laAll}, where the
+most relevant aspect of each cluster is highlighted. From the trajectories plot,
+we can see that there is a large but shrinking cluster, depicted in green, one
+increasing cluster in purple, an almost constant orange cluster, a smaller but
+increasing pink cluster, and three other small clusters. The corresponding map
+illustrates where these clusters are located, and that they are somewhat
+geographically stable, with some movement between the green, orange, and purple
+clusters.
 
 \begin{figure}
     \centering 
@@ -170,8 +170,8 @@ with some movement between the green, orange, and purple clusters.
         in Figure~\ref{fig:laAll}.\label{fig:la}}
 \end{figure}
 
-From Figure~\ref{fig:laAll}, we can see that the green cluster is characterized by
-a high percentage of White population, low percentage of population in the
+From Figure~\ref{fig:laAll}, we can see that the green cluster is characterized
+by a high percentage of White population, low percentage of population in the
 lowest income bracket, mostly administrative occupations, and about 30\% of the
 population with four or more years of college. The orange cluster is
 characterized by a high percentage of Black population, with few people in the
@@ -187,7 +187,9 @@ represents Black population, with higher level of education and income, mostly
 working administrative jobs. The brown cluster represent a majority of single
 population, working administrative jobs with mostly low income. The dark gray
 cluster is characterized by all its population in the lowest income bracket, low
-education level, with a majority of White population.
+education level, with a majority of White population. Since the extremes in the
+boxplots of the grey cluster are not significantly different, we can also
+surmise that this cluster is either small or homogeneous.
 
 \begin{figure*}
     \centering 
@@ -197,23 +199,20 @@ education level, with a majority of White population.
      cluster.\label{fig:laAll}}
 \end{figure*}
 
-Further, the larger clusters, green, orange, and purple, present a significant
-intra-cluster variance in most variables, as indicated by the maximum and
-minimum whiskers of the boxplots. For instance, while fifty percent of the CTs
-in the green cluster have between 20\% and 40\% of people in the lowest income
-bracket, that cluster also includes CTs where none and all the population
-belongs to that bracket. This might indicate that this cluster could be further
-divided, and currently represents different groups of people that are not
-different enough to be separated into clusters in this level of the hierarchy.
+The  green, orange, and purple clusters present a significant intra-cluster
+variance in most variables, as indicated by extreme whiskers of the boxplots.
+While fifty percent of the CTs in the green cluster have between 20\% and 40\%
+of people in the lowest income bracket, that cluster also includes CTs where
+none and all the population belongs to that bracket. This might indicate that
+this cluster represents different groups of people that are not different enough
+to be separated at this level of the hierarchy. Conversely, the light green,
+brown, and dark gray clusters are different enough to be separated into their
+own clusters at this level, despite being small and ephemeral, including only a
+few CTs. 
 
-
-While the larger clusters are expected, the light green, brown, and dark gray
-clusters are more surprising. These clusters are small and ephemeral, including
-only a few CTs, and are peculiarly different enough to be separated into their
-own clusters, at this level of the hierarchy. While these small clusters might
-be interesting enough to warrant further study, they might suppress larger, but
-more subtle, clusters from appearing in this interface,  due to the limited
-number of clusters.
+% While they might be interesting enough to
+% warrant further study, they might suppress larger, but more subtle, clusters
+% from appearing in this interface due to the limited number of clusters.
 
 The orange area in the map in Figure~\ref{fig:la} presents movement, indicated by
 the presence of green and purple tones mixed with the orange, which may warrant
@@ -255,7 +254,7 @@ considerably, the economic and educational aspects stayed the same.
 \end{figure}
 
 
-While Toronto is more dynamic than Los Angeles, possibly due to size
+\smallskip While Toronto is more dynamic than Los Angeles, possibly due to size
 differences, the volatile regions shown in Figure~\ref{fig:toVol} did not change
 as quickly or dramatically as the ones shown in Figure~\ref{fig:laVol}, which
 involved twice as many people. We found this trend to be related to the
@@ -270,11 +269,12 @@ of all the regions accessible in this prototype.
 \section{Expert feedback}
 %This could be a big step toward better understanding of evolving urban morphology.
 To assess the proposed method, we contacted academic and industry experts in
-sociology and urban sciences. The supplementary material contains all our
-communication with five experts, identified from A to E. 
+sociology and urban sciences. The supplementary material contains the
+communication with five experts, verbatim, identified from A to E. 
 
-Their response was positive,  mentioning that the prototype allows them to
-analyze census data without the additional work of obtaining and cleaning the
+
+Their overall response was positive,  mentioning that the prototype allows them
+to analyze census data without the additional work of obtaining and cleaning the
 data (A, B, E), and it allows the inclusion of geographic visual analysis tools
 in their research process (D). It enables the users to tell different stories
 about neighborhoods/cities and their changes (A), visualize the relationship
@@ -284,27 +284,40 @@ around a particular issue or efficiently understanding the context of an area
 (E).  Indeed, the experts identified gentrification processes in Manhattan (B)
 and Dallas (E), reinforced a hypothesis for occupational clustering (D), and
 highlighted how the method can be used to compare neighborhoods and cities (A).
-These remarks attest that we satisfied the design requirements regarding the
-existing demographic groups and their changes.
+In summary, the proposed methodology can be a viable alternative for the visual
+analytics of evolving demographic data.
 
 
 
 While the interface was "easy to navigate" (B), it was also considered
 "overwhelming" (A), "intimidating" (E), and "tricky to interpret" (C), possible
 side-effects of our effort to increase  representational accuracy, where we
-avoided using simplified labels. Specifically, while identifying clusters by
-their most relevant variables was welcome, the overlap of information from
-different clusters in the boxplot was "a bit confusing" (C). While the map of
-trajectories was mentioned as a "good summary map", how it related to the
-clustering method was unclear (C). While we provide different options on how the
-colors are used on this map, both are sub optimal, reliably representing several
-distinct entities using colors is still an open problem in visualization.
+avoided using simplified representation or labels. Identifying clusters by their
+most relevant variables was welcome, but the overlap of information from
+different clusters in the boxplot was "a bit confusing" (C) when color is not
+present. Further, most clusters can be sufficiently characterized using only the
+most relevant aspect, but this is not generally true. 
+
+
+While the map of trajectories was mentioned as a "good summary map", how it
+related to the clustering method was unclear (C). While we provide different
+options on how the colors are used, both are sub optimal since reliably
+representing several distinct entities using colors is humanly unfeasible.
+Indeed, the number of distinguishable colors was a significant constraint, we
+found indications that more clusters should be used in some cases, even if eight
+clusters is more than what is traditionally considered in these analyses.
+Conversely, increasing the number of clusters would also complicate the
+interpretation of the results.
 
 
 The experts also mentioned the poor responsiveness of the method when changes in
 the clustering parameters required server-side processing (B,D). Indeed, the
 current implementation can take a few minutes to cluster regions with high
-number of CTs, like Los Angeles or Brooklyn.
+number of CTs, like Los Angeles or Brooklyn. Server-processing reduced the
+amount of data transfered to client, but might increase response time under
+load. We implemented a cache policy that greatly reduces the response time, but
+fully pre-processing the results is not practical due to size of the parameter
+space.
 
 Most of the experts demonstrated interest in using our method in their research
 (A, B, D, E), aiming to use the census data as a backdrop for other datasets,
@@ -316,7 +329,8 @@ More importantly, while these experts were aware that our method does not
 perform geographic normalization, none of them mention it. We did not
 specifically ask if this difference led to unexpected results, but rather
 inquired if they found interesting insights, leading them to consider the
-interface, its options, and results as a whole. Therefore the method was
-neutrally compared against other, traditionally normalized results. We interpret
-the fact that most of them were interested in the next steps as an affirmation
-of the accuracy of the method.
+interface, its options, and results as a whole. Most experts found phenomena
+corroborated by the specialized literature, indicating that our methodology
+produces equivalent results, with a fraction of the effort. We interpret the
+fact that most of them were interested in the next steps as an affirmation of
+the accuracy of the method.

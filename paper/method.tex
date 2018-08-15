@@ -113,16 +113,16 @@ arbitrary number of clusters.
 
 Each resulting cluster is contiguous in the graph. This means that two similar,
 but non-contiguous, sets of CTs will be classified into two different clusters,
-which can be counterintuitive. To overcome this issue, we \emph{augment} the
+which can be counter-intuitive. To overcome this issue, we \emph{augment} the
 graph with two new edges per node from a nearest neighbors
 graph~\cite{scikit-learn} using only the distances between the histograms. These
 edges connect nodes with similar content, if they are not already connected,
 providing a path for the algorithm to group similar nodes. Theoretically, adding
 more of these content based edges could be used to decrease the impact of the
-spatio-temporal edges, controling the balance between content and topology in
+spatio-temporal edges, controlling the balance between content and topology in
 the result. In practice, the effect is dependent on the data itself, and the
 results are not consistent, or predictable, across different cities. We fixed it
-at two edges because it was the lowest number that empircally led to consistent
+at two edges because it was the lowest number that empirically led to consistent
 clusters, but we believe that this idea warrants further investigation, as an
 alternative to mixing parameters in the distance metric~\cite{Chavent2017}.
 
@@ -365,7 +365,7 @@ maps, depicting the clusters at each year, and the stacked bar plots that
 summarize the overall composition of these regions. Some finer localization
 information is lost using small multiples, such as small border changes, but
 that information is available at the larger map. All the maps are linked with
-syncronized navigation, and the use of small multiples allows the exploration of
+synchronized navigation, and the use of small multiples allows the exploration of
 each temporal census individually, and its comparison to the others, with
 minimal interaction. 
 

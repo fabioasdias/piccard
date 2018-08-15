@@ -5,15 +5,27 @@ with visual tools to allow for the exploration of geographically inconsistent
 census data. While we successfully replicated and corroborated results from the
 literature, this method still has significant limitations. 
 
+
 Removing the geographical normalization/interpolation step greatly reduces the
 amount of work necessary, but the method still requires consistent variables
 across the years. Matching the fields of the public census can be trivial for
-some aspects, like Age, but challenging for others, like Income. The divulged
-income ranges vary over time, the actual value changes due to inflation and
-other factors, and so on. Moreover, some fields were not considered in earlier
-censuses, such as Race in Canada, or Hispanic population in the USA, hampering its
-use when they are available. We matched some aspects, but a deeper demographic
-analysis would greatly benefit from all available information.
+some aspects (Age), but challenging for others (Income). The divulged income
+ranges vary over time, the actual value changes due to inflation and other
+factors, and so on. Moreover, some fields were not considered in earlier
+censuses, such as Race in Canada, or Hispanic population in the USA, hampering
+its use when they are available. Since this is only a prototype, we matched few
+aspects, but a deeper demographic analysis would greatly benefit from all
+available information.
+
+
+The limitation on the number of displayed clusters because of the limited number
+of distinguishable colors was significant. While increasing the number of
+clusters would further complicate an already complex analysis, it might be
+warranted for some regions. Color is a fundamental and intuitive tool for
+information representation that can be coherently used across different plots,
+so we opted to use it, even if in a limited way. With eight colors, there was
+overlap between some clusters, the relevance gradient, and the color
+combination. 
 
 
 Another limitation is the lack of control on how much the geographical
