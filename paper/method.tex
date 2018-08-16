@@ -149,13 +149,12 @@ specific range of values is something that only occurs in this cluster.
 
 \subsection{Clusters and trajectories}
 While the partition of the data into different clusters helps the user to
-understand what demographic groups exist and where they are, we are also
-interested in the changes in those groups. To this end, we introduce the concept
-of \emph{trajectories}, which are composed by regions that are classified into
-the same sequence of clusters over the considered period. This enables direct
-access to regions that evolved in the same manner. While the interface provides
-access to data by census tract, the trajectories are the main unit of
-exploration in this work.
+understand what groups exist and where they are, we are also interested in the
+evolution of these groups. We introduce the concept of \emph{trajectories},
+composed by regions classified into the same sequence of clusters over the
+considered period. This enables direct access to regions that evolved in the
+same manner. While the interface provides access to data by individual census
+tract, the trajectories are the main unit of exploration in this work.
 
 \subsection{Colors}
 \label{sec:colors}
@@ -217,8 +216,7 @@ from the Chicago region between 1970 and 2010, using previous published studies
 as corroboration. This region is known for its entrenched racial divide and the
 emergence of a \emph{'young urban'} population with a higher education
 level~\cite{Delmelle2016,Delmelle2017}. More details about this dataset are
-presented in Section~\ref{sec:study}, with an workflow example in
-Figure~\ref{fig:chiWorkflow}.
+presented in Section~\ref{sec:study}.
 
 \begin{figure*}
     \centering 
@@ -305,10 +303,10 @@ CTs that are almost exclusively occupied by people of the same racial category.
 
 
 The trajectories overview aims to convey basic information about the
-trajectories present in the data, where they are, and what changes are involved.
-This is done using three sub panels. The first, on the left, contains a Sankey
-diagram illustrating the evolution of the clusters over time. The widths are
-proportional to the population involved, the colors follow a policy detailed in
+trajectories, where they are, and what changes are involved. This is done using
+three sub panels. The first, on the left, contains a Sankey diagram illustrating
+the evolution of the clusters over time. The widths are proportional to the
+population involved, the colors follow a policy detailed in
 Section~\ref{sec:colors}. A stacked graph could also be used to represent the
 proportions of each cluster~\cite{Valdivia2015} with less clutter, since the
 transitions between clusters would not be represented. However, this is only
@@ -318,23 +316,23 @@ are selected, but this would change the layout and compromise the user's mental
 map.
 
 
-In our example in Figure~\ref{fig:ui}, we can see that the total population of
-Chicago is decreasing. Additionally, the orange and green clusters contain most
-of the population and are fairly stable over time. The pink cluster is small and
-mostly stable. The purple cluster is increasing, mostly by incorporating areas
-that were previously orange. Since the purple group corresponds to the emergent
+In our example in Figure~\ref{fig:ui}, the total population of Chicago is
+decreasing. Additionally, the orange and green clusters contain most of the
+population and are fairly stable over time. The pink cluster is small and mostly
+stable. The purple cluster is increasing, mostly by incorporating areas that
+were previously orange. Since the purple group corresponds to the emergent
 'young urban' group, this corroborates the findings of
 Delmelle~\cite{Delmelle2016,Delmelle2017}. This diagram can also be used to
 select specific trajectories, by clicking on the bands, or all trajectories that
 contain a specific cluster at a specific time, by clicking on the rectangles.
 
 
-The next sub panel, in the top middle of Figure~\ref{fig:ui}, is a transition
-matrix between the clusters. It indicates the percentage of the population whose
-area changed in each pattern. This kind of table can be found in the related
-literature~\cite{Delmelle2016}, so it is familiar to the advanced users, and it
-not only informs the proportional changes, but allows the selection of the
-corresponding trajectories for further analysis.
+In the next panel, illustrated in the top middle of Figure~\ref{fig:ui}, is a
+transition matrix between the clusters. It indicates the percentage of the
+population whose area changed between each pair of clusters. This kind of table
+can be found in the related literature~\cite{Delmelle2016}, so it is familiar to
+the advanced users. It not only informs the proportional changes, but allows the
+selection of the corresponding trajectories for further analysis.
 
 Contrary to the trajectories plot, this representation is more Markovian, where
 only the current and next state are considered. This panel also enables easier

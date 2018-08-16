@@ -302,7 +302,7 @@ most relevant aspect, but this is not generally true.
 
 
 While the map of trajectories was mentioned as a "good summary map", how it
-related to the clustering method was unclear (C). The methos includes different
+related to the clustering method was unclear (C). The methods includes different
 options on how the colors are used, but both are sub optimal since reliably
 representing several distinct entities using colors is humanly unfeasible.
 Indeed, the number of distinguishable colors was a significant constraint, we
@@ -316,7 +316,7 @@ The experts also mentioned the poor responsiveness of the method when changes in
 the clustering parameters required server-side processing (B,D). Indeed, the
 current implementation can take a few minutes to cluster regions with high
 number of CTs, like Los Angeles or Brooklyn. Server-processing reduced the
-amount of data transfered to client, but it might increase the response time
+amount of data transferred to client, but it might increase the response time
 under load. We implemented a cache policy that greatly improved the performance,
 but fully pre-processing the results is not practical due to size of the
 parameter space.
