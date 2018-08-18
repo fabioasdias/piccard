@@ -10,9 +10,16 @@
 
 \begin{document}
 \maketitle
-A previous version of this paper was submitted to IEEE VAST 2018. While the full
-text of the reviews is attached, we would like to overview the changes made,
-leveraging the summary review:
+A previous version of this paper was submitted to IEEE VAST 2018. Before going
+to the reviews, I am personally humbly requesting from this new wave of
+reviewers: \textbf{please be specific}. I can't really do much with \emph{"most
+technical content would benefit from a thorough re-written"} or \emph{"the
+writing style and paper organization is hardly a qualified research paper on
+visualization"}, especially because I'm following the same pattern of my last
+three publications at VAST and TVCG. 
+ 
+The full text of the reviews is attached. We start with the overview of the
+changes using the summary review:
 
 
 \begin{itemize}
@@ -20,23 +27,27 @@ leveraging the summary review:
     of the domain expert interview are missing. (R1, R3)
     
     \reply{We did not introduce a new clustering method. The original paper
-    contains such evaluations, we added that explicitly on the text. All the
-    communication with the experts is included, verbatim, in the supplementary
-    material, with the exception of Patrick Adler, which is a member of the
-    Urban Genome Project, but did not collaborate directly in this work.}}
+    contains such evaluations, we added that explicitly on the text. More
+    details about the information available to the experts at the time of their
+    review was added to the respective section, the supplementary material
+    contains the full transcript of our communications.}}
 
     \item{Design: the consideration and final choice of design are not clearly discussed.
     Specially, the color usage is confusing. (R2, R3, R4).
     
-    \reply{We added/expanded discussion about the choices, including the
-     subsection about color.}}
+    \reply{We added/expanded the discussion about the visual and
+     representational choices, including a five paragraph subsection about
+     color.}}
 
     \item{Motivation: the authors fail to clearly demonstrate the motivation of their
     work, probably due to their writing style. (R2, R4)}
-    \reply{The introduction was re-written to make this clearer.}
 
     \item{Presentation: no technical contribution clearly stated, writing style not
-    qualified as a good research paper, paper organization can be improved (R2, R4)}
+    qualified as a good research paper, paper organization can be improved (R2, R4)
+
+    \reply{The paper was re-organized to better reflect our contributions and
+     motivation, including a full rewrite of the intro and related work.}}
+     
 \end{itemize}
 
 \section{Reviewer 1 - score 4/5}
@@ -92,11 +103,11 @@ leveraging the summary review:
     performed using CT as the region in census data, it would have been nice to see if
     this work is also applicable to other census regions as well.
 
-    \reply{The specific region used for the analysis is irrelevant to the
-    method, we could have used mixed regions for instance. We adopted CTs
-    because it is the most finely grained and volatile data available including
-    more than population count. And all the communications with the experts was
-    included in the supplementary material.}
+    \reply{The text was modified to make clear that the specific region used for
+    the analysis is irrelevant to the method. We adopted census data because it
+    is well explored, and we adopted CTs because it is the most finely grained
+    and volatile data available in the censuses that include more than
+    population count.}
 
     \textbf{Revision Required:}
     Figure 2: while useful could use more detail and better explanation of the
@@ -105,7 +116,7 @@ leveraging the summary review:
 
     \reply{This change wasn't made because we do not introduce the clustering
     algorithm. For the purposes of this work, any hierarchical clustering would
-    work.}}
+    work. The text was modified to make this point clearer.}}
 \end{itemize}
 
 \section{Reviewer 2 - score 2/5}
@@ -162,7 +173,7 @@ leveraging the summary review:
     process of geographical harmonization in the data analysis. The authors need to
     explicitly describe the motivation of the proposed work.
 
-    \reply{The introduction was re-written to make this explicit.}
+    \reply{The introduction was re-written to make the motivation and our contributions explicit.}
 
     In addition, the authors are suggested to clearly discuss about the design
     considerations. For example, “Details of the changes” is not clear enough. Many
@@ -249,11 +260,11 @@ revisions in The Review section)}
     there is a high correlation of spatio-temporal information with the histogram
     distance).
 
-    \reply{We did not propose a new clusering method. Any hierarchical
-    clustering would work, with potentially minimal differences in the result.
-    This specific suggestion corresponds to the ClustGeo, an R package that does
-    Ward clustering with two distance matrices to express geographic distance.
-    That work is mentioned and discussed.}}
+    \reply{I modified the text to make clear that the clustering method is not
+    new. Indeed, any hierarchical clustering would work. This specific
+    suggestion corresponds to the ClustGeo, an R package that does Ward
+    clustering with two distance matrices to express geographic distance. That
+    work is mentioned and discussed.}}
 
 
     \item{The color usage for the whole visual analytic system is sometimes confusing. 
@@ -269,27 +280,24 @@ revisions in The Review section)}
     on top since there is some color overlap with the categorical encoding (e.g., the
     green and grape color).
 
-    \reply{Colour assignment was indeed challenge for this work, mostly because
-    it needs to be used, but there isn't a definitive way to actually do it.
-    That was also the reason for artificially limiting the maxium number of
-    clusters to eight. There is indeed overlap between the colours used for
-    relevance and the clusters, mostly because the clusters used virtually all
-    of the colour space. However, we believe that their different meanings are
-    clear, since none of the experts, nor the other reviewers, mentioned any
-    confusion in this specific aspect. It is not ideal, but we believe it is a
-    acceptable approximation. Not ideal, but reasonable enough.}}
+    \reply{The colour discussion was expanded. However, we believe the colour
+    confusion mentioned is not particular problematic since none of the experts,
+    nor the other reviewers, mentioned it. Not ideal, but reasonable enough.}}
 
     \item{The details of the domain expert interview is missing in the paper.  
     I really appreciate that the authors attached the detailed expert review comments
     and the online demo is available. However, in the main paper, there is a very
     little description of how the expert interviews were conducted. Since there are
     still plenty of space, I would suggest the authors to add more details in Section
-    6.}
+    6.
+    \reply{Done.}}
     \end{enumerate}
     \textbf{Minor issue}:
     The demo video can be improved by providing a more comprehensive walkthrough of a
     case study instead of fragmented videos to explain the functionalities.
-}
+
+    \reply{These videos are part of the documentation, illustrating specific
+    activities.}}
 \end{itemize}
 
 \section{Reviewer 4 - score 2/5}
@@ -325,7 +333,7 @@ revisions in The Review section)}
     minor grammar errors, most technical content would benefit from a thorough re-
     written. There is no explicit contribution statement. It seems the contribution on
     visualization is rather limited. The authors are also encouraged to re-submit to a
-    GIS venue.
+    GIS venue.}
 
 \item{\textbf{The Review}
 
@@ -393,11 +401,11 @@ revisions in The Review section)}
     work". I did review some works from Andrienko's group, after all they are
     fairly known for this, but some were not included because they are not
     relevant to the current problem. \\The introduction and related work were
-    re-written and significantly expanded. I included more text expliciting
-    exactly what was accomplished in this work, which hopefully will make that
-    distinction clearer. \\ As the others reviewers mentioned, the tool was
-    available not only for the experts, but for the reviewers as well, on an
-    anonymous site.}
+    re-written and significantly expanded. I included more text explaining
+    exactly what was accomplished in this work, to make that distinction
+    clearer. \\ As the others reviewers mentioned, quite obviously the tool was
+    available to the experts, and for the reviewers as well, on an anonymous
+    site.}
 
     There are some other minor issues which the authors can address in any later
     versions.
@@ -432,7 +440,6 @@ revisions in The Review section)}
     explain all the involved concepts. Further publications on applied geography
     and demographics venues are planned in the scope of the Urban Genome
     Project, which will cite this publication for the technical details.}}
-
 \end{itemize}
 
 \subsection{The Summary Review}
