@@ -28,10 +28,12 @@ leveraging the summary review:
     \item{Design: the consideration and final choice of design are not clearly discussed.
     Specially, the color usage is confusing. (R2, R3, R4).
     
-    }
+    \reply{We added/expanded discussion about the choices, including the
+     subsection about color.}}
 
     \item{Motivation: the authors fail to clearly demonstrate the motivation of their
     work, probably due to their writing style. (R2, R4)}
+    \reply{The introduction was re-written to make this clearer.}
 
     \item{Presentation: no technical contribution clearly stated, writing style not
     qualified as a good research paper, paper organization can be improved (R2, R4)}
@@ -92,15 +94,18 @@ leveraging the summary review:
 
     \reply{The specific region used for the analysis is irrelevant to the
     method, we could have used mixed regions for instance. We adopted CTs
-    because it is the most finely grained data available including more than
-    population count. Additionally, other census areas do not change as
-    frequently as CTs. }
+    because it is the most finely grained and volatile data available including
+    more than population count. And all the communications with the experts was
+    included in the supplementary material.}
 
     \textbf{Revision Required:}
     Figure 2: while useful could use more detail and better explanation of the
     algorithm, it could do a better job in showing clustering and explaing the diagram
     since this is the figure that explains the entire paper.
-}
+
+    \reply{This change wasn't made because we do not introduce the clustering
+    algorithm. For the purposes of this work, any hierarchical clustering would
+    work.}}
 \end{itemize}
 
 \section{Reviewer 2 - score 2/5}
@@ -128,7 +133,10 @@ leveraging the summary review:
     In this paper, the authors propose a method for longitudinal data analysis that
     avoids the geographical harmonization. The paper focuses on an interesting topic.
     The weakness of the paper is that the motivation and design requirements are not
-    clearly demonstrated, and the design process is not justified.}
+    clearly demonstrated, and the design process is not justified.
+
+    \reply{The intro was re-written and justifications/discussions added for every plot/option.}
+    }
 
 \item{\textbf{The Review}
 
@@ -153,6 +161,8 @@ leveraging the summary review:
     also fail to illustrate why it is important and challenging for omitting the
     process of geographical harmonization in the data analysis. The authors need to
     explicitly describe the motivation of the proposed work.
+
+    \reply{The introduction was re-written to make this explicit.}
 
     In addition, the authors are suggested to clearly discuss about the design
     considerations. For example, “Details of the changes” is not clear enough. Many
@@ -238,8 +248,13 @@ revisions in The Review section)}
     considering spatio-temporal information (specific for the first one, since I think
     there is a high correlation of spatio-temporal information with the histogram
     distance).
-    \reply{TODO}
-    }
+
+    \reply{We did not propose a new clusering method. Any hierarchical
+    clustering would work, with potentially minimal differences in the result.
+    This specific suggestion corresponds to the ClustGeo, an R package that does
+    Ward clustering with two distance matrices to express geographic distance.
+    That work is mentioned and discussed.}}
+
 
     \item{The color usage for the whole visual analytic system is sometimes confusing. 
 
@@ -262,7 +277,7 @@ revisions in The Review section)}
     of the colour space. However, we believe that their different meanings are
     clear, since none of the experts, nor the other reviewers, mentioned any
     confusion in this specific aspect. It is not ideal, but we believe it is a
-    acceptable approximation.}}
+    acceptable approximation. Not ideal, but reasonable enough.}}
 
     \item{The details of the domain expert interview is missing in the paper.  
     I really appreciate that the authors attached the detailed expert review comments
@@ -338,11 +353,12 @@ revisions in The Review section)}
     chosen? What are the nature of the resulting clusters? To this end, what is the
     specialized design for inconsistent census data?
 
-    \reply{Following the guidelines, an application paper doesn't need to
-    include new techniques. Indeed, the objective of this work was to leverage
-    "commonplace" VIS methods to provide a more efficient solution to a common
-    issue in another field. Indeed, we provide a viable alternative to time
-    consuming and challenging problem that was believed to be unavoidable.}}
+    \reply{This is an application paper, not a technique paper. It's objective
+    is to demonstrate how cleverly combining simple, well explored, VIS methods
+    can solve an "unsolvable" problem for demographic analysis. All the panels
+    contain established tools (except for the "enhanced" boxplot, I didn't find
+    anything similar in the literature, but that's hardly the main contribution
+    of the paper).}
 
 
     Second, the writing style and paper organization is hardly a qualified
@@ -372,10 +388,12 @@ revisions in The Review section)}
     interactive tool to try themselves! From the preview video, it is hard to
     imagine a real system exists for this work.
 
+
     \reply{Unfortunately the reviewer doesn't mention which is the "most related
     work". I did review some works from Andrienko's group, after all they are
     fairly known for this, but some were not included because they are not
-    relevant to the current problem. TODO I included more text expliciting
+    relevant to the current problem. \\The introduction and related work were
+    re-written and significantly expanded. I included more text expliciting
     exactly what was accomplished in this work, which hopefully will make that
     distinction clearer. \\ As the others reviewers mentioned, the tool was
     available not only for the experts, but for the reviewers as well, on an
@@ -394,6 +412,12 @@ revisions in The Review section)}
         \item{It will be helpful to put a sample census data in the paper, e.g., a table}
         \item{The Sankey diagram in Figure 6 is cluttered, any solution?}
     \end{itemize}
+    \reply{We removed the design objectives. Indeed they were rather obvious for
+    the context/application. \\
+    The discussion for edge augmentation was extended.\\
+    Figure placement is up to latex, and the publishers.\\
+    The data for a single CT would occupy too much space. It is included in the
+    supplementary material.}
 
     Overall, the authors have studied a valid problem with an appropriate
     solution and well-conducted case study, but the contribution on
