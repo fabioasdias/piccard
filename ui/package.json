@@ -2,7 +2,7 @@
   "name": "uievo",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://fabioasdias.github.io/piccard/",
+  "homepage": "http://ug.daniels.utoronto.ca/~diasf/Piccard/",
   "dependencies": {
     "@turf/bbox": "^5.1.5",
     "@turf/clone": "^5.1.5",
