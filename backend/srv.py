@@ -21,7 +21,7 @@ from scipy.spatial.distance import pdist, sqeuclidean, squareform
 from sklearn.manifold import TSNE
 from sklearn.neighbors import NearestNeighbors
 
-#import matplotlib.pylab as plt
+# import matplotlib.pylab as plt
 
 def cors():
   if cherrypy.request.method == 'OPTIONS':
@@ -344,7 +344,7 @@ class server(object):
         """Returns a json containing the segmentation results considering the variables
            The results are composed by the initial set of labels + the merges done at each level"""
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        cherrypy.request.config.update({'tools.sessions.timeout': 1200})
+        # cherrypy.request.config.update({'tools.sessions.timeout': 1200})
         ret = dict()
 
         dsconf = {}
@@ -425,14 +425,6 @@ class server(object):
         ret['labels'], ret['traj'], nodesByTID= _graph2display(G, baseLabels, curCity, corr)
         print(time() - t0)
 
-        # print('geo metrics')
-        # t0 = time()
-        # ret['gmetric']=dict()
-        # for c in clusterNodes:
-        #     if (c not in ret['gmetric']):
-        #         ret['gmetric'][c] = 
-
-        # print(time() - t0)
 
 
         print('temporal differences')
@@ -472,6 +464,9 @@ class server(object):
                     cTemp, q=25, axis=0).squeeze().tolist())
                 q3 = np.atleast_1d(np.percentile(
                     cTemp, q=75, axis=0).squeeze().tolist())
+                med = np.atleast_1d(np.percentile(
+                    cTemp, q=50, axis=0).squeeze().tolist())
+
                 vmin = np.atleast_1d(np.amin(cTemp, axis=0).squeeze().tolist())
                 vmax = np.atleast_1d(np.amax(cTemp, axis=0).squeeze().tolist())
                 q1q3 = (np.array(q3) - np.array(q1))
@@ -480,6 +475,7 @@ class server(object):
                             'q3': q3,
                             'min': vmin,
                             'max': vmax,
+                            'med': med,
                             'q1q3': q1q3,
                             'numel': len(clusterNodes[c]),
                             'var': ds.getVarName(vi),
@@ -492,14 +488,16 @@ class server(object):
             AllOverlaps[lvl] = dict()
             importances[lvl] = dict()
             tClusters = sorted(set(corr[lvl]))
+            # plt.figure()
             for c1 in tClusters:
                 if (c1 not in importances[lvl]):
                     importances[lvl][c1] = dict()
 
-                if (len(tClusters) == 1):
-                    lastCluster = tClusters[0]
-                    break
                 for v in Q[c1]:
+                    if (len(tClusters) == 1):
+                        importances[lvl][c1][v]=[1,]*len(Q[c1][v]['q3']) #nobody to compare
+                        continue
+
                     # it would be faster if c2>c1, but then it would more complicated afterwards. This runs fast enough.
                     for c2 in tClusters:
                         if (c2 == c1):
@@ -510,44 +508,44 @@ class server(object):
                             AllOverlaps[lvl][c1][c2] = dict()
                         if (v not in AllOverlaps[lvl][c1][c2]):
                             AllOverlaps[lvl][c1][c2][v] = (np.min([Q[c1][v]['q3'], Q[c2][v]['q3']], axis=0) - np.max(
-                                [Q[c1][v]['q1'], Q[c2][v]['q1']], axis=0)) / len(Q[c1][v]['q1'])
+                                [Q[c1][v]['q1'], Q[c2][v]['q1']], axis=0)) #/ len(Q[c1][v]['q1'])
 
-                    overlaps = np.median([AllOverlaps[lvl][c1][c2][v]
+                    overlaps = np.max([AllOverlaps[lvl][c1][c2][v]
                                           for c2 in AllOverlaps[lvl][c1]], axis=0)
-                    importances[lvl][c1][v] = -overlaps
+                    # plt.plot(overlaps)
+                    importances[lvl][c1][v] = (-overlaps+1.0)/2.0 #overlap: -1 spread, 0 touch, 1 full overlap
+            # plt.show()
+            # if len(tClusters) > 1:
+            #     D = np.zeros((len(tClusters), len(tClusters)))
+            #     C2I = {c: i for i, c in enumerate(tClusters)}
+            #     for c1 in tClusters:
+            #         for c2 in tClusters:
+            #             if c2 <= c1:
+            #                 continue
+            #             D[C2I[c1]][C2I[c2]] = - np.sum(
+            #                 [np.sum(AllOverlaps[lvl][c1][c2][x]) for x in AllOverlaps[lvl][c1][c2]])
 
-            if len(tClusters) > 1:
-                D = np.zeros((len(tClusters), len(tClusters)))
-                I2C = {i: c for i, c in enumerate(tClusters)}
-                C2I = {c: i for i, c in enumerate(tClusters)}
-                for c1 in tClusters:
-                    for c2 in tClusters:
-                        if c2 <= c1:
-                            continue
-                        D[C2I[c1]][C2I[c2]] = - np.sum(
-                            [np.sum(AllOverlaps[lvl][c1][c2][x]) for x in AllOverlaps[lvl][c1][c2]])
-
-                D = D + D.T - D.min()
-                for i in range(D.shape[0]):
-                    D[i, i] = 0.0
+            #     D = D + D.T - D.min()
+            #     for i in range(D.shape[0]):
+            #         D[i, i] = 0.0
 
         ret['centroid'] = curCity['centroid']
 
         ret['patt'] = []
-        impMin = dict()
-        impMax = dict()
-        for lvl in importances:
-            impMin[lvl] = dict()
-            impMax[lvl] = dict()
-            for c in importances[lvl]:
-                if (c == lastCluster):
-                    continue
-                flVersion = []
-                for v in importances[lvl][c]:
-                    flVersion.extend(importances[lvl][c][v])
-                flVersion = np.array(flVersion)
-                impMin[lvl][c] = np.amin(flVersion)
-                impMax[lvl][c] = np.amax(flVersion)
+        # impMin = dict()
+        # impMax = dict()
+        # for lvl in importances:
+        #     impMin[lvl] = dict()
+        #     impMax[lvl] = dict()
+        #     for c in importances[lvl]:
+        #         if (c == lastCluster):
+        #             continue
+        #         flVersion = []
+        #         for v in importances[lvl][c]:
+        #             flVersion.extend(importances[lvl][c][v])
+        #         flVersion = np.array(flVersion)
+        #         impMin[lvl][c] = np.amin(flVersion)
+        #         impMax[lvl][c] = np.amax(flVersion)
 
         for c in clusterNodes:
             V = []
@@ -557,13 +555,14 @@ class server(object):
                 for i in range(len(Q[c][v]['q1'])):
                     importance = []
                     for lvl in importances:
-                        if c in impMax[lvl]:
-                            importance.append(
-                                (importances[lvl][c][v][i] - impMin[lvl][c]) / abs(impMax[lvl][c] - impMin[lvl][c]))
+                        if c in importances[lvl]:
+                            importance.append(importances[lvl][c][v][i])
+                                # (importances[lvl][c][v][i] - impMin[lvl][c]) / abs(impMax[lvl][c] - impMin[lvl][c]))
                         else:
-                            importance.append(1.0)
+                            importance.append(-1.0)
+                                #  'y': (Q[c][v]['q1'][i] + Q[c][v]['q3'][i]) / 2.0,
                     cVar.append({'xx': i,
-                                 'y': (Q[c][v]['q1'][i] + Q[c][v]['q3'][i]) / 2.0,
+                                 'y': Q[c][v]['med'][i],
                                  'yMin': Q[c][v]['min'][i],
                                  'yMax': Q[c][v]['max'][i],
                                  'yQ1': Q[c][v]['q1'][i],
@@ -678,7 +677,7 @@ if __name__ == '__main__':
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
         # break
 
     conf = {

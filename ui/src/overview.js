@@ -130,7 +130,16 @@ class Overview extends Component {
                         }
                     }
                     newData=patt[i].variables[vi].map((d)=>{
-                        return({...d, 'stroke': 'grey', 'fill':cScale(d.importance[level])});
+                        let cimp=d.importance[level];
+                        cimp=(cimp-0.35)/(0.65-0.35);
+                        if (cimp<0){
+                            cimp=0;
+                        }
+                        if (cimp>1){
+                            cimp=1;
+                        }
+                        console.log(d.importance[level],cimp)
+                        return({...d, 'stroke': 'grey', 'fill':cScale(cimp)});
                     })
                     boxJSX.push(<BoxplotSeries
                                     data={newData}
