@@ -138,7 +138,6 @@ class Overview extends Component {
                         if (cimp>1){
                             cimp=1;
                         }
-                        console.log(d.importance[level],cimp)
                         return({...d, 'stroke': 'grey', 'fill':cScale(cimp)});
                     })
                     boxJSX.push(<BoxplotSeries

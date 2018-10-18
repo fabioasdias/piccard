@@ -15,6 +15,16 @@ const mapStateToProps = (state) => ({
 
 });
 
+//https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
+function getParams(location) {
+  const searchParams = new URLSearchParams(location.search);
+  return {
+    city: searchParams.get('city') || '',
+    nc: searchParams.get('nc') || '',
+  };
+}
+
+
 class App extends Component {
   render() {
     let retJSX=[];
@@ -41,25 +51,44 @@ class App extends Component {
 
   componentDidMount = () => {    
     let {dispatch}=this.props;
-    getData(getURL.CityOptions(), function(data) {
-
-      dispatch(actionCreators.SetCityOptions(data))
-      dispatch(actionCreators.SetCity(0));
-      getData(getURL.GeoJSON(0),(gj)=>{
+    let doCity=(city_id, nc)=>{
+      console.log("doing city ",city_id," nc ",nc);
+      dispatch(actionCreators.SetCity(city_id));
+      getData(getURL.GeoJSON(city_id),(gj)=>{
         dispatch(actionCreators.SetGeoJson(gj));
       });
 
       dispatch(actionCreators.ShowLoading(true));
 
-      getData(getURL.Segmentation(0),function(data) {    
+      getData(getURL.Segmentation(city_id),function(data) {    
         // console.log(data);
           dispatch(actionCreators.UpdateMap(data));                                
-          if (data.levelCorr.length>5)
-              dispatch(actionCreators.SetLevel(data.levelCorr.length-5));      
-          else
-              dispatch(actionCreators.SetLevel(data.levelCorr.length-2));          
+          if (data.levelCorr.length>=nc){
+            dispatch(actionCreators.SetLevel(data.levelCorr.length-nc));      
+          }
+          else{
+            dispatch(actionCreators.SetLevel(data.levelCorr.length-2));          
+          }
         dispatch(actionCreators.ShowLoading(false));
       });
+    }
+    getData(getURL.CityOptions(), function(data) {
+      dispatch(actionCreators.SetCityOptions(data))
+      let params=getParams(window.location);
+      let city=0; //default city and number of clusters
+      let nc=5;
+      if (params.city!==''){
+        for(let i=0;i<data.length;i++){
+          if (data[i].name===params.city){
+            city=data[i].id;
+          }
+        }
+      }
+      if (params.nc!==''){
+        nc=parseInt(params.nc,10);
+      }
+      doCity(city,nc);
+      
     });
   }  
 }
