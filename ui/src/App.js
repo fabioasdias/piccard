@@ -12,7 +12,7 @@ import TransMat from './transMat';
 
 const mapStateToProps = (state) => ({
   showLoading: state.showLoading,
-
+  traj: state.traj
 });
 
 //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -21,8 +21,10 @@ function getParams(location) {
   return {
     city: searchParams.get('city') || '',
     nc: searchParams.get('nc') || '',
+    cid: searchParams.get('cid') || '',
   };
 }
+
 
 
 class App extends Component {
@@ -51,8 +53,22 @@ class App extends Component {
 
   componentDidMount = () => {    
     let {dispatch}=this.props;
-    let doCity=(city_id, nc)=>{
-      console.log("doing city ",city_id," nc ",nc);
+    let fromCIDtoTID=(C)=>{
+      let {traj}=this.props;
+        let tids=[];
+            for (let i=0;i<traj.length;i++){
+                for (let j=0;j<traj[i].chain.length;j++){
+                    if (traj[i].chain[j]===C){
+                        tids.push(traj[i].tid);
+                        break
+                    }
+                }
+            }
+        dispatch(actionCreators.SetTID(tids));
+    };
+
+    let doCity=(city_id, nc, cluster_ID)=>{
+      console.log("doing city ",city_id," nc ",nc, 'cid',cluster_ID);
       dispatch(actionCreators.SetCity(city_id));
       getData(getURL.GeoJSON(city_id),(gj)=>{
         dispatch(actionCreators.SetGeoJson(gj));
@@ -69,6 +85,9 @@ class App extends Component {
           else{
             dispatch(actionCreators.SetLevel(data.levelCorr.length-2));          
           }
+        if (cluster_ID!==''){
+          fromCIDtoTID(cluster_ID);
+        }      
         dispatch(actionCreators.ShowLoading(false));
       });
     }
@@ -87,7 +106,8 @@ class App extends Component {
       if (params.nc!==''){
         nc=parseInt(params.nc,10);
       }
-      doCity(city,nc);
+
+      doCity(city,nc,parseInt(params.cid,10));
       
     });
   }  

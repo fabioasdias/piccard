@@ -66,6 +66,7 @@ class Overview extends Component {
                 return(s);
             })
             let selectTIDs=(d)=>{
+                console.log('selecting',d.target.getAttribute('data-clusterid'))
                 let C=toInt(d.target.getAttribute('data-clusterid'));
                 let tids=[];
     

@@ -81,7 +81,7 @@ class CurConf extends Component {
                     </div>:null}                
                 </div>
         </div>);
-        console.log(nLevels)
+        // console.log(nLevels)
 
         let selModeChange=(d)=>{
             dispatch(actionCreators.SetSelectionMode(d.target.value));
