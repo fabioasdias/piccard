@@ -86,7 +86,7 @@ class App extends Component {
             dispatch(actionCreators.SetLevel(data.levelCorr.length-2));          
           }
         if (cluster_ID!==''){
-          fromCIDtoTID(cluster_ID);
+          fromCIDtoTID(parseInt(cluster_ID,10));
         }      
         dispatch(actionCreators.ShowLoading(false));
       });
@@ -107,7 +107,7 @@ class App extends Component {
         nc=parseInt(params.nc,10);
       }
 
-      doCity(city,nc,parseInt(params.cid,10));
+      doCity(city,nc,params.cid);
       
     });
   }  
