@@ -95,7 +95,8 @@ class dataStore(object):
                 ret[outIbyN[n],oi[v]]=f(self._tabdata[self._IDbyN[n],ind[v]])
         
         return(ret,outNbyInd)
-    def tabDataList(self,dsconf,nodes):
+    def tabDataList(self,dsconf,Nodes):
+        nodes=sorted(Nodes)
         outNbyInd={i:n for i,n in enumerate(nodes)}
         outIbyN={n:i for i,n in enumerate(nodes)}
         ivars=dsconf['ivars']

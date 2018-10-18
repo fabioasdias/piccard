@@ -49,10 +49,10 @@ def stream(G, psi, x, layer):
 
 def watershed(G, layer):
     psi = dict()
-    for n in G.nodes():
+    for n in sorted(G.nodes()):
         psi[n] = -1
     nb_labs = 0
-    for x in G.nodes():
+    for x in sorted(G.nodes()):
         if (psi[x] == -1):
             [L, lab] = stream(G, psi, x, layer)
             if (lab == -1):
