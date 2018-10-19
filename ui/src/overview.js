@@ -60,7 +60,7 @@ class Overview extends Component {
                 let s=0;
                 let val;
                     for (let i=0;i<a.length;i++){
-                        val=a[i].importance[level];
+                        val=+(a[i].importance[level]);
                         s=(s>val)?s:val;
                 }
                 return(s);
@@ -74,7 +74,7 @@ class Overview extends Component {
                         for (let j=0;j<traj[i].chain.length;j++){
                             if (traj[i].chain[j]===C){
                                 tids.push(traj[i].tid);
-                                break
+                                break;
                             }
                         }
                     }
@@ -110,8 +110,8 @@ class Overview extends Component {
                     rightOrder.push(vi);
                 }
                 if (!this.state.full){
-                    rightOrder.sort((a,b)=>{
-                        return(sumImportance(patt[i].variables[a])<sumImportance(patt[i].variables[b]));
+                    rightOrder=rightOrder.sort((a,b)=>{
+                        return(sumImportance(patt[i].variables[b])-sumImportance(patt[i].variables[a]));
                     });
                 }
                 for (let vi of rightOrder)
