@@ -472,7 +472,7 @@ class server(object):
                 q1q3 = (np.array(q3) - np.array(q1))
                 H=dict()
                 for vv in range(cTemp.shape[1]):
-                    h,_=np.histogram(cTemp[:,vv],bins=10,range=(0,1))
+                    h,_=np.histogram(cTemp[:,vv],bins=20,range=(0,1))
                     H[vv]=h.astype(int).squeeze().tolist()
 
                 Q[c][vi] = {'q1': q1,
