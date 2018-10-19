@@ -23,10 +23,6 @@ from sklearn.neighbors import NearestNeighbors
 
 # import matplotlib.pylab as plt
 
-def default(o):
-    if isinstance(o, np.int64): return int(o)  
-    raise TypeError
-
 def cors():
   if cherrypy.request.method == 'OPTIONS':
     # preflign request 
@@ -477,7 +473,7 @@ class server(object):
                 H=dict()
                 for vv in range(cTemp.shape[1]):
                     h,_=np.histogram(cTemp[:,vv],bins=10,range=(0,1))
-                    H[vv]=h.squeeze().tolist()
+                    H[vv]=h.astype(int).squeeze().tolist()
 
                 Q[c][vi] = {'q1': q1,
                             'q3': q3,
@@ -608,12 +604,11 @@ class server(object):
         ret['conf'] = [{"var": ds.getVarName(dsconf['ivars'][i]), 'w':w[i], 'filter':ds.getFilterName(
             dsconf['fs'][i])} for i in range(len(dsconf['ivars']))]
 
-        textVersion=json.dumps(ret,default=default)
+        
 
         with open(cacheName, 'w') as fc:
-            fc.write(textVersion)
-        
-        return(json.loads(textVersion))#this is horrendous. but there is a np.int64 somewhere there that makes it crash
+            json.dump(ret,fc)
+        return(ret)
 
     @cherrypy.expose
     def index(self):
@@ -691,7 +686,7 @@ if __name__ == '__main__':
 
         cities.append(cData)
         # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        # break
+        break
 
     conf = {
         '/': {
