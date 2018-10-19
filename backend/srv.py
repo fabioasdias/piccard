@@ -340,7 +340,7 @@ class server(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     @cherrypy.tools.gzip()
-    def getSegmentation(self, cityID, variables=None, filters=None, weights=None, k=5):
+    def getSegmentation(self, cityID, variables=None, filters=None, weights=None, k=2):
         """Returns a json containing the segmentation results considering the variables
            The results are composed by the initial set of labels + the merges done at each level"""
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
