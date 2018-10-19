@@ -686,7 +686,7 @@ if __name__ == '__main__':
 
         cities.append(cData)
         # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        break
+        # break
 
     conf = {
         '/': {
