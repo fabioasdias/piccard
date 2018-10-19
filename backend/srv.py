@@ -23,6 +23,10 @@ from sklearn.neighbors import NearestNeighbors
 
 # import matplotlib.pylab as plt
 
+def default(o):
+    if isinstance(o, np.int64): return int(o)  
+    raise TypeError
+
 def cors():
   if cherrypy.request.method == 'OPTIONS':
     # preflign request 
@@ -461,18 +465,23 @@ class server(object):
             for vi in temp:
                 cTemp = np.array(temp[vi]).squeeze()
                 q1 = np.atleast_1d(np.percentile(
-                    cTemp, q=25, axis=0).squeeze().tolist())
+                    cTemp, q=25, axis=0).squeeze()).tolist()
                 q3 = np.atleast_1d(np.percentile(
-                    cTemp, q=75, axis=0).squeeze().tolist())
+                    cTemp, q=75, axis=0).squeeze()).tolist()
                 med = np.atleast_1d(np.percentile(
-                    cTemp, q=50, axis=0).squeeze().tolist())
+                    cTemp, q=50, axis=0).squeeze()).tolist()
 
-                vmin = np.atleast_1d(np.amin(cTemp, axis=0).squeeze().tolist())
-                vmax = np.atleast_1d(np.amax(cTemp, axis=0).squeeze().tolist())
+                vmin = np.atleast_1d(np.amin(cTemp, axis=0).squeeze()).tolist()
+                vmax = np.atleast_1d(np.amax(cTemp, axis=0).squeeze()).tolist()
                 q1q3 = (np.array(q3) - np.array(q1))
+                H=dict()
+                for vv in range(cTemp.shape[1]):
+                    h,_=np.histogram(cTemp[:,vv],bins=10,range=(0,1))
+                    H[vv]=h.squeeze().tolist()
 
                 Q[c][vi] = {'q1': q1,
                             'q3': q3,
+                            'hist':H,
                             'min': vmin,
                             'max': vmax,
                             'med': med,
@@ -562,6 +571,7 @@ class server(object):
                             importance.append(-1.0)
                                 #  'y': (Q[c][v]['q1'][i] + Q[c][v]['q3'][i]) / 2.0,
                     cVar.append({'xx': i,
+                                 'hist': Q[c][v]['hist'][i],
                                  'y': Q[c][v]['med'][i],
                                  'yMin': Q[c][v]['min'][i],
                                  'yMax': Q[c][v]['max'][i],
@@ -598,9 +608,12 @@ class server(object):
         ret['conf'] = [{"var": ds.getVarName(dsconf['ivars'][i]), 'w':w[i], 'filter':ds.getFilterName(
             dsconf['fs'][i])} for i in range(len(dsconf['ivars']))]
 
+        textVersion=json.dumps(ret,default=default)
+
         with open(cacheName, 'w') as fc:
-            fc.write(json.dumps(ret))
-        return(ret)
+            fc.write(textVersion)
+        
+        return(json.loads(textVersion))#this is horrendous. but there is a np.int64 somewhere there that makes it crash
 
     @cherrypy.expose
     def index(self):
