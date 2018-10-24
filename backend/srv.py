@@ -208,9 +208,9 @@ def _graph2display(G, L, curCity, corr):
     ds=curCity['ds']
 
 
-    for n in G.nodes():
+    for n in sorted(G.nodes()):
         cYear = n[0]
-        for i,dl in enumerate(G.node[n]['display_ids']):
+        for i,dl in enumerate(sorted(G.node[n]['display_ids'])):
             labels.append({'year': cYear, 'did': dl, 'id': L[n]})            
             if (G.node[n]['areas'][i]>1e-5):
                 if (dl not in labelsByDID):
@@ -228,7 +228,7 @@ def _graph2display(G, L, curCity, corr):
     for lvl in range(len(corr)):
         nodesByTID[lvl]=dict()
         traj[lvl]=[]
-        for did in labelsByDID:
+        for did in sorted(labelsByDID):
             usedYears=[x['year'] for x in labelsByDID[did]]            
             chain=[corr[lvl][x['id']] for x in labelsByDID[did]]
             for i in range(len(traj[lvl])):
@@ -246,7 +246,7 @@ def _graph2display(G, L, curCity, corr):
             if (tid not in nodesByTID[lvl]):
                 nodesByTID[lvl][tid]=[]
 
-            for y in usedYears:
+            for y in sorted(usedYears):
                 n=None
                 try:
                     n=curCity['nByYearDisplayId'][(y, did)]
@@ -311,6 +311,7 @@ class server(object):
         input_json = cherrypy.request.json
         cityID=input_json['cityID']
         nodes=input_json['nodes']
+        print(input_json)
         variables=input_json['variables']
         filters=input_json['filters']
 
@@ -686,7 +687,7 @@ if __name__ == '__main__':
 
         cities.append(cData)
         # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        # break
+        break
 
     conf = {
         '/': {
