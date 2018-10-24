@@ -68,7 +68,8 @@ class dataStore(object):
             for V in self.avVars():
                 r=self._rowByVarID[V['id']]
                 self._tabdata[self._IDbyN[n],r[0]:r[1]]=self._normdata[n][V["name"]]['values']
-    def tabData(self,dsconf, nodes):
+    def tabData(self,dsconf, Nodes):
+        nodes=sorted(Nodes)
         outNbyInd={i:n for i,n in enumerate(nodes)}
         outIbyN={n:i for i,n in enumerate(nodes)}        
         ivars=dsconf['ivars']
@@ -215,5 +216,5 @@ class dataStore(object):
         self.read(gjzip)
         self.clean(basegraph)
         self.normalize()
-        self._NodeByJSID={i:n for i,n in enumerate(basegraph.nodes())}
+        self._NodeByJSID={i:n for i,n in enumerate(sorted(basegraph.nodes()))}
         self._JSIDByNode={self._NodeByJSID[i]:i for i in self._NodeByJSID}
