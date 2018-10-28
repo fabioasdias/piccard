@@ -458,6 +458,8 @@ class server(object):
             Q[c] = dict()
             for n in clusterNodes[c]:
                 cData = ds.getValue(n)
+                print("----------",n)
+                exit()
                 for i, v in enumerate(cData):
                     if (i not in temp):
                         temp[i] = []
@@ -692,7 +694,7 @@ if __name__ == '__main__':
 
         cities.append(cData)
         webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        # break
+        break
 
     conf = {
         '/': {
