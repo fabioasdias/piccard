@@ -4,7 +4,7 @@ import TempEvo from './sankey'
 import Overview from './overview'
 import Detail from './detail'
 import { connect } from 'react-redux';
-import { actionCreators, getURL, getData } from './reducers';
+import { actionCreators, getURL, getData, selModes } from './reducers';
 import ConfigPanel from './configPanel'
 import NewMap from './newmap'
 import TrajDet from './trajectoryDetails';
@@ -67,8 +67,8 @@ class App extends Component {
         dispatch(actionCreators.SetTID(tids));
     };
 
-    let doCity=(city_id, nc, cluster_ID)=>{
-      console.log("doing city ",city_id," nc ",nc, 'cid',cluster_ID);
+    let doCity=(city_id, nc, cluster_IDs)=>{
+      console.log("doing city ",city_id," nc ",nc, 'cid',cluster_IDs);
       dispatch(actionCreators.SetCity(city_id));
       getData(getURL.GeoJSON(city_id),(gj)=>{
         dispatch(actionCreators.SetGeoJson(gj));
@@ -85,9 +85,11 @@ class App extends Component {
           else{
             dispatch(actionCreators.SetLevel(data.levelCorr.length-2));          
           }
-        if (cluster_ID!==''){
-          fromCIDtoTID(parseInt(cluster_ID,10));
-        }      
+        dispatch(actionCreators.SetSelectionMode(selModes.ADD));
+        for (let i=0;i<cluster_IDs.length;i++){
+          fromCIDtoTID(cluster_IDs[i]);
+        }
+        dispatch(actionCreators.SetSelectionMode(selModes.SET));
         dispatch(actionCreators.ShowLoading(false));
       });
     }
@@ -96,6 +98,7 @@ class App extends Component {
       let params=getParams(window.location);
       let city=0; //default city and number of clusters
       let nc=5;
+      let cids='';
       if (params.city!==''){
         for(let i=0;i<data.length;i++){
           if (data[i].name===params.city){
@@ -106,8 +109,16 @@ class App extends Component {
       if (params.nc!==''){
         nc=parseInt(params.nc,10);
       }
+      if (params.cid!==''){
+        if (params.cid.indexOf(',')>-1){
+          cids=params.cid.split(',').map((d)=>parseInt(d,10));
+        }
+        else{
+          cids=[parseInt(params.cid,10),];
+        }
+      }
 
-      doCity(city,nc,params.cid);
+      doCity(city,nc,cids);
       
     });
   }  

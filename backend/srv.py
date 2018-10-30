@@ -453,35 +453,45 @@ class server(object):
         t0 = time()
 
         Q = dict()
+        aspects=set()
         for c in clusterNodes:
-            temp = dict()
+            temp = {y:{} for y in curCity['years']}
             Q[c] = dict()
             for n in clusterNodes[c]:
+                y=n[0]
                 cData = ds.getValue(n)
-                print("----------",n)
-                exit()
                 for i, v in enumerate(cData):
-                    if (i not in temp):
-                        temp[i] = []
+                    if (i not in temp[y]):
+                        temp[y][i] = []
+                    aspects.add(i)
+                    temp[y][i].append(v)
 
-                    temp[i].append(v)
+            for vi in aspects:
+                cTemp=[]
+                for y in temp:
+                    if (vi in temp[y]):
+                        cTemp=cTemp+temp[y][vi]
+                cTemp = np.array(cTemp).squeeze()
+                q1 = np.atleast_1d(np.percentile(cTemp, q=25, axis=0).squeeze()).tolist()
+                q3 = np.atleast_1d(np.percentile(cTemp, q=75, axis=0).squeeze()).tolist()
+                med = np.atleast_1d(np.percentile(cTemp, q=50, axis=0).squeeze()).tolist()
 
-            for vi in temp:
-                cTemp = np.array(temp[vi]).squeeze()
-                q1 = np.atleast_1d(np.percentile(
-                    cTemp, q=25, axis=0).squeeze()).tolist()
-                q3 = np.atleast_1d(np.percentile(
-                    cTemp, q=75, axis=0).squeeze()).tolist()
-                med = np.atleast_1d(np.percentile(
-                    cTemp, q=50, axis=0).squeeze()).tolist()
 
                 vmin = np.atleast_1d(np.amin(cTemp, axis=0).squeeze()).tolist()
                 vmax = np.atleast_1d(np.amax(cTemp, axis=0).squeeze()).tolist()
                 q1q3 = (np.array(q3) - np.array(q1))
                 H=dict()
                 for vv in range(cTemp.shape[1]):
-                    h,_=np.histogram(cTemp[:,vv],bins=HBINS,range=(0,1))
-                    H[vv]=h.astype(int).squeeze().tolist()
+                    hh={}
+                    for y in temp:
+                        if (vi not in temp[y]):
+                            h=np.zeros((HBINS,)).tolist()
+                        else:
+                            curT=np.array(temp[y][vi])
+                            h,_=np.histogram(curT[:,vv],bins=HBINS,range=(0,1))
+                            h=h.astype(int).squeeze().tolist()
+                        hh[y]=h
+                    H[vv]=hh
 
                 Q[c][vi] = {'q1': q1,
                             'q3': q3,
@@ -494,6 +504,7 @@ class server(object):
                             'var': ds.getVarName(vi),
                             'short': ds.getVarShortLabels(vi),
                             'range': ds.getVarLabels(vi)}
+
 
         AllOverlaps = dict()
         importances = dict()
@@ -693,8 +704,8 @@ if __name__ == '__main__':
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        break
+        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        # break
 
     conf = {
         '/': {

@@ -19,12 +19,12 @@ class CurConf extends Component {
     render() {
         let {dispatch,simpleColours}=this.props;
         let {conf,nLevels}=this.props;
-        let {dsconf}=this.props;
+        // let {dsconf}=this.props;
         let {selMode}=this.props;
         let {showConfig}=this.props;
         let {level}=this.props;
         let tJSX=[];
-        tJSX.push(<p><a href="doc.html" target="_blank">Documentation</a></p>)
+        tJSX.push(<p key="doc"><a href="doc.html" target="_blank">Documentation</a></p>)
 //                         <li key={'k'}>Augmented edges: {dsconf.k}</li>
         
         if (conf!==undefined){
