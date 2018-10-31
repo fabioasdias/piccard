@@ -245,7 +245,7 @@ def _graph2display(G, L, curCity, corr):
                 if (len(set(usedYears))!=len(usedYears)):
                     print(chain,usedYears)
                     input('.')
-                traj[lvl].append({'tid':tid, 'chain':chain, 'years':usedYears, 'pop':{y:0 for y in years}})
+                traj[lvl].append({'tid':tid, 'chain':chain, 'years':usedYears, 'pop':{y:0 for y in years},'ctCount':{y:0 for y in years}})
 
 
             if (tid not in nodesByTID[lvl]):
@@ -260,6 +260,7 @@ def _graph2display(G, L, curCity, corr):
                 if (n):                    
                     nodesByTID[lvl][tid].append(n)                
                     traj[lvl][tid]['pop'][y]+=ds.getPopulation(n)
+                    traj[lvl][tid]['ctCount'][y]+=1
 
         for tid in nodesByTID[lvl]:
             nodesByTID[lvl][tid]=list(set(nodesByTID[lvl][tid]))
@@ -704,7 +705,7 @@ if __name__ == '__main__':
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
         # break
 
     conf = {
