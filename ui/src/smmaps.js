@@ -35,12 +35,12 @@ class SmMaps extends Component {
       
       for (let y of years){
           if (gj!==undefined){
-              if (gj.features.length>0){
+              if (gj[y].features.length>0){
                   rowJSX.push(
                     <Map 
                         key={'sm'+y}
                         className={'mapSM'}
-                        data={gj}
+                        data={gj[y]}
                         bbox={this.state.bounds}
                         boundsCallback={(bb)=>{this.setState({bounds:bb});}}
                         tids={tID}

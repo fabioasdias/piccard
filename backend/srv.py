@@ -144,7 +144,6 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
     else:
         G=H
     
-    years = curCity['years']
 
     states = dict()
     pop = dict()
@@ -206,32 +205,14 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
     return({'population':pop, 'paths':ret})
 
 
-def _graph2display(G, L, curCity, corr):
+def _computeTrajectories(G, L, curCity, corr):
     labels = []
-    labelsByDID = dict()                
     years= curCity['years']
     ds=curCity['ds']
 
-
-    for n in sorted(G.nodes()):
-        cYear = n[0]
-        for i,dl in enumerate(sorted(G.node[n]['display_ids'])):
-            labels.append({'year': cYear, 'did': dl, 'id': L[n]})            
-            if (G.node[n]['areas'][i]>1e-5):
-                if (dl not in labelsByDID):
-                    labelsByDID[dl]=[]
-                labelsByDID[dl].append({'id':L[n],'year':cYear})
-
-
-
     traj=dict()
-    nodesByTID=dict()
-
-    for did in labelsByDID:
-        labelsByDID[did]=sorted(labelsByDID[did],key=lambda x: x['year'])
 
     for lvl in range(len(corr)):
-        nodesByTID[lvl]=dict()
         traj[lvl]=[]
         for did in sorted(labelsByDID):
             usedYears=[x['year'] for x in labelsByDID[did]]            
@@ -302,7 +283,7 @@ class server(object):
     @cherrypy.expose
     def getGJ(self, cityID):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        with open(cities[int(cityID)]['folder'] + '/display.gj', 'r') as fin:
+        with open(cities[int(cityID)]['folder'] + '/display.json', 'r') as fin:
             buff = fin.read()
         return(buff)
 
@@ -392,10 +373,10 @@ class server(object):
 
         cID = _createID(dsconf)
         cacheName = curCity['cache'] + '/{0}.json'.format(cID)
-        if (exists(cacheName)):
-            with open(cacheName, 'r') as fc:
-                buff = json.loads(fc.read())
-            return(buff)
+        # if (exists(cacheName)):
+        #     with open(cacheName, 'r') as fc:
+        #         buff = json.loads(fc.read())
+        #     return(buff)
 
         G = basegraph.copy()
 
@@ -429,7 +410,13 @@ class server(object):
 
         print('display labels')
         t0 = time()
-        ret['labels'], ret['traj'], nodesByTID= _graph2display(G, baseLabels, curCity, corr)
+        ret['labels'] = {}
+        for (y,CTID) in baseLabels:
+            if y not in ret['labels']:
+                ret['labels'][y]={}
+            ret['labels'][y][CTID]=baseLabels[(y,CTID)]
+        
+        ret['traj']= _computeTrajectories(G, baseLabels, curCity, corr)
         print(time() - t0)
 
 
@@ -440,11 +427,11 @@ class server(object):
         tdsconf['ivars']=np.array([x['id'] for x in ds.avVars()])
         tdsconf['fs']=np.zeros_like(tdsconf['ivars'])
         ret['basepath']=_TemporalDifferences(curCity, tdsconf, G)
-        ret['nodesByTID']=dict()
-        for lvl in range(len(corr)):
-            ret['nodesByTID'][lvl]=dict()
-            for tid in nodesByTID[lvl]:
-                ret['nodesByTID'][lvl][tid]=[ds.JSID(x) for x in nodesByTID[lvl][tid]]
+        # ret['nodesByTID']=dict()
+        # for lvl in range(len(corr)):
+        #     ret['nodesByTID'][lvl]=dict()
+        #     for tid in nodesByTID[lvl]:
+        #         ret['nodesByTID'][lvl][tid]=[ds.JSID(x) for x in nodesByTID[lvl][tid]]
         print(time() - t0)
 
         print(time() - t0)
@@ -694,19 +681,17 @@ if __name__ == '__main__':
         cData['ds'] = dataStore()
         cData['basegraph'] = nx.read_gpickle(baseFolder + '/basegraph.gp')
         years = []
-        cData['nByYearDisplayId'] = dict()
+        cData['years'] = sorted(list(set(years)))
         for n in cData['basegraph']:
             years.append(n[0])
-            for did in cData['basegraph'].node[n]['display_ids']:
-                cData['nByYearDisplayId'][(n[0], did)] = n
         cData['years'] = sorted(list(set(years)))
         del(years)
         cData['ds'].loadAndPrep(
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        # break
+        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        break
 
     conf = {
         '/': {

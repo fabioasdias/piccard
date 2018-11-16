@@ -38,8 +38,8 @@ class App extends Component {
     }else{
       retJSX.push(<Overview key='op'/>);
       retJSX.push(<TempEvo key='tp'/>);
-      retJSX.push(<TransMat key='tm'/>)
-      retJSX.push(<NewMap key='nm'/>);
+      // retJSX.push(<TransMat key='tm'/>)
+      // retJSX.push(<NewMap key='nm'/>);
       retJSX.push(<TrajDet key='tj'/>);
       retJSX.push(<Detail key='dp'/>);  
     }

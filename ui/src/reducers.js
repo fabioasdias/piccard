@@ -109,7 +109,7 @@ export const reducer = (state={
                                 globalPath: true,
                             }, action)=>{
     const { type, payload } = action;
-    // console.log(state);
+    console.log(state);
     let tid;
     // console.log(payload);
     switch (type){
@@ -156,58 +156,64 @@ export const reducer = (state={
             }
 
             let labels={};
-            for (let d of state.segData.labels)
+            for (let y in state.segData.labels)
             {
-                if (!labels.hasOwnProperty(d.year)){
-                    labels[d.year]={};
+                if (!labels.hasOwnProperty(y)){
+                    labels[y]={};
                 }
-                labels[d.year][d.did]=state.segData.levelCorr[payload][d.id];
+                for (let CTID in state.segData.labels[y]){
+                    labels[y][CTID]=state.segData.levelCorr[payload][CTID];
+                }
             }
 
             let years;
             if (state.segData.years!==undefined){
                 years=state.segData.years.map((d)=>{return(toInt(d));});
             }
-            
-            let gj=clone(state.origGJ);
+
+            let gj={};
+            for (let y in state.origGJ){
+                gj[y]=clone(state.origGJ[y]);
+            }
+            // let gj=clone(state.origGJ);
             let tchain;
             let traj=state.segData.traj[payload].slice();
             let usedYears;
-            if ((years!==undefined) && (state.gj !== undefined)) {
-                for (let feat of gj.features){
-                    tchain=[];
-                    usedYears=[];
-                    for (let y of years){
-                        let cClass=labels[y][feat.properties.display_id];
-                        if (cClass!==undefined){
-                            tchain.push(labels[y][feat.properties.display_id]);
-                            usedYears.push(y);
-                        }
-                    }
-                    feat.properties.chain=tchain;                              
-                    tid=findTraj(colours,traj,tchain,usedYears,parseFloat(feat.properties.area));
-                    feat.properties.tID=tid;
-                    for (let y of years){
-                        feat.properties[y.toString()]='rgba(0,0,0,0)';
-                    }
+            // if ((years!==undefined) && (state.gj !== undefined)) {
+            //     for (let feat of gj.features){
+            //         tchain=[];
+            //         usedYears=[];
+            //         for (let y of years){
+            //             let cClass=labels[y][feat.properties.display_id];
+            //             if (cClass!==undefined){
+            //                 tchain.push(labels[y][feat.properties.display_id]);
+            //                 usedYears.push(y);
+            //             }
+            //         }
+            //         feat.properties.chain=tchain;                              
+            //         tid=findTraj(colours,traj,tchain,usedYears,parseFloat(feat.properties.area));
+            //         feat.properties.tID=tid;
+            //         for (let y of years){
+            //             feat.properties[y.toString()]='rgba(0,0,0,0)';
+            //         }
                 
-                    if (tid!==undefined){
-                        for (let i=0;i<tchain.length;i++){
-                            feat.properties[usedYears[i]]=getColour(colours,tchain[i]);
-                        }
-                        feat.properties.colour=traj[tid].colour;
-                        feat.properties.normal=traj[tid].colour;
-                        feat.properties.faded=traj[tid].faded;    
-                        feat.properties.simplified=traj[tid].simplified;
-                    }
-                    else{
-                        feat.properties.colour='rgba(0,0,0,0)';
-                        feat.properties.normal='rgba(0,0,0,0)';
-                        feat.properties.faded='rgba(0,0,0,0)';
-                        feat.properties.simplified='rgba(0,0,0,0)';
-                    }
-                }
-            }
+            //         if (tid!==undefined){
+            //             for (let i=0;i<tchain.length;i++){
+            //                 feat.properties[usedYears[i]]=getColour(colours,tchain[i]);
+            //             }
+            //             feat.properties.colour=traj[tid].colour;
+            //             feat.properties.normal=traj[tid].colour;
+            //             feat.properties.faded=traj[tid].faded;    
+            //             feat.properties.simplified=traj[tid].simplified;
+            //         }
+            //         else{
+            //             feat.properties.colour='rgba(0,0,0,0)';
+            //             feat.properties.normal='rgba(0,0,0,0)';
+            //             feat.properties.faded='rgba(0,0,0,0)';
+            //             feat.properties.simplified='rgba(0,0,0,0)';
+            //         }
+            //     }
+            // }
             
             let patt=state.segData.patt.filter( d=> (colours.hasOwnProperty(d.id)) );
             return({...state, 

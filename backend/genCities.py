@@ -90,11 +90,11 @@ if __name__ == '__main__':
             makeBuff=makeBuff+"\tpython3 normGJVars.py {0}/geojsons.zip {1}\n".format(folder,kind)
             makeBuff=makeBuff+"\tzip -9j {0}/normGeoJsons.zip {0}/*_n.gj\n".format(folder)
             makeBuff=makeBuff+"\trm {0}/*_n.gj\n".format(folder)
-        makeBuff=makeBuff+"{0}/display.gj: {0}/normGeoJsons.zip genDisplayGJ.py\n".format(folder)
-        makeBuff=makeBuff+"\tpython3 genDisplayGJ.py {0}/normGeoJsons.zip {0}/display.gj\n".format(folder)        
-        makeBuff=makeBuff+"{0}/basegraph.gp: {0}/display.gj {0}/normGeoJsons.zip genBasegraph.py util.py\n".format(folder)
-        makeBuff=makeBuff+"\tpython3 genBasegraph.py {0}/normGeoJsons.zip {0}/display.gj {0}/basegraph.gp\n".format(folder)
-        makeBuff=makeBuff+"{0}: {1}/basegraph.gp {1}/normGeoJsons.zip {1}/display.gj\n".format(properName,folder)
+        makeBuff=makeBuff+"{0}/display.json: {0}/normGeoJsons.zip prepGJs.py\n".format(folder)
+        makeBuff=makeBuff+"\tpython3 prepGJs.py {0}/normGeoJsons.zip {0}/display.json\n".format(folder)        
+        makeBuff=makeBuff+"{0}/basegraph.gp: {0}/normGeoJsons.zip genBasegraph.py util.py\n".format(folder)
+        makeBuff=makeBuff+"\tpython3 genBasegraph.py {0}/normGeoJsons.zip {0}/basegraph.gp\n".format(folder)
+        makeBuff=makeBuff+"{0}: {1}/basegraph.gp {1}/normGeoJsons.zip {1}/display.json\n".format(properName,folder)
      
     # this way, all is the first
     makeBuff="all: srv.py "+' '.join(allNames)+"\n"+"\t python3 srv.py conf.json\n\n"+makeBuff
