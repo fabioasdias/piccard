@@ -206,14 +206,47 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
 
 
 def _computeTrajectories(G, L, curCity, corr):
-    labels = []
+    def _noLessYear(G,n):
+        for nv in G.neighbors(n):
+            if (nv[0]<n[0]):
+                return(False)
+        return(True)
+    def _temporal(G,n):
+        ret=[]
+        for nv in G.neighbors(n):
+            if (nv[0]>n[0]):
+                ret.append(n)
+        return(ret)
+
     years= curCity['years']
     ds=curCity['ds']
+    nodesByTID={}
 
     traj=dict()
+    paths=[]
+    starts=[n for n in G.nodes() if _noLessYear(G,n)]
+    for n0 in sorted(starts):
+        todo=[[n0,],]
+        while todo:
+            cpath=todo.pop(0)
+            options=_temporal(G,cpath[-1])
+            if not options:
+                paths.append(cpath)
+            else:
+                for op in options:
+                    todo.append(cpath+[op,])
+    print(len(paths))
+    print(paths[0])
+    exit()
+
+
+    
+
 
     for lvl in range(len(corr)):
         traj[lvl]=[]
+        
+
         for did in sorted(labelsByDID):
             usedYears=[x['year'] for x in labelsByDID[did]]            
             chain=[corr[lvl][x['id']] for x in labelsByDID[did]]
@@ -229,24 +262,10 @@ def _computeTrajectories(G, L, curCity, corr):
                 traj[lvl].append({'tid':tid, 'chain':chain, 'years':usedYears, 'pop':{y:0 for y in years},'ctCount':{y:0 for y in years}})
 
 
-            if (tid not in nodesByTID[lvl]):
-                nodesByTID[lvl][tid]=[]
 
-            for y in sorted(usedYears):
-                n=None
-                try:
-                    n=curCity['nByYearDisplayId'][(y, did)]
-                except:
-                    pass
-                if (n):                    
-                    nodesByTID[lvl][tid].append(n)                
-                    traj[lvl][tid]['pop'][y]+=ds.getPopulation(n)
-                    traj[lvl][tid]['ctCount'][y]+=1
+            # traj[lvl][tid]['ctCount'][y]+=1 ->xcity uses this
 
-        for tid in nodesByTID[lvl]:
-            nodesByTID[lvl][tid]=list(set(nodesByTID[lvl][tid]))
-
-    return(labels,traj,nodesByTID)
+    return(traj)
 
 
 

@@ -22,6 +22,8 @@ if __name__ == '__main__':
             for feat in cgj['features']:
                 display[year]['features'].append({'type': "Feature",
                                                   'geometry':feat['geometry'], 
-                                                  'properties':{'CT_ID':feat['properties']['CT_ID'],}})
+                                                  'properties':{'CT_ID':feat['properties']['CT_ID'],
+                                                                'pop':[x['values'][0] for x in feat['properties']['variables'] if x['name']=="Population"][0]
+                                                                }})
     with open(outName,'w') as fout:
         json.dump(display,fout)
