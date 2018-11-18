@@ -3,6 +3,7 @@ import networkx as nx
 from util import indexedPols,geoJsons
 from shapely.geometry import shape   
 import geojson
+import json
 
 if __name__ == '__main__':
     if (len(sys.argv)) < 2:
@@ -53,3 +54,30 @@ if __name__ == '__main__':
                 
     print('saving')
     nx.write_gpickle(B,outName)
+
+    def _noLessYear(G,n):
+        for nv in G.neighbors(n):
+            if (nv[0]<n[0]):
+                return(False)
+        return(True)
+    def _temporal(G,n):
+        ret=[]
+        for nv in G.neighbors(n):
+            if (nv[0]>n[0]):
+                ret.append(nv)
+        return(ret)
+
+    paths=[]
+    starts=[n for n in B.nodes() if _noLessYear(B,n)]
+    for n0 in sorted(starts):
+        todo=[[n0,],]
+        while todo:
+            cpath=todo.pop(0)
+            options=_temporal(B,cpath[-1])
+            if not options:
+                paths.append(cpath)
+            else:
+                for op in options:
+                    todo.append(cpath+[op,])
+    with open(outName+'.tpaths','w') as fout:
+        json.dump(paths,fout)

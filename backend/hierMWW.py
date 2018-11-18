@@ -69,9 +69,18 @@ def hierMWW(D, Gr, NbyInd, dsconf, maxClusters=20):
 
     IndByN = {NbyInd[i]: i for i in NbyInd}
 
-    T=np.percentile(D,25)
-
     G = Gr.copy()
+
+    # NaNs=[]
+    # NaNInds=[]
+    # for i in range(D.shape[0]):
+    #     N=np.isnan(D[i,:])
+    #     if np.sum(N)<(D.shape[0]-1):
+    #         NaNInds=[j for j in (np.where(N)[0]).squeeze()]
+    #         NaNs=[NbyInd[j] for j in NaNInds]
+    #         break
+    # NNaNs=len(NaNs)
+
     lName = 'data'
     for e in G.edges():
         i1 = IndByN[e[0]]
@@ -79,11 +88,15 @@ def hierMWW(D, Gr, NbyInd, dsconf, maxClusters=20):
         cD = D[i1, i2]
         G[e[0]][e[1]][lName] = cD
 
+
     psi = watershed(G, lName)
+
+    T=np.percentile(D,25)
+
+
     nClusters = len(set(psi.values()))
     lastNClusters = nClusters
     while (nClusters > maxClusters):
-
         clInds = dict()
         for L in set(psi.values()):
             clInds[L] = []
@@ -100,8 +113,11 @@ def hierMWW(D, Gr, NbyInd, dsconf, maxClusters=20):
                     Lused[l1] = dict()
                 if (l2 not in Lused[l1]):
                     Lused[l1][l2] = True
-                    H.enqueue((l1, l2), np.nanmedian(
-                        (D[clInds[l1], :])[:, clInds[l2]]))
+                    DD=(D[clInds[l1], :])[:, clInds[l2]]
+                    if not (np.all(np.isnan(DD))):
+                        P=np.nanmedian(DD)
+                        if not np.isnan(P):
+                            H.enqueue((l1, l2), P)
 
         used = []
         while len(H) > 0:

@@ -104,11 +104,9 @@ def _GeoMetric(G,nodes):
 
 def _getD(curCity, dsconf, X):
     w = dsconf['weights']
-    p = dict()
-    todo = []
     N = X[0].shape[0]
     D = np.zeros((N,N))
-    for i, ivar in enumerate(dsconf['ivars']):
+    for i in range(len(dsconf['ivars'])):
         D = D + w[i] * _parD(X[i])
     return(D)
 
@@ -206,50 +204,23 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
 
 
 def _computeTrajectories(G, L, curCity, corr):
-    def _noLessYear(G,n):
-        for nv in G.neighbors(n):
-            if (nv[0]<n[0]):
-                return(False)
-        return(True)
-    def _temporal(G,n):
-        ret=[]
-        for nv in G.neighbors(n):
-            if (nv[0]>n[0]):
-                ret.append(n)
-        return(ret)
 
     years= curCity['years']
     ds=curCity['ds']
     nodesByTID={}
+    paths=curCity['temporalPaths']
 
-    traj=dict()
-    paths=[]
-    starts=[n for n in G.nodes() if _noLessYear(G,n)]
-    for n0 in sorted(starts):
-        todo=[[n0,],]
-        while todo:
-            cpath=todo.pop(0)
-            options=_temporal(G,cpath[-1])
-            if not options:
-                paths.append(cpath)
-            else:
-                for op in options:
-                    todo.append(cpath+[op,])
-    print(len(paths))
-    print(paths[0])
-    exit()
-
-
-    
+    traj=dict()    
 
 
     for lvl in range(len(corr)):
         traj[lvl]=[]
-        
+        for p in paths:
+            usedYears=[n[0] for n in p]            
+            chain=[corr[lvl][L[n]] for n in p if n in L]
+            if (len(chain)!=len(p)):
+                continue #missing data in one of them
 
-        for did in sorted(labelsByDID):
-            usedYears=[x['year'] for x in labelsByDID[did]]            
-            chain=[corr[lvl][x['id']] for x in labelsByDID[did]]
             for i in range(len(traj[lvl])):
                 if (chain==traj[lvl][i]['chain']) and (usedYears==traj[lvl][i]['years']):
                     tid=i
@@ -399,14 +370,13 @@ class server(object):
 
         G = basegraph.copy()
 
-        to_remove = []
+        NaNs = []
         for n in G:
             for tVar in ds.getValue(n, dsconf):
                 if ((len(tVar) == 1) and (np.isnan(tVar[0]))) or ((len(tVar) > 1) and (np.sum(tVar) < 0.5)):
-                    to_remove.append(n)
+                    NaNs.append(n)
                     break
-
-        G.remove_nodes_from(to_remove)
+        G.remove_nodes_from(NaNs)
 
 
         ret['years'] = curCity['years']
@@ -424,18 +394,22 @@ class server(object):
 
         baseLabels, corr, clusterNodes = hierMWW(
             D, G, NbI, dsconf, maxClusters=8)
+            
         ret['levelCorr'] = corr
         print(time() - t0)
 
+        print('traj')
+        t0 = time()        
+        ret['traj']= _computeTrajectories(G, baseLabels, curCity, corr)
+        print(time() - t0)
         print('display labels')
-        t0 = time()
+        t0 = time()        
+
         ret['labels'] = {}
         for (y,CTID) in baseLabels:
             if y not in ret['labels']:
                 ret['labels'][y]={}
             ret['labels'][y][CTID]=baseLabels[(y,CTID)]
-        
-        ret['traj']= _computeTrajectories(G, baseLabels, curCity, corr)
         print(time() - t0)
 
 
@@ -446,11 +420,6 @@ class server(object):
         tdsconf['ivars']=np.array([x['id'] for x in ds.avVars()])
         tdsconf['fs']=np.zeros_like(tdsconf['ivars'])
         ret['basepath']=_TemporalDifferences(curCity, tdsconf, G)
-        # ret['nodesByTID']=dict()
-        # for lvl in range(len(corr)):
-        #     ret['nodesByTID'][lvl]=dict()
-        #     for tid in nodesByTID[lvl]:
-        #         ret['nodesByTID'][lvl][tid]=[ds.JSID(x) for x in nodesByTID[lvl][tid]]
         print(time() - t0)
 
         print(time() - t0)
@@ -699,17 +668,24 @@ if __name__ == '__main__':
 
         cData['ds'] = dataStore()
         cData['basegraph'] = nx.read_gpickle(baseFolder + '/basegraph.gp')
+        
         years = []
         cData['years'] = sorted(list(set(years)))
         for n in cData['basegraph']:
             years.append(n[0])
         cData['years'] = sorted(list(set(years)))
+        
         del(years)
+        with open(baseFolder+'/basegraph.gp.tpaths','r') as fin:
+            cData['temporalPaths'] = json.load(fin)
+        for ii,p in enumerate(cData['temporalPaths']):
+            cData['temporalPaths'][ii]=[tuple(n) for n in p]
+
         cData['ds'].loadAndPrep(
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
         break
 
     conf = {
