@@ -25,7 +25,7 @@ let Map = class Map extends React.Component {
     if ((this.moving!==undefined)&&(this.moving)){
       return;
     }
-    // console.log(this.props.tids,nextProps.tids);
+    // console.log(this.props.nids,nextProps.nids);
     let arrayEQ=(a,b)=>{
       if ((a===undefined)&&(b===undefined)){
         return(true);
@@ -43,29 +43,29 @@ let Map = class Map extends React.Component {
       }
       return(true);
     }
-    // console.log(this.props.tids,nextProps.tids,arrayEQ(this.props.tids,nextProps.tids));
-    if (!arrayEQ(this.props.tids,nextProps.tids)){
-      if ((nextProps.tids!==undefined)&&(nextProps.tids.length>0)){
-        let nextTids={};
+    // console.log(this.props.nids,nextProps.nids,arrayEQ(this.props.nids,nextProps.nids));
+    if (!arrayEQ(this.props.nids,nextProps.nids)){
+      if ((nextProps.nids!==undefined)&&(nextProps.nids.length>0)){
+        let nextnids={};
         let tempGJ={type:'FeatureCollection',features:[]}
         
-        for (let i=0;i<nextProps.tids.length;i++){
-          nextTids[nextProps.tids[i]]=0;
+        for (let i=0;i<nextProps.nids.length;i++){
+          nextnids[nextProps.nids[i]]=0;
         } 
         for (let feat of nextProps.data.features){
-          if (nextTids.hasOwnProperty(feat.properties.tID)){
+          if (nextnids.hasOwnProperty(feat.properties.tID)){
             tempGJ.features.push(feat);
           }
         }
-        bounds=bbox(tempGJ);
-        this.map.fitBounds([[bounds[0],bounds[1]],
-                            [bounds[2],bounds[3]]]);         
+        // bounds=bbox(tempGJ);
+        // this.map.fitBounds([[bounds[0],bounds[1]],
+        //                     [bounds[2],bounds[3]]]);         
         this.moving=true;
       }else{
-        if (nextProps.tids.length===0){
-          bounds=bbox(this.props.data);
-          this.map.fitBounds([[bounds[0],bounds[1]],
-                              [bounds[2],bounds[3]]]);         
+        if (nextProps.nids.length===0){
+          // bounds=bbox(this.props.data);
+          // this.map.fitBounds([[bounds[0],bounds[1]],
+          //                     [bounds[2],bounds[3]]]);         
           this.moving=true;
         }
       }  
@@ -75,7 +75,7 @@ let Map = class Map extends React.Component {
     }  
     else{
         if (nextProps.bbox!==undefined){
-          this.map.fitBounds(nextProps.bbox);
+          // this.map.fitBounds(nextProps.bbox);
           this.moving=true;
         }  
       }
@@ -175,7 +175,7 @@ let Map = class Map extends React.Component {
 
       this.setFill();
 
-      this.map.fitBounds(bounds)
+      // this.map.fitBounds(bounds);
       this.setState({'map':this.map});
     });
   }
@@ -183,15 +183,15 @@ let Map = class Map extends React.Component {
   setFill() {
     this.map.setPaintProperty('gjlayer', 'fill-color', ['get', this.props.paintProp]);    
     this.map.setPaintProperty('faded', 'fill-color', ['get', this.props.paintProp]);   
-    let tids={};
-    for (let i=0;i<this.props.tids.length;i++){
-      tids[this.props.tids[i]]=0;
+    let nids={};
+    for (let i=0;i<this.props.nids.length;i++){
+      nids[this.props.nids[i]]=0;
     }
 
     
-    if (this.props.tids.length>0){
-      this.map.setFilter('faded',['!', ["has", ["to-string", ['get', "tID"]], ['literal', tids]]]);
-      this.map.setFilter('gjlayer',["has", ["to-string", ['get', "tID"]], ['literal', tids]]);
+    if (this.props.nids.length>0){
+      this.map.setFilter('faded',['!', ["has", ["to-string", ['get', "nid"]], ['literal', nids]]]);
+      this.map.setFilter('gjlayer',["has", ["to-string", ['get', "nid"]], ['literal', nids]]);
     } else {
       this.map.setFilter('faded',["==", "tID", -1]);
       this.map.setFilter('gjlayer',["!=", "tID", -1]);    

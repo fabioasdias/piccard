@@ -9,7 +9,6 @@ const mapStateToProps = (state) => ({
     dsconf: state.dsconf,
     level: state.level,
     showConfig: state.showConfig,
-    simpleColours: state.simpleColours,
     selMode: state.selMode,
     nLevels: state.nLevels
   });
@@ -17,7 +16,7 @@ const mapStateToProps = (state) => ({
 //https://github.com/iconic/open-iconic
 class CurConf extends Component {
     render() {
-        let {dispatch,simpleColours}=this.props;
+        let {dispatch}=this.props;
         let {conf,nLevels}=this.props;
         // let {dsconf}=this.props;
         let {selMode}=this.props;
@@ -54,7 +53,7 @@ class CurConf extends Component {
                 <img src="cog.svg" alt='Configuration' height="24" width="24" style={{verticalAlign:'middle'}}></img>
             </button>
             <div>
-                <div key={'simpleCheck'} style={{display:'flex',width:'fit-content',height:'fit-content',margin:'auto'}}>
+                {/* <div key={'simpleCheck'} style={{display:'flex',width:'fit-content',height:'fit-content',margin:'auto'}}>
                     <input name="varEnable"
                             type="checkbox"
                             checked={simpleColours}
@@ -65,7 +64,7 @@ class CurConf extends Component {
                     <p style={{margin:'auto'}}>
                         Simplified colours
                     </p>
-                </div>
+                </div> */}
                 {level!==undefined?<div key='ncslider' 
                     style={{width:'fit-content',margin:"auto",marginLeft:'2px',padding:'5px', textAlign:'center'}}>
                     <p style={{marginTop: '5px', marginBottom: '0'}}>

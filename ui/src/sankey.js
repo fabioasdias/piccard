@@ -74,32 +74,17 @@ class TempEvo extends Component {
 
         if ((labels!==undefined)&&(gj!==undefined) && (years!==undefined) && (colours!==undefined))
         {        
-            
-            // let vMax=traj[0].value;
-            // let vMin=traj[0].value;
-            // for (let i=0;i<traj.length;i++){
-            //     vMax=Math.max(vMax,traj[i].value);
-            //     vMin=Math.min(vMax,traj[i].value);
-            // }
-            // if ((this.state.min!==0) && (this.state.max!==100)){
-            //     traj=traj.filter( (d) => {
-            //         let v=100*((d.value-vMin)/vMax);
-            //         return((v>=this.state.min)&&(v<=this.state.max));
-            //     });}
-
             for (let i=0;i<traj.length;i++){
                 for (let j=0;j<(traj[i].chain.length-1);j++){
-                        let cNode=insertGetInd({year:traj[i].years[j],id:traj[i].chain[j],tID:traj[i].tid});
-                        let cPop=traj[i].pop[traj[i].years[j]];
-                        let nNode=insertGetInd({year:traj[i].years[j+1],id:traj[i].chain[j+1],tID:traj[i].tid});
-                        let nPop=traj[i].pop[traj[i].years[j+1]];
-                        links=addLinkVal(links,cNode,nNode,Math.min(cPop,nPop),i);    
+                    let y0=traj[i].years[j];
+                    let y1=traj[i].years[j+1]
+                    let cNode=insertGetInd({year:y0,id:traj[i].chain[j],tID:traj[i].tid});
+                    let cPop=traj[i].numNodes[y0];
+                    let nNode=insertGetInd({year:y1,id:traj[i].chain[j+1],tID:traj[i].tid});
+                    let nPop=traj[i].numNodes[y1];
+                    links=addLinkVal(links,cNode,nNode,Math.min(cPop,nPop),i);    
                 }
             }
-            // retJSX.push(<div style={{margin:'5px'}}>
-            //                 Minimum area: <input type="range" className="sliderTEv" min={0} max={100} defaultValue={0} onChange={(d)=>{this.setState({min:d.target.value});}}/>
-            //                 Maximum area: <input type="range" className="sliderTEv" min={0} max={100} defaultValue={100} onChange={(d)=>{this.setState({max:d.target.value});}}/>
-            //             </div>);
             let tJSX=[]
             for (let y of years){
                     tJSX.push(<div key={'year'+y}>{y}</div>)

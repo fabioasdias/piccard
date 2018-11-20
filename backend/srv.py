@@ -206,8 +206,6 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
 def _computeTrajectories(G, L, curCity, corr):
 
     years= curCity['years']
-    ds=curCity['ds']
-    nodesByTID={}
     paths=curCity['temporalPaths']
 
     traj=dict()    
@@ -230,12 +228,15 @@ def _computeTrajectories(G, L, curCity, corr):
                 if (len(set(usedYears))!=len(usedYears)):
                     print(chain,usedYears)
                     input('.')
-                traj[lvl].append({'tid':tid, 'chain':chain, 'years':usedYears, 'pop':{y:0 for y in years},'ctCount':{y:0 for y in years}})
+                traj[lvl].append({'tid':tid, 'chain':chain, 'years':usedYears,'nodes':[], 'numNodes':{y:0 for y in years}})
 
+            
+            for n in p:
+                traj[lvl][tid]['nodes'].append(G.node[n]['nid'])
+                traj[lvl][tid]['numNodes'][n[0]]+=1
 
-
-            # traj[lvl][tid]['ctCount'][y]+=1 ->xcity uses this
-
+        for i in range(len(traj[lvl])):
+            traj[lvl][i]['nodes']=sorted(set(traj[lvl][i]['nodes']))
     return(traj)
 
 
@@ -274,8 +275,7 @@ class server(object):
     def getGJ(self, cityID):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         with open(cities[int(cityID)]['folder'] + '/display.json', 'r') as fin:
-            buff = fin.read()
-        return(buff)
+            return(fin.read())
 
 
     @cherrypy.expose
@@ -287,15 +287,15 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         cityID=input_json['cityID']
-        nodes=input_json['nodes']
         #print(input_json)
-        variables=input_json['variables']
-        filters=input_json['filters']
+        # variables=input_json['variables']
+        # filters=input_json['filters']
 
         dsconf = {}
         curCity = cities[int(cityID)]
         ds = curCity['ds']
         basegraph = curCity['basegraph']
+        nodes=[curCity['i2n'][x] for x in input_json['nodes']]
 
         # if (variables):
         #     ivars = np.array([int(x) for x in variables])
@@ -311,8 +311,9 @@ class server(object):
         fs = np.zeros_like(ivars)
 
         dsconf['fs'] = fs[rightOrder]
-        ret=_TemporalDifferences(curCity,dsconf,basegraph,[ds.Node(int(x)) for x in nodes])
-        # print(ret)
+        print(nodes)
+        ret=_TemporalDifferences(curCity,dsconf,basegraph,nodes)
+        print(ret)
         return(ret)
 
     @cherrypy.expose
@@ -363,10 +364,10 @@ class server(object):
 
         cID = _createID(dsconf)
         cacheName = curCity['cache'] + '/{0}.json'.format(cID)
-        # if (exists(cacheName)):
-        #     with open(cacheName, 'r') as fc:
-        #         buff = json.loads(fc.read())
-        #     return(buff)
+        if (exists(cacheName)):
+            with open(cacheName, 'r') as fc:
+                buff = json.loads(fc.read())
+            return(buff)
 
         G = basegraph.copy()
 
@@ -671,9 +672,12 @@ if __name__ == '__main__':
         
         years = []
         cData['years'] = sorted(list(set(years)))
+        cData['i2n']={}
         for n in cData['basegraph']:
             years.append(n[0])
+            cData['i2n'][cData['basegraph'].node[n]['nid']]=n
         cData['years'] = sorted(list(set(years)))
+
         
         del(years)
         with open(baseFolder+'/basegraph.gp.tpaths','r') as fin:
@@ -685,7 +689,7 @@ if __name__ == '__main__':
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
         break
 
     conf = {

@@ -13,14 +13,13 @@ const mapStateToProps = (state) => ({
     years: state.years,
     colours: state.colours,
     basedata: state.basedata,
-    tID: state.tID,
+    nids: state.nids,
     gj: state.gj,
     path: state.path,
     globalPath: state.globalPath,
     population: state.population,
     patt: state.patt,
     cityID: state.cityID,
-    NbyTID: state.NbyTID,
     traj: state.traj,
     dsconf: state.dsconf
   });
@@ -44,20 +43,20 @@ class TrajDet extends Component {
     }
     
     componentWillUpdate(nextProps, nextState) {
-        let {dispatch,cityID,NbyTID,traj,dsconf,tID}=nextProps;
-        if ((nextProps.tID.length>0)&&(!arrEQ(this.props.tID,nextProps.tID))){
+        let {dispatch,cityID,traj,dsconf,nids}=nextProps;
+        if ((nextProps.nids.length>0)&&(!arrEQ(this.props.nids,nextProps.nids))){
             let tn=[];
-            for (let t of tID){
-                tn=tn.concat(NbyTID[traj[t]['tid']]);
+            for (let t of nids){
+                tn=tn.concat(traj[t]['nodes']);
             }
-            dispatch(requestPath(cityID,dsconf.vars,dsconf.fs,tn));    
+            dispatch(requestPath(cityID,dsconf.vars,dsconf.fs,[...new Set(tn)]));    
         }
     }
 
     
     render () {
         let {path}=this.props;
-        let {tID}=this.props;
+        let {nids}=this.props;
         let {years}=this.props;
         let {population}=this.props;
         let {basedata,globalPath}=this.props;
@@ -79,7 +78,7 @@ class TrajDet extends Component {
             this.setState({extended:cExtended.slice()});
         }
         
-        retJSX.push(<SmMaps key={'smallmaps'} gj={gj} tids={tID} years={years}/>);
+        retJSX.push(<SmMaps key={'smallmaps'} gj={gj} nids={nids} years={years}/>);
 
         rowJSX=[];
         for (let y of years){

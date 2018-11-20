@@ -90,8 +90,7 @@ function findTraj(colours, traj, chain, usedYears, val){
         }
         if (allEq) {            
             if (traj[i].colour===undefined){
-                let c=mixColours(colours,chain);
-                traj[i]={...traj[i],value:val,colour: c,normal:c, faded:'lightgrey',simplified:mixSimplified(colours,chain)};            
+                traj[i]={...traj[i],value:val,normal:'blue', faded:'lightgrey'};            
             }else{
                 traj[i].value+=val;
             }
@@ -162,7 +161,7 @@ export const reducer = (state={
                     labels[y]={};
                 }
                 for (let CTID in state.segData.labels[y]){
-                    labels[y][CTID]=state.segData.levelCorr[payload][CTID];
+                    labels[y][CTID]=state.segData.levelCorr[payload][state.segData.labels[y][CTID]];
                 }
             }
 
@@ -173,48 +172,18 @@ export const reducer = (state={
 
             let gj={};
             for (let y in state.origGJ){
-                gj[y]=clone(state.origGJ[y]);
+                gj[y]=state.origGJ[y];//clone(state.origGJ[y]);
+                console.log(gj[y])
+                for (let i=0; i< gj[y].features.length;i++){
+                    let f=gj[y].features[i];
+                    f.properties.colour=getColour(colours,labels[y][f.properties.CT_ID]);
+                }
             }
+            console.log(gj)
             // let gj=clone(state.origGJ);
             let tchain;
             let traj=state.segData.traj[payload].slice();
-            let usedYears;
-            // if ((years!==undefined) && (state.gj !== undefined)) {
-            //     for (let feat of gj.features){
-            //         tchain=[];
-            //         usedYears=[];
-            //         for (let y of years){
-            //             let cClass=labels[y][feat.properties.display_id];
-            //             if (cClass!==undefined){
-            //                 tchain.push(labels[y][feat.properties.display_id]);
-            //                 usedYears.push(y);
-            //             }
-            //         }
-            //         feat.properties.chain=tchain;                              
-            //         tid=findTraj(colours,traj,tchain,usedYears,parseFloat(feat.properties.area));
-            //         feat.properties.tID=tid;
-            //         for (let y of years){
-            //             feat.properties[y.toString()]='rgba(0,0,0,0)';
-            //         }
-                
-            //         if (tid!==undefined){
-            //             for (let i=0;i<tchain.length;i++){
-            //                 feat.properties[usedYears[i]]=getColour(colours,tchain[i]);
-            //             }
-            //             feat.properties.colour=traj[tid].colour;
-            //             feat.properties.normal=traj[tid].colour;
-            //             feat.properties.faded=traj[tid].faded;    
-            //             feat.properties.simplified=traj[tid].simplified;
-            //         }
-            //         else{
-            //             feat.properties.colour='rgba(0,0,0,0)';
-            //             feat.properties.normal='rgba(0,0,0,0)';
-            //             feat.properties.faded='rgba(0,0,0,0)';
-            //             feat.properties.simplified='rgba(0,0,0,0)';
-            //         }
-            //     }
-            // }
-            
+            let usedYears;            
             let patt=state.segData.patt.filter( d=> (colours.hasOwnProperty(d.id)) );
             return({...state, 
                     colours: colours, 
@@ -224,7 +193,6 @@ export const reducer = (state={
                     path:state.segData.basepath.paths,
                     pop:state.segData.basepath.population,
                     traj: traj,
-                    NbyTID: state.segData.nodesByTID[payload],
                     gj: gj,
                     tID: [],
                     level: payload

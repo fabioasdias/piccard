@@ -51,6 +51,10 @@ if __name__ == '__main__':
                 matched=geo[nextYear].getPolygon(polID) 
                 nID=geo[nextYear].getProperty(polID,'CT_ID')
                 B.add_edge((thisYear, tid),(nextYear, nID))
+    
+    nodes=sorted(B.nodes())
+    for i,n in enumerate(nodes):
+        B.node[n]['nid']=i
                 
     print('saving')
     nx.write_gpickle(B,outName)

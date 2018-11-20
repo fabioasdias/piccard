@@ -45,7 +45,7 @@ class SmMaps extends Component {
                         boundsCallback={(bb)=>{this.setState({bounds:bb});}}
                         tids={tID}
                         level={level}
-                        paintProp={y.toString()}
+                        paintProp={'colour'}
                         onClick={RegionClick}
                   />);
               }
