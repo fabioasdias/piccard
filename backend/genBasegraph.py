@@ -42,6 +42,7 @@ if __name__ == '__main__':
                     B.add_edge(n,(year, nid))                    
 
     #temporal edges
+    print('edges',len(B.edges()))
     print('temporal edges')
     for i in range(1, len(years)):
         thisYear = years[i-1]
@@ -50,8 +51,12 @@ if __name__ == '__main__':
             for polID in geo[nextYear].search(shape(tgeom).buffer(-1e-6)):   
                 matched=geo[nextYear].getPolygon(polID) 
                 nID=geo[nextYear].getProperty(polID,'CT_ID')
-                B.add_edge((thisYear, tid),(nextYear, nID))
-    
+                # print(tgeom.intersection(matched).area/tgeom.area,(thisYear, tid),(nextYear, nID))
+                if (tgeom.intersection(matched).area/tgeom.area)>0.1:
+                    B.add_edge((thisYear, tid),(nextYear, nID))
+
+    print('edges',len(B.edges()))
+
     nodes=sorted(B.nodes())
     for i,n in enumerate(nodes):
         B.node[n]['nid']=i

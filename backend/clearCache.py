@@ -13,6 +13,7 @@ erase=(len(sys.argv)>1)
 
 for city in cities:
     cache=city['folder']+'/cache'
+#    remove('basegraph.gp')
 
     if (not exists(cache)):
         makedirs(cache)

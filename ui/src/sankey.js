@@ -58,15 +58,10 @@ class TempEvo extends Component {
         const addLinkVal = (L,s,t,v,tID) =>{
             let tColour;
             if ((selTID.length>0) && (! selTID.includes(tID))){
-                tColour=traj[tID].faded;
+                tColour='lightgray';
             }
             else{
-                if (simpleColours){
-                    tColour=traj[tID].simplified;    
-                }else{
-                    tColour=traj[tID].colour;
-                }
-                
+                tColour='darkgray';
             }
             L.push({source:s,target:t,value:v, tID:tID, chain: traj[tID].chain, years: traj[tID].years, color: tColour});
             return(L);
@@ -95,7 +90,6 @@ class TempEvo extends Component {
             retJSX.push(<div key='yearsbar' className='yearsBar'>{tJSX}</div>);
             let onLink=(d)=>{
                 dispatch(actionCreators.SetTID(d.tID));
-
             };
             let onValClick=(d)=>{
                 let ctids=d.key.tID;

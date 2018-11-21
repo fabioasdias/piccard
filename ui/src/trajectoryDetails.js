@@ -24,7 +24,9 @@ const mapStateToProps = (state) => ({
     dsconf: state.dsconf
   });
 
-let arrEQ=(A1,A2)=>{
+let objSameProps=(o1,o2)=>{
+    let A1=Object.keys(o1);
+    let A2=Object.keys(o2);
     if (A1.length!==A2.length){
         return(false);
     }
@@ -39,17 +41,17 @@ let arrEQ=(A1,A2)=>{
 class TrajDet extends Component {
     constructor(props){
         super(props);
-        this.state={extended:[],value:undefined}
+        this.state={extended:[],value:undefined};
     }
     
     componentWillUpdate(nextProps, nextState) {
         let {dispatch,cityID,traj,dsconf,nids}=nextProps;
-        if ((nextProps.nids.length>0)&&(!arrEQ(this.props.nids,nextProps.nids))){
-            let tn=[];
-            for (let t of nids){
-                tn=tn.concat(traj[t]['nodes']);
-            }
-            dispatch(requestPath(cityID,dsconf.vars,dsconf.fs,[...new Set(tn)]));    
+        console.log('will')
+        let k=Object.keys(nids);
+        if ((k.length>0)&&(!objSameProps(this.props.nids,nids))){
+            console.log('request')
+            console.log(k)
+            dispatch(requestPath(cityID,dsconf.vars,dsconf.fs,k));    
         }
     }
 

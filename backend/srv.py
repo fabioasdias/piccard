@@ -295,7 +295,7 @@ class server(object):
         curCity = cities[int(cityID)]
         ds = curCity['ds']
         basegraph = curCity['basegraph']
-        nodes=[curCity['i2n'][x] for x in input_json['nodes']]
+        nodes=[curCity['i2n'][int(x)] for x in input_json['nodes']]
 
         # if (variables):
         #     ivars = np.array([int(x) for x in variables])
@@ -311,9 +311,9 @@ class server(object):
         fs = np.zeros_like(ivars)
 
         dsconf['fs'] = fs[rightOrder]
-        print(nodes)
+        # print(nodes)
         ret=_TemporalDifferences(curCity,dsconf,basegraph,nodes)
-        print(ret)
+        # print(ret)
         return(ret)
 
     @cherrypy.expose
@@ -689,8 +689,8 @@ if __name__ == '__main__':
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        break
+        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        # break
 
     conf = {
         '/': {

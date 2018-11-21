@@ -102,13 +102,13 @@ function findTraj(colours, traj, chain, usedYears, val){
 
 export const reducer = (state={
                                 tID:[],
+                                nids:{},
                                 showLoading:true,
                                 selMode:selModes.SET,
-                                simpleColours:true,
                                 globalPath: true,
                             }, action)=>{
     const { type, payload } = action;
-    console.log(state);
+    console.log(state,type,payload);
     let tid;
     // console.log(payload);
     switch (type){
@@ -122,7 +122,7 @@ export const reducer = (state={
             return({...state, path: payload.paths, population:payload.population, globalPath:false});
 
         case types.CLEAR_TID:
-            return({...state, globalPath:true, path: state.segData.basepath.paths, population:state.segData.basepath.population, tID:[]});
+            return({...state, globalPath:true, path: state.segData.basepath.paths, population:state.segData.basepath.population, tID:[], nids:{}});
 
         case types.SET_TID:            
             tid=state.tID.slice();
@@ -136,10 +136,17 @@ export const reducer = (state={
             if (state.selMode===selModes.REMOVE){
                 tid=tid.filter((d)=>{return(!par.includes(d))});
             }
-            return({...state, tID:tid});    
+            let nids={};
+            for (let i=0;i<tid.length;i++){
+                for (let j=0;j<state.traj[tid[i]].nodes.length;j++){
+                    nids[state.traj[tid[i]].nodes[j]]=true;
+                }
+            }
+
+            return({...state, tID:tid,nids:nids});    
 
         case types.UPDATE_MAP:
-            return({...state, nLevels:payload.levelCorr.length, segData:payload, tID:[], dsconf:payload.dsconf, basedata: payload.basepath, path:payload.basepath.paths, population:payload.basepath.population, conf:payload.conf, centroid:payload.centroid});
+            return({...state, nLevels:payload.levelCorr.length, segData:payload, tID:[], nids:{}, dsconf:payload.dsconf, basedata: payload.basepath, path:payload.basepath.paths, population:payload.basepath.population, conf:payload.conf, centroid:payload.centroid});
 
         case types.UPDATE_DETAILS:
             return({...state, details:payload});
@@ -172,14 +179,19 @@ export const reducer = (state={
 
             let gj={};
             for (let y in state.origGJ){
-                gj[y]=state.origGJ[y];//clone(state.origGJ[y]);
-                console.log(gj[y])
+                console.log('redo map',y,)
+                gj[y]=clone(state.origGJ[y]);
                 for (let i=0; i< gj[y].features.length;i++){
                     let f=gj[y].features[i];
-                    f.properties.colour=getColour(colours,labels[y][f.properties.CT_ID]);
+                    let c=getColour(colours,labels[y][f.properties.CT_ID])
+                    if ((c===undefined)||(c===null)){
+                        f.properties.colour='white';
+                    }else{
+                        f.properties.colour=c;
+                    }
+                    
                 }
             }
-            console.log(gj)
             // let gj=clone(state.origGJ);
             let tchain;
             let traj=state.segData.traj[payload].slice();
@@ -195,6 +207,7 @@ export const reducer = (state={
                     traj: traj,
                     gj: gj,
                     tID: [],
+                    nids:{},
                     level: payload
                 });
     
@@ -309,6 +322,7 @@ export function requestPath(city,vars,filters,nodes) {
     if (nodes!==undefined){
         args['nodes']=nodes;
     }
+    console.log('path',args)
     return function (dispatch) {
         return fetch(getURL.Path(), {
             body: JSON.stringify(args), // must match 'Content-Type' header

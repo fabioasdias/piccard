@@ -68,13 +68,14 @@ class App extends Component {
     };
 
     let doCity=(city_id, nc, cluster_IDs)=>{
+      dispatch(actionCreators.ShowLoading(true));
       console.log("doing city ",city_id," nc ",nc, 'cid',cluster_IDs);
       dispatch(actionCreators.SetCity(city_id));
       getData(getURL.GeoJSON(city_id),(gj)=>{
         dispatch(actionCreators.SetGeoJson(gj));
       });
 
-      dispatch(actionCreators.ShowLoading(true));
+      
 
       getData(getURL.Segmentation(city_id),function(data) {    
         // console.log(data);
