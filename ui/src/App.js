@@ -37,7 +37,7 @@ class App extends Component {
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }else{
       retJSX.push(<Overview key='op'/>);
-      retJSX.push(<TempEvo key='tp'/>);
+      // retJSX.push(<TempEvo key='tp'/>);
       // retJSX.push(<TransMat key='tm'/>)
       // retJSX.push(<NewMap key='nm'/>);
       retJSX.push(<TrajDet key='tj'/>);
