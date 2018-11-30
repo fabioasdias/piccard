@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { actionCreators} from './reducers';
+// import { actionCreators} from './reducers';
 import './style.css';
-import './trajectoryDetails.css';
+import './smmaps.css';
 import Map from './glmap';
 
 

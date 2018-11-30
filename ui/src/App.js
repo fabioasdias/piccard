@@ -6,9 +6,10 @@ import Detail from './detail'
 import { connect } from 'react-redux';
 import { actionCreators, getURL, getData, selModes } from './reducers';
 import ConfigPanel from './configPanel'
-import NewMap from './newmap'
+// import NewMap from './newmap'
 import TrajDet from './trajectoryDetails';
-import TransMat from './transMat';
+import CurConf from './curConf';
+// import TransMat from './transMat';
 
 const mapStateToProps = (state) => ({
   showLoading: state.showLoading,
@@ -36,8 +37,9 @@ class App extends Component {
     if (showLoading===true){
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }else{
+      retJSX.push(<CurConf key='cc'/>);
+      retJSX.push(<TempEvo key='tp'/>);
       retJSX.push(<Overview key='op'/>);
-      // retJSX.push(<TempEvo key='tp'/>);
       // retJSX.push(<TransMat key='tm'/>)
       // retJSX.push(<NewMap key='nm'/>);
       retJSX.push(<TrajDet key='tj'/>);

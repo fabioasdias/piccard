@@ -689,8 +689,8 @@ if __name__ == '__main__':
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        # break
+        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        break
 
     conf = {
         '/': {

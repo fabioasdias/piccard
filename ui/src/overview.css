@@ -1,8 +1,8 @@
 .Overview {
-    /* height: 130px; */
+    height: 350px;
     background-color: white;
     width:fit-content;
-    height: fit-content;
+    /* height: fit-content; */
     border: solid;
     text-align: left;
     border-color: darkgrey;
@@ -11,14 +11,14 @@
     display: grid;
     z-index: 2000;
     margin: 1px;    
-    padding: 1px;
+    /* padding: 1px; */
     text-align: center;
     align-content: flex-start;
 }
 .patts{    
-    height: fit-content;
-    width: 220px;
-    display: block;
+    height: 330px;
+    width: fit-content;
+    display: flex;
     float: left;
     margin: 3px;
     border: none;

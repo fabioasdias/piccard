@@ -6,7 +6,6 @@ import './style.css';
 import './overview.css';
 import  BoxplotSeries  from './boxplot';
 import chroma from 'chroma-js';
-import CurConf from './curConf';
 
 const mapStateToProps = (state) => ({
     colours: state.colours,
@@ -27,9 +26,8 @@ class Overview extends Component {
         let {level}=this.props;
         let retJSX=[];
         let pattJSX=[];
-        let tJSX=[]
-        retJSX.push(<CurConf key='cc'/>);
-        let cScale=chroma.scale(chroma.brewer.Viridis).mode('lab').correctLightness().classes(5);            
+        let tJSX=[];
+
 
         if (patt!==undefined){
             let cMax=[];
@@ -139,7 +137,7 @@ class Overview extends Component {
                         if (cimp>1){
                             cimp=1;
                         }
-                        return({...d, 'stroke': 'grey', 'fill':cScale(cimp)});
+                        return({...d, 'stroke': 'grey', 'fill':'black'});
                     })
                     boxJSX.push(<BoxplotSeries
                                     data={newData}
@@ -194,18 +192,6 @@ class Overview extends Component {
             }
             if (!this.state.full){
                 retJSX.push(<div key='patts' className="patts">
-                                <div style={{margin:'auto 5px'}}>
-                                <div key='relevanceScale' style={{display:'flex',margin:'auto', width:'fit-content', textAlign:'center',height:'fit-content',paddingBottom:'5px'}}>
-                                    <div key='vabtn' style={{textAlign:'center',margin:'auto',paddingRight:'5px'}}><button style={{fontSize:'small'}} onClick={(d)=>{this.setState({full:true,extended:[]})}}>View All</button></div>
-                                    <div key='rel' style={{marginRight:'5px',fontSize:'small'}}>Relevance:    -</div>
-                                    <div key='rel0' style={{width:'10px',height:'18px',backgroundColor:cScale(0)}}></div>
-                                    <div key='rel025' style={{width:'10px',height:'18px',backgroundColor:cScale(0.25)}}></div>
-                                    <div key='rel05' style={{width:'10px',height:'18px',backgroundColor:cScale(0.5)}}></div>
-                                    <div key='rel075' style={{width:'10px',height:'18px',backgroundColor:cScale(0.75)}}></div>
-                                    <div key='rel1' style={{width:'10px',height:'18px',backgroundColor:cScale(1)}}></div>
-                                    <div key='relplus' style={{marginLeft:'5px'}}>+</div>
-                                </div>
-                                </div>
                                 {pattJSX}
                             </div>);
             }else{
