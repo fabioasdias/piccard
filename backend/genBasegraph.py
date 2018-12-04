@@ -1,33 +1,45 @@
 import sys
 import networkx as nx
-from util import indexedPols,geoJsons
+import fiona
+from util import indexedPols
 from shapely.geometry import shape   
 import geojson
 import json
 
 if __name__ == '__main__':
-    if (len(sys.argv)) < 2:
-        print(".py geojsons.zip (basegraph.gp)")
+    nargs=len(sys.argv)
+    if (nargs<5) or ((nargs%2)!=1):
+        print(".py field outName.gp year1 shp1 y2 s2 ...")
         exit(-1)
 
-    if (len(sys.argv)==2):
-        outName='basegraph.gp'
-    else:
-        outName=sys.argv[2]
+    field = sys.argv[1]
+    outName=sys.argv[2]
+
+    args=sys.argv[3:]
+    i=0
+    years=[]
+    shps=[]
+    while i < len(args):
+        years.append(args[i])
+        shps.append(args[i+1])
+        i+=2
+
     geo = {}
     print('Make sure you are using 4269!')
-    with geoJsons(sys.argv[1]) as gj:
-        for year,cgj in gj:
-            print(year)
-            geo[year]=indexedPols()
-            for feat in cgj['features']:
-                geo[year].insertJSON(G=feat['geometry'],props={'CT_ID':feat['properties']['CT_ID'],})
-    years = sorted(geo.keys())
+    for i,year in enumerate(years):
+        print(year)
+        geo[year]=indexedPols()
+
+        with fiona.open(shps[i], 'r') as source:
+            for feat in source:
+                geo[year].insertJSON(G=feat['geometry'],props={'CT_ID':feat['properties'][field],})
+
 
     print('starting spatial edges')
     B = nx.Graph()
     
     for year in years:
+        print(year)
         for fid, geom in geo[year].iterIDGeom('CT_ID'):
             n=(year,fid)
 
@@ -52,7 +64,8 @@ if __name__ == '__main__':
                 matched=geo[nextYear].getPolygon(polID) 
                 nID=geo[nextYear].getProperty(polID,'CT_ID')
                 # print(tgeom.intersection(matched).area/tgeom.area,(thisYear, tid),(nextYear, nID))
-                if (tgeom.intersection(matched).area/tgeom.area)>0.1:
+                interArea=tgeom.intersection(matched).area
+                if ((interArea/tgeom.area)>0.05) or ((interArea/matched.area)>0.05):
                     B.add_edge((thisYear, tid),(nextYear, nID))
 
     print('edges',len(B.edges()))

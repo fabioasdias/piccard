@@ -34,8 +34,6 @@ class dataStore(object):
         self._rowByVarID={}   # row ranges for each var
         self._varById={}      # variable name (key) by varID
         self._distCache={}    # cache of computed distances
-        self._NodeByJSID={} # to enable talk with the react frontend - stable ordering
-        self._JSIDByNode={}
 
     def avVars(self):
         return(self._avVars)

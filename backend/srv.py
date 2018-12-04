@@ -13,15 +13,13 @@ from numpy import nan
 
 import cherrypy
 import networkx as nx
-from dataStore import dataStore
+import tempfile
+
 from hierMWW import hierMWW
 from mmg import segmentation
 from networkx.readwrite import json_graph
 from scipy.spatial.distance import pdist, sqeuclidean, squareform
 from sklearn.manifold import TSNE
-from sklearn.neighbors import NearestNeighbors
-
-# import matplotlib.pylab as plt
 
 
 HBINS=50
@@ -42,67 +40,12 @@ def cors():
 
 cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
 
-
-#from scipy.stats import wasserstein_distance, entropy
-
-
 def _doStats(V):
     return(np.nanmedian(V,axis=0),np.nanmin(V,axis=0),np.nanmax(V,axis=0),np.percentile(V,25,axis=0),np.percentile(V,75,axis=0))
 
-def _parD(x):
-    return(squareform(pdist(x, 'cosine')))
-    # dt=np.zeros((x.shape[0],x.shape[0]))
-    # for i in range(x.shape[0]):
-    #     for j in range(i+1,x.shape[0]):
-    #         # dt[i,j]=entropy(x[i,:],x[j,:])
-    #         dt[i,j]=wasserstein_distance(x[i,:],x[j,:])
-    # return(dt+dt.T)
-
-def _GeoMetric(G,nodes):
-
-    nodesByYear=dict()
-    for n in nodes:
-        if (n[0]) not in nodesByYear:
-            nodesByYear[n[0]]=[]
-        nodesByYear[n[0]].append(n)
-
-    allNodesByYear=dict()
-    for n in G.nodes:
-        if (n[0]) not in allNodesByYear:
-            allNodesByYear[n[0]]=[]
-        allNodesByYear[n[0]].append(n)
-    
-
-    TG=dict()
-    for year in nodesByYear:
-        TG[year]=nx.subgraph(G,allNodesByYear[year])
-
-    t0=time()
-    res=[]
-    for year in nodesByYear:
-        for i in range(len(nodesByYear[year])):
-            n1=nodesByYear[year][i]
-            thisnode=[]
-            for j in range(i+1,len(nodesByYear[year])):
-                n2=nodesByYear[year][j]
-                try:
-                    if (all([x in nodesByYear[year] for x in nx.shortest_path(TG[year],n1,n2)])):
-                        thisnode.append(1)
-                    else:
-                        thisnode.append(0)
-                except:
-                    pass
-
-            if (len(thisnode)!=0):
-                res.append(sum(thisnode)/len(thisnode))
-    print(time()-t0)
-    return(sum(res)/len(res))
-
-            
-
-
-
-def _getD(curCity, dsconf, X):
+def _getD(dsconf, X):
+    def _parD(x):
+        return(squareform(pdist(x, 'cosine')))
     w = dsconf['weights']
     N = X[0].shape[0]
     D = np.zeros((N,N))
@@ -117,19 +60,6 @@ def _createID(dsconf, useOnly=[]):
         if (not useOnly) or (k in useOnly):
             ID = ID + '-' + '_'.join(['{0}'.format(i) for i in dsconf[k]])
     return(ID)
-
-
-def _skKNN(X, curCity, dsconf, k=3):
-    cData, nByID = curCity['ds'].tabData(dsconf, X.nodes())
-    neigh = NearestNeighbors(k)
-    if (len(cData.shape) == 1):
-        cData = (cData - cData.min()) / (cData.max() - cData.min())
-    neigh.fit(np.atleast_2d(cData))
-
-    A = np.nonzero(neigh.kneighbors_graph())
-    for i in range(A[0].shape[0]):
-        X.add_edge(nByID[A[0][i]], nByID[A[1][i]])
-    return(X)
 
 
 def _TemporalDifferences(curCity, dsconf, H, nodes=None):
@@ -243,56 +173,42 @@ def _computeTrajectories(G, L, curCity, corr):
 
 
 
-def _runAll(webapp, cityID):
-    ds = cities[cityID]['ds']
+def _runAll(webapp, countryID):
+    ds = countries[countryID]['ds']
     V = [x['id'] for x in ds.avVars()]
-    F = [x['id'] for x in ds.avFilters()]
     for i in range(1, len(V) + 1):
         for cv in combinations(V, i):
-            for cf in combinations_with_replacement(F, i):
-                for k in range(0, 10):
-                    webapp.getSegmentation(cityID=cityID, variables=','.join(['{0}'.format(
-                        x) for x in cv]), filters=','.join(['{0}'.format(x) for x in cf]), k=k)
+            for k in range(0, 10):
+                webapp.getSegmentation(countryID=countryID, variables=','.join(['{0}'.format(x) for x in cv]))
 
 
 @cherrypy.expose
 class server(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def availableCities(self):
+    def availablecountries(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
-        for i, city in enumerate(cities):
+        for i, city in enumerate(countries):
             ret.append({'id': i,
                         'name': city['name'],
                         'kind': city['kind'],
                         'years': city['years'],
-                        'variables': [{'id': v['id'], 'name': v['name']} for v in city['ds'].avVars()],
-                        'filters': [{'id': v['id'], 'name': v['name']} for v in city['ds'].avFilters()]})
+                        'variables': [{'id': v['id'], 'name': v['name']} for v in city['ds'].avVars()]})
         return(ret)
-
-    @cherrypy.expose
-    def getGJ(self, cityID):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        with open(cities[int(cityID)]['folder'] + '/display.json', 'r') as fin:
-            return(fin.read())
-
 
     @cherrypy.expose
     @cherrypy.config(**{'tools.cors.on': True})
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
-    def getPath(self):#, cityID, nodes, variables=None, filters=None):
+    def getPath(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        cityID=input_json['cityID']
-        #print(input_json)
-        # variables=input_json['variables']
-        # filters=input_json['filters']
+        countryID=input_json['countryID']
 
         dsconf = {}
-        curCity = cities[int(cityID)]
+        curCity = countries[int(countryID)]
         ds = curCity['ds']
         basegraph = curCity['basegraph']
         nodes=[curCity['i2n'][int(x)] for x in input_json['nodes']]
@@ -305,21 +221,13 @@ class server(object):
         rightOrder = np.argsort(ivars)
         dsconf['ivars'] = ivars[rightOrder]
 
-        # if (filters):
-        #     fs = np.array([int(x) for x in filters])
-        # else:
-        fs = np.zeros_like(ivars)
-
-        dsconf['fs'] = fs[rightOrder]
-        # print(nodes)
         ret=_TemporalDifferences(curCity,dsconf,basegraph,nodes)
-        # print(ret)
         return(ret)
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
     @cherrypy.tools.gzip()
-    def getSegmentation(self, cityID, variables=None, filters=None, weights=None, k=2):
+    def getSegmentation(self, countryID, variables=None, weights=None):
         """Returns a json containing the segmentation results considering the variables
            The results are composed by the initial set of labels + the merges done at each level"""
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
@@ -327,7 +235,7 @@ class server(object):
         ret = dict()
 
         dsconf = {}
-        curCity = cities[int(cityID)]
+        curCity = countries[int(countryID)]
         ds = curCity['ds']
         basegraph = curCity['basegraph']
 
@@ -338,14 +246,6 @@ class server(object):
 
         rightOrder = np.argsort(ivars)
         dsconf['ivars'] = ivars[rightOrder]
-
-        if (filters):
-            fs = np.array([int(x) for x in filters.split(',')])
-        else:
-            fs = np.zeros_like(ivars)
-
-        dsconf['fs'] = fs[rightOrder]
-
 
         ret['dsconf']={'vars':dsconf['ivars'].tolist(),'fs':dsconf['fs'].tolist()} #easier to get back later
 
@@ -382,16 +282,10 @@ class server(object):
 
         ret['years'] = curCity['years']
 
-        if (k > 0):
-            print('knn sk')
-            t0 = time()
-            G = _skKNN(G, curCity, dsconf, k)
-            print(time() - t0)
-
         print('segmentation')
         t0 = time()
         X, NbI = ds.tabDataList(dsconf, G.nodes())
-        D = _getD(curCity, dsconf, X)
+        D = _getD(dsconf, X)
 
         baseLabels, corr, clusterNodes = hierMWW(
             D, G, NbI, dsconf, maxClusters=8)
@@ -597,10 +491,7 @@ class server(object):
                 colours[level][c] = used[c]
         ret['colours'] = colours
 
-        ret['conf'] = [{"var": ds.getVarName(dsconf['ivars'][i]), 'w':w[i], 'filter':ds.getFilterName(
-            dsconf['fs'][i])} for i in range(len(dsconf['ivars']))]
-
-        
+        ret['conf'] = [{"var": ds.getVarName(dsconf['ivars'][i]), 'w':w[i]} for i in range(len(dsconf['ivars']))]
 
         with open(cacheName, 'w') as fc:
             json.dump(ret,fc)
@@ -611,12 +502,36 @@ class server(object):
         return("It works!")
 
     @cherrypy.expose
+    @cherrypy.config(**{'tools.cors.on': True})    
+    @cherrypy.tools.gzip()
     @cherrypy.tools.json_out()
-    def getRegionDetails(self, cityID, displayID):
+    def upload(self, file):
+        myFile=file
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        res={'name':myFile.filename,'ok':True}
+        with tempfile.TemporaryDirectory() as tempDir:
+            fname=tempDir+'/'+myFile.filename
+            with open(fname,'wb') as outFile:        
+                while True:
+                    data = myFile.file.read(8192)
+                    if not data:
+                        break
+                    outFile.write(data)      
+            try:
+                pass
+            except:
+                res['ok']=False      
+            # out=processUploadFolder(tempDir)            
+        return(res)
+
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def getRegionDetails(self, countryID, displayID):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         displayID = int(displayID)
-        cityID = int(cityID)
-        curCity = cities[cityID]
+        countryID = int(countryID)
+        curCity = countries[countryID]
         ret = dict()
         for year in curCity['years']:
             try:  # not all display id actually exist...
@@ -633,23 +548,16 @@ class server(object):
 
 
 if __name__ == '__main__':
-    if ((len(sys.argv)) != 2) and ((len(sys.argv)) != 3):
-        print(".py conf.json (genCache? - optional = Y/N)")
+    if (len(sys.argv)) != 2:
+        print(".py conf.json")
         exit(-1)
 
-    with open(sys.argv[1], 'r') as f:
-        citiesConfig = json.load(f)
-
-    genCache = False
-    if (len(sys.argv) == 3) and (sys.argv[2] == 'Y'):
-        genCache = True
-
-    cities = []
+    countries = []
     webapp = server()
+    with open(sys.argv[1],'r') as fin:
+        countriesConfig=json.load(fin)
 
-    for i, v in enumerate(citiesConfig):
-        if (v['kind']=='SY'):
-            continue
+    for i, v in enumerate(countriesConfig):
         cData = dict()
 
         baseFolder = v['folder']
@@ -660,14 +568,13 @@ if __name__ == '__main__':
 
         cData['cache'] = cacheDir
 
-        cData['centroid'] = v['centroid']
+        # cData['centroid'] = v['centroid']
 
         cName = v['name']
         print('\n\n'+cName)
         cData['name'] = cName
         cData['kind'] = v['kind']
 
-        cData['ds'] = dataStore()
         cData['basegraph'] = nx.read_gpickle(baseFolder + '/basegraph.gp')
         
         years = []
@@ -685,12 +592,12 @@ if __name__ == '__main__':
         for ii,p in enumerate(cData['temporalPaths']):
             cData['temporalPaths'][ii]=[tuple(n) for n in p]
 
-        cData['ds'].loadAndPrep(
-            baseFolder + '/normGeoJsons.zip', cData['basegraph'])
+        # cData['ds'] = dataStore()
+        # cData['ds'].loadAndPrep(baseFolder + '/data', cData['basegraph'])
 
-        cities.append(cData)
-        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
-        break
+        countries.append(cData)
+        # webapp.getSegmentation(countryID=i)#,variables='1,3,5,6,7')
+        # break
 
     conf = {
         '/': {

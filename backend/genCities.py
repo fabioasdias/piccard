@@ -99,10 +99,10 @@ if __name__ == '__main__':
     # this way, all is the first
     makeBuff="all: srv.py "+' '.join(allNames)+"\n"+"\t python3 srv.py conf.json\n\n"+makeBuff
 
-    with open('conf.json','w') as fout:
-        json.dump(conf,fout)
-    with open('Makefile','w') as fout:
-        fout.write(makeBuff)
+    # with open('conf.json','w') as fout:
+    #     json.dump(conf,fout)
+    # with open('Makefile','w') as fout:
+    #     fout.write(makeBuff)
 
         
 
