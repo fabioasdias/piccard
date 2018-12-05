@@ -5,7 +5,6 @@ import { XYPlot, XAxis, YAxis } from 'react-vis';
 import './style.css';
 import './overview.css';
 import  BoxplotSeries  from './boxplot';
-import chroma from 'chroma-js';
 
 const mapStateToProps = (state) => ({
     colours: state.colours,

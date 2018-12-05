@@ -26,7 +26,8 @@ class SmMaps extends Component {
     }
 
     render(){
-        let {gj,nids,years,dispatch,level}=this.props;
+        let {gj,nids,years,level}=this.props;
+        // let {dispatch,}=this.props;
         let rowJSX=[];
         let RegionClick = (d) =>{
             console.log('click',d.features["0"].properties);

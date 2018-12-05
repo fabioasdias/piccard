@@ -20,8 +20,8 @@ from mmg import segmentation
 from networkx.readwrite import json_graph
 from scipy.spatial.distance import pdist, sqeuclidean, squareform
 from sklearn.manifold import TSNE
-
-
+from dataStore import dataStore
+from upload import processUploadFolder
 HBINS=50
 
 
@@ -47,6 +47,8 @@ def _getD(dsconf, X):
     def _parD(x):
         return(squareform(pdist(x, 'cosine')))
     w = dsconf['weights']
+    if len(w)==0:
+        return(np.atleast_2d([]))
     N = X[0].shape[0]
     D = np.zeros((N,N))
     for i in range(len(dsconf['ivars'])):
@@ -62,8 +64,8 @@ def _createID(dsconf, useOnly=[]):
     return(ID)
 
 
-def _TemporalDifferences(curCity, dsconf, H, nodes=None):
-    ds = curCity['ds']
+def _TemporalDifferences(curCountry, dsconf, H, nodes=None):
+    ds = curCountry['ds']
 
     if (nodes is not None):
         if (nodes==[]):
@@ -133,10 +135,10 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
     return({'population':pop, 'paths':ret})
 
 
-def _computeTrajectories(G, L, curCity, corr):
+def _computeTrajectories(G, L, curCountry, corr):
 
-    years= curCity['years']
-    paths=curCity['temporalPaths']
+    years= curCountry['years']
+    paths=curCountry['temporalPaths']
 
     traj=dict()    
 
@@ -186,7 +188,7 @@ def _runAll(webapp, countryID):
 class server(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def availablecountries(self):
+    def availableCountries(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
         for i, city in enumerate(countries):
@@ -194,7 +196,7 @@ class server(object):
                         'name': city['name'],
                         'kind': city['kind'],
                         'years': city['years'],
-                        'variables': [{'id': v['id'], 'name': v['name']} for v in city['ds'].avVars()]})
+                        'variables': []});#[{'id': v['id'], 'name': v['name']} for v in city['ds'].avVars()]})
         return(ret)
 
     @cherrypy.expose
@@ -208,10 +210,10 @@ class server(object):
         countryID=input_json['countryID']
 
         dsconf = {}
-        curCity = countries[int(countryID)]
-        ds = curCity['ds']
-        basegraph = curCity['basegraph']
-        nodes=[curCity['i2n'][int(x)] for x in input_json['nodes']]
+        curCountry = countries[int(countryID)]
+        ds = curCountry['ds']
+        basegraph = curCountry['basegraph']
+        nodes=[curCountry['i2n'][int(x)] for x in input_json['nodes']]
 
         # if (variables):
         #     ivars = np.array([int(x) for x in variables])
@@ -221,7 +223,7 @@ class server(object):
         rightOrder = np.argsort(ivars)
         dsconf['ivars'] = ivars[rightOrder]
 
-        ret=_TemporalDifferences(curCity,dsconf,basegraph,nodes)
+        ret=_TemporalDifferences(curCountry,dsconf,basegraph,nodes)
         return(ret)
 
     @cherrypy.expose
@@ -235,9 +237,9 @@ class server(object):
         ret = dict()
 
         dsconf = {}
-        curCity = countries[int(countryID)]
-        ds = curCity['ds']
-        basegraph = curCity['basegraph']
+        curCountry = countries[int(countryID)]
+        ds = curCountry['ds']
+        basegraph = curCountry['basegraph']
 
         if (variables):
             ivars = np.array([int(x) for x in variables.split(',')])
@@ -247,23 +249,20 @@ class server(object):
         rightOrder = np.argsort(ivars)
         dsconf['ivars'] = ivars[rightOrder]
 
-        ret['dsconf']={'vars':dsconf['ivars'].tolist(),'fs':dsconf['fs'].tolist()} #easier to get back later
+        ret['dsconf']={'vars':dsconf['ivars'].tolist()} #easier to get back later
 
-
-        k = int(k)
-        dsconf['k'] = [k, ]
         if (weights):
             w = np.array([float(x) for x in weights.split(',')])
             w = w[rightOrder]
         else:
             w = np.array([1.0, ] * len(ivars))
 
-        ret['dsconf']={'vars':dsconf['ivars'].tolist(),'fs':dsconf['fs'].tolist(),'w': w.tolist(),'k':k} #easier to get back later
+        ret['dsconf']={'vars':dsconf['ivars'].tolist(),'w': w.tolist()} #easier to get back later
 
         dsconf['weights'] = w/np.sum(w)
 
         cID = _createID(dsconf)
-        cacheName = curCity['cache'] + '/{0}.json'.format(cID)
+        cacheName = curCountry['cache'] + '/{0}.json'.format(cID)
         if (exists(cacheName)):
             with open(cacheName, 'r') as fc:
                 buff = json.loads(fc.read())
@@ -280,7 +279,7 @@ class server(object):
         G.remove_nodes_from(NaNs)
 
 
-        ret['years'] = curCity['years']
+        ret['years'] = curCountry['years']
 
         print('segmentation')
         t0 = time()
@@ -295,7 +294,7 @@ class server(object):
 
         print('traj')
         t0 = time()        
-        ret['traj']= _computeTrajectories(G, baseLabels, curCity, corr)
+        ret['traj']= _computeTrajectories(G, baseLabels, curCountry, corr)
         print(time() - t0)
         print('display labels')
         t0 = time()        
@@ -313,8 +312,7 @@ class server(object):
         t0 = time()
         tdsconf={**dsconf}
         tdsconf['ivars']=np.array([x['id'] for x in ds.avVars()])
-        tdsconf['fs']=np.zeros_like(tdsconf['ivars'])
-        ret['basepath']=_TemporalDifferences(curCity, tdsconf, G)
+        ret['basepath']=_TemporalDifferences(curCountry, tdsconf, G)
         print(time() - t0)
 
         print(time() - t0)
@@ -326,7 +324,7 @@ class server(object):
         Q = dict()
         aspects=set()
         for c in clusterNodes:
-            temp = {y:{} for y in curCity['years']}
+            temp = {y:{} for y in curCountry['years']}
             Q[c] = dict()
             for n in clusterNodes[c]:
                 y=n[0]
@@ -424,7 +422,7 @@ class server(object):
             #     for i in range(D.shape[0]):
             #         D[i, i] = 0.0
 
-        ret['centroid'] = curCity['centroid']
+        ret['centroid'] = curCountry['centroid']
 
         ret['patt'] = []
         # impMin = dict()
@@ -517,11 +515,10 @@ class server(object):
                     if not data:
                         break
                     outFile.write(data)      
-            try:
-                pass
-            except:
-                res['ok']=False      
-            # out=processUploadFolder(tempDir)            
+            # try:
+            res.update(processUploadFolder(tempDir))
+            # except:
+                # res['ok']=False      
         return(res)
 
 
@@ -531,12 +528,12 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         displayID = int(displayID)
         countryID = int(countryID)
-        curCity = countries[countryID]
+        curCountry = countries[countryID]
         ret = dict()
-        for year in curCity['years']:
+        for year in curCountry['years']:
             try:  # not all display id actually exist...
-                n = curCity['nByYearDisplayId'][(year, displayID)]
-                ret[year] = curCity['ds'].getRaw(n) + [{'type': "internal", 'short': [
+                n = curCountry['nByYearDisplayId'][(year, displayID)]
+                ret[year] = curCountry['ds'].getRaw(n) + [{'type': "internal", 'short': [
                     'CTID', ], 'values': [n[1], ], 'name': 'CTID', 'labels': ['name']}, ]
                 for i in range(len(ret[year])):
                     for j in range(len(ret[year][i]['values'])):
@@ -591,8 +588,13 @@ if __name__ == '__main__':
             cData['temporalPaths'] = json.load(fin)
         for ii,p in enumerate(cData['temporalPaths']):
             cData['temporalPaths'][ii]=[tuple(n) for n in p]
-
-        # cData['ds'] = dataStore()
+        cData['raw']=baseFolder+'/raw/'
+        cData['aspects']=baseFolder+'/aspects/'
+        if not exists(cData['raw']):
+            makedirs(cData['raw'])
+        if not exists(cData['aspects']):
+            makedirs(cData['aspects'])
+        cData['ds'] = dataStore()
         # cData['ds'].loadAndPrep(baseFolder + '/data', cData['basegraph'])
 
         countries.append(cData)
@@ -611,7 +613,7 @@ if __name__ == '__main__':
             'tools.staticdir.dir': './public'
         }
     }
-
+    cherrypy.server.max_request_body_size = 0 #for upload
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.server.socket_port = 8080
     cherrypy.quickstart(webapp, '/', conf)

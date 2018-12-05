@@ -1,9 +1,8 @@
-import chroma from 'chroma-js';
 import clone from '@turf/clone';
 
 const baseURL=()=>{
     return('http://localhost:8080/');
-    return('http://142.1.190.14/ct/');// clr
+    // return('http://142.1.190.14/ct/');// clr
 }
 
 export const selModes={
@@ -17,10 +16,10 @@ export const types={
     UPDATE_DETAILS: 'UpdateDetails',
     SET_GEOJSON:'SetGeoJson',
     SET_SELMODE: 'SetSelectionMode',    
-    SET_CITY_OPTIONS: 'SetCityOptions',
+    SET_COUNTRY_OPTIONS: 'SetCountryOptions',
     SET_LEVEL: 'SetLevel',
     SET_REGION: 'SetRegion',
-    SET_CITY: 'SetCity',
+    SET_COUNTRY: 'SetCountry',
     SHOW_CONFIG: 'ShowConfig',
     SHOW_LOADING: 'ShowLoading',
     SHOW_DETAILS: 'ShowDetails',
@@ -52,8 +51,8 @@ export const actionCreators = {
     SetGeoJson: gj => {
       return { type: types.SET_GEOJSON, payload: gj };
     },
-    SetCity: cityID => {
-        return {type: types.SET_CITY, payload: cityID};
+    SetCountry: countryID => {
+        return {type: types.SET_COUNTRY, payload: countryID};
     },
     SetLevel: level => {
         return {type: types.SET_LEVEL, payload:level};
@@ -61,8 +60,8 @@ export const actionCreators = {
     SetRegion: rid => {
         return {type: types.SET_REGION, payload: rid};
     },
-    SetCityOptions: data => {
-        return {type: types.SET_CITY_OPTIONS, payload: data}
+    SetCountryOptions: data => {
+        return {type: types.SET_COUNTRY_OPTIONS, payload: data}
     },
     SetSelectionMode: (mode) => {
         return {type: types.SET_SELMODE, payload:mode}
@@ -215,11 +214,11 @@ export const reducer = (state={
         case types.SET_REGION:
             return({...state, region:payload});
 
-        case types.SET_CITY_OPTIONS:
-            return({...state, cityOptions: payload});
+        case types.SET_COUNTRY_OPTIONS:
+            return({...state, COUNTRYOptions: payload});
 
-        case types.SET_CITY:
-            return({...state, cityID:payload});
+        case types.SET_COUNTRY:
+            return({...state, countryID:payload});
             
         case types.SHOW_CONFIG:
             return({...state, showConfig:payload});
@@ -235,7 +234,7 @@ export const reducer = (state={
 
 export const requestType ={
     SEGMENTATION : 'Segmentation',
-    CITY_OPTIONS : 'CityOptions',
+    COUNTRY_OPTIONS : 'COUNTRYOptions',
     PATH         : 'Path',
     REGION_DETAILS : 'RegionDetails',
     GEO_JSON       : 'GeoJSON',
@@ -246,19 +245,22 @@ export function toInt(d){
 }
 
 export const getURL  = {
-    CityOptions: () => {
-        return(baseURL()+'availableCities');
+    CountryOptions: () => {
+        return(baseURL()+'availableCountries');
     },
-    RegionDetails: (cityID,displayID) => {
-        return(baseURL()+'getRegionDetails?cityID='+cityID+'&displayID='+displayID);
+    RegionDetails: (countryID,displayID) => {
+        return(baseURL()+'getRegionDetails?countryID='+countryID+'&displayID='+displayID);
+    },
+    Upload: () => {
+        return(baseURL()+'upload');
     },
     Path: () => {
         return(baseURL()+'getPath');
     },
-    Segmentation: (city,vars,filters,weights,k) => {
+    Segmentation: (country,vars,filters,weights) => {
         let args=[];
-        if (city!==undefined){
-            args.push('cityID='+city);
+        if (country!==undefined){
+            args.push('countryID='+country);
         }
         if (vars!==undefined){
             args.push('variables='+vars);
@@ -269,13 +271,10 @@ export const getURL  = {
         if (filters!==undefined){
             args.push('filters='+filters);
         }
-        // if (k!==undefined){
-        args.push('k=2');
-        // }
         return(baseURL()+'getSegmentation?'+ args.join('&'));
     },
-    GeoJSON: (cityID) => {
-        return(baseURL()+'getGJ?cityID='+cityID);
+    GeoJSON: (countryID) => {
+        return(baseURL()+'getGJ?countryID='+countryID);
     }
 };
 
@@ -307,10 +306,10 @@ export const getClass = (labels, year, did) => {
         
 };
 
-export function requestPath(city,vars,filters,nodes) {
+export function requestPath(country,vars,filters,nodes) {
     let args={};
-    if (city!==undefined){
-        args['cityID']=city;
+    if (country!==undefined){
+        args['countryID']=country;
     }
     if (vars!==undefined){
         args['variables']=vars;
@@ -344,42 +343,5 @@ export function requestPath(city,vars,filters,nodes) {
             },
             error => console.log('ERRORRRRR')
         );
-    }
-}
-
-
-
-function mixSimplified(colours, ids){
-    let unique = (arrArg) => arrArg.filter((elem, pos, arr) => arr.indexOf(elem) === pos);
-
-    let c=ids.filter((d)=>{return(d!==undefined);});
-    if (c.length<3){
-        return('lightgrey');
-    }
-
-    let u=unique(c);
-    if (u.length===1){
-        return(getColour(colours,u[0]))
-    }
-    for (let cU of u){
-        let count=0;
-        for (let i=0;i<c.length;i++){
-            count+=(c[i]===cU)
-        }
-        if (count>(c.length/2)){
-            return(chroma(getColour(colours,cU)).saturate(2).brighten().hex());    
-        }    
-    }
-    return('darkgrey');
-
-}
-
-function mixColours(colours, ids){
-    let c=ids.filter((d)=>{return(d!==undefined);}).map((d)=>{return(getColour(colours,d))});
-    if (c.length>0){
-        let ret=chroma.average(c,'lab');
-        return(ret.hex());
-    }else{
-        return('none');
     }
 }

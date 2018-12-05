@@ -4,8 +4,8 @@ import { actionCreators, getData, getURL, toInt } from './reducers';
 import './configPanel.css';
 
 const mapStateToProps = (state) => ({
-    cityOptions: state.cityOptions,
-    cityID: state.cityID,
+    countryOptions: state.countryOptions,
+    countryID: state.countryID,
     dsconf: state.dsconf,
     showConfig: state.showConfig,
   });
@@ -22,9 +22,9 @@ class ConfigPanel extends Component {
 
     render() {
         let {showConfig}=this.props;
-        let {cityOptions}=this.props;
+        let {countryOptions}=this.props;
         let {dispatch}=this.props;
-        let {cityID}=this.props;
+        let {countryID}=this.props;
         let {dsconf}=this.props;
         let tarray;
 
@@ -36,13 +36,13 @@ class ConfigPanel extends Component {
             return(conf);
         };
 
-        if ((showConfig===undefined) || (!showConfig) || (cityOptions===undefined)){
+        if ((showConfig===undefined) || (!showConfig) || (countryOptions===undefined)){
             return(null);
         }
         else {
             if (this.state.conf===undefined){
                 if (dsconf===undefined){
-                    this.setState({nextId:cityOptions[cityID].variables.length,conf:defaultConf(cityOptions[cityID].variables)});
+                    this.setState({nextId:countryOptions[countryID].variables.length,conf:defaultConf(countryOptions[countryID].variables)});
                 }else{
                     let cconf=[];
                     for (let i=0;i<dsconf.vars.length;i++){
@@ -61,15 +61,15 @@ class ConfigPanel extends Component {
                                 className="dropboxes" 
                                 onChange={(e)=>{
                                     let curVal=toInt(e.target.value);
-                                    if (cityOptions[cityID].kind!==cityOptions[curVal].kind){
-                                        this.setState({nextId:cityOptions[curVal].variables.length,conf:defaultConf(cityOptions[curVal].variables)});                                    }
-                                    dispatch(actionCreators.SetCity(curVal));
+                                    if (countryOptions[countryID].kind!==countryOptions[curVal].kind){
+                                        this.setState({nextId:countryOptions[curVal].variables.length,conf:defaultConf(countryOptions[curVal].variables)});                                    }
+                                    dispatch(actionCreators.SetCountry(curVal));
                                 }} >
-                                {cityOptions.map( (e) => {
+                                {countryOptions.map( (e) => {
                                     return(<option 
                                             value={e.id} 
                                             key={e.id} 
-                                            selected={e.id===cityID}
+                                            selected={e.id===countryID}
                                             > 
                                                 {e.name}  
                                             </option>)
@@ -138,7 +138,7 @@ class ConfigPanel extends Component {
                             key={'dVar'+k}
                             onChange={varChange} 
                             >
-                            {cityOptions[cityID].variables.map( (e) => {
+                            {countryOptions[countryID].variables.map( (e) => {
                                 return(<option 
                                             value={e.id} 
                                             key={e.id}
@@ -153,7 +153,7 @@ class ConfigPanel extends Component {
                 //             data-k={k}
                 //             onChange={fChange}
                 //           >
-                //             {cityOptions[cityID].filters.map( (e) => {
+                //             {countryOptions[countryID].filters.map( (e) => {
                 //                 return(<option 
                 //                           value={e.id} 
                 //                           key={e.id}
@@ -217,11 +217,11 @@ class ConfigPanel extends Component {
                             dispatch(actionCreators.SetGeoJson(undefined));
                             
 
-                            getData(getURL.GeoJSON(cityID),(gj)=>{
+                            getData(getURL.GeoJSON(countryID),(gj)=>{
                                 dispatch(actionCreators.SetGeoJson(gj));
                             })
                             dispatch(actionCreators.ShowLoading(true));
-                            getData(getURL.Segmentation(cityID, selVars, selFilters, W, this.state.k),function(data) {    
+                            getData(getURL.Segmentation(countryID, selVars, selFilters, W, this.state.k),function(data) {    
                                 // console.log(data);
                                 dispatch(actionCreators.UpdateMap(data));                                
                                 if (data.levelCorr.length>5)

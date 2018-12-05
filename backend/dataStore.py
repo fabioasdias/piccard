@@ -71,7 +71,6 @@ class dataStore(object):
         outNbyInd={i:n for i,n in enumerate(nodes)}
         outIbyN={n:i for i,n in enumerate(nodes)}        
         ivars=dsconf['ivars']
-        fs=dsconf['fs']
         if (self._tabdata is None):
             self._buildtabdata()
         ind=dict()
@@ -89,9 +88,8 @@ class dataStore(object):
         ret=np.zeros((len(nodes),lenVars))
         for i in range(len(ivars)):
             v=ivars[i]
-            f=self._avFilters[fs[i]]['func']
             for n in nodes:
-                ret[outIbyN[n],oi[v]]=f(self._tabdata[self._IDbyN[n],ind[v]])
+                ret[outIbyN[n],oi[v]]=self._tabdata[self._IDbyN[n],ind[v]]
         
         return(ret,outNbyInd)
     def tabDataList(self,dsconf,Nodes):
@@ -99,43 +97,39 @@ class dataStore(object):
         outNbyInd={i:n for i,n in enumerate(nodes)}
         outIbyN={n:i for i,n in enumerate(nodes)}
         ivars=dsconf['ivars']
-        fs=dsconf['fs']
         if (self._tabdata is None):
             self._buildtabdata()
         ind=dict()
         res=[]
         for i in range(len(ivars)):
-            f=self._avFilters[fs[i]]['func']
+            # f=self._avFilters[fs[i]]['func']
             v=ivars[i]
             r=self._rowByVarID[v]
             ind[v]=[]
             for t in range(r[0],r[1]):
                 ind[v].append(t)
-            res.append(np.zeros((len(nodes),np.size(f(self._tabdata[0,ind[v]])))))
+            res.append(np.zeros((len(nodes),np.size(self._tabdata[0,ind[v]]))))
             
             for n in nodes:
-                res[-1][outIbyN[n],:]=f(self._tabdata[self._IDbyN[n],ind[v]])
+                res[-1][outIbyN[n],:]=self._tabdata[self._IDbyN[n],ind[v]]
         return(res,outNbyInd)
     def getValue(self, n, dsconf=None):
         """If dsconf==None, returns all variables, original data, in the avVars order"""
         if (dsconf):
             ivars=dsconf['ivars']
-            fs=dsconf['fs']
         else:
             ivars=[v['id'] for v in self._avVars]
-            fs=[0,]*len(ivars)
 
         ret=[]
         for i in range(len(ivars)):
             r=self._rowByVarID[ivars[i]]
-            ret.append(self._avFilters[fs[i]]['func'](self._tabdata[self._IDbyN[n],r[0]:r[1]]))
+            ret.append(self._tabdata[self._IDbyN[n],r[0]:r[1]])
         return(ret)
     def distance(self, node1, node2, dsconf):
         ivars=dsconf['ivars']
-        fs=dsconf['fs']
         
 
-        kid=' '.join(['{0}'.format(x) for x in ivars])+'|'+' '.join(['{0}'.format(x) for x in fs])
+        kid=' '.join(['{0}'.format(x) for x in ivars])
         if (kid not in self._distCache):
             self._distCache[kid]={}
         n1=min((node1,node2))
@@ -206,13 +200,7 @@ class dataStore(object):
                 for j,val in enumerate(self._rawdata[n][v]['values']):
                         if (isinstance(val,str)):
                             self._rawdata[n][v]['values'][j]=np.float('NaN')
-    def JSID(self, node):
-        return(self._JSIDByNode[node])
-    def Node(self, jsid):
-        return(self._NodeByJSID[jsid])
     def loadAndPrep(self,gjzip,basegraph):
         self.read(gjzip)
         self.clean(basegraph)
         self.normalize()
-        self._NodeByJSID={i:n for i,n in enumerate(sorted(basegraph.nodes()))}
-        self._JSIDByNode={self._NodeByJSID[i]:i for i in self._NodeByJSID}

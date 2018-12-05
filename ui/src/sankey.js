@@ -13,7 +13,6 @@ const mapStateToProps = (state) => ({
     traj: state.traj,
     colours: state.colours,
     labels: state.labels,
-    simpleColours: state.simpleColours,
   });
 
 
@@ -27,7 +26,7 @@ class TempEvo extends Component {
       }
 
     render() {
-        let {colours,simpleColours}=this.props;
+        let {colours}=this.props;
         let {dispatch}=this.props;
         let {years}=this.props;
         let {labels}=this.props;
