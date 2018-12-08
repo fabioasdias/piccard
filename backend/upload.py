@@ -25,8 +25,7 @@ def _nhgis(folder):
         except:
             print('not found',c)
 
-    return(ret)
-
+    return(ret)    
 
 def processUploadFolder(tempDir):    
     csvs=[]
