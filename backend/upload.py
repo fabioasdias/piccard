@@ -49,10 +49,11 @@ def processUploadFolder(tempDir):
                     nzips+=1
                     _extractErase(fname,newdir)
                     folders.append(newdir)
-                if ((kind=='text/plain') and (('.csv' in fname)or('.tsv' in fname))):
-                    csvs.append(fname)
-                if ((kind=='text/plain') and ('.json' in fname)):
-                    jsons.append(fname)
+                if (kind=='text/plain'):
+                    if (('.csv' in fname)or('.tsv' in fname)):
+                        csvs.append(fname)
+                    if ('.json' in fname):
+                        jsons.append(fname)
 
     id=uuid4()
     ret={}

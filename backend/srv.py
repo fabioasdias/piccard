@@ -180,8 +180,7 @@ def _runAll(webapp, countryID):
     V = [x['id'] for x in ds.avVars()]
     for i in range(1, len(V) + 1):
         for cv in combinations(V, i):
-            for k in range(0, 10):
-                webapp.getSegmentation(countryID=countryID, variables=','.join(['{0}'.format(x) for x in cv]))
+            webapp.getSegmentation(countryID=countryID, variables=','.join(['{0}'.format(x) for x in cv]))
 
 
 @cherrypy.expose
