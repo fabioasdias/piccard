@@ -27,7 +27,7 @@ def _nhgis(folder):
 
     return(ret)    
 
-def processUploadFolder(tempDir):    
+def processUploadFolder(tempDir,uploadDir):    
     csvs=[]
     jsons=[]
     nh=[]
@@ -55,10 +55,16 @@ def processUploadFolder(tempDir):
                     if ('.json' in fname):
                         jsons.append(fname)
 
+    print('found: csvs {0}, jsons {1}, nhgis {2}'.format(len(csvs),len(jsons),len(nh)))
+    print(csvs)
+    print(jsons)
+    print(nh)
+
     id=uuid4()
     ret={}
     ret['id']=str(id)
     ret['status']={}
+    
     df={}
     descriptions={}
 

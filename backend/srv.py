@@ -5,7 +5,7 @@ import pickle
 import sys
 from itertools import combinations, combinations_with_replacement
 from os import makedirs
-from os.path import exists
+from os.path import exists, join
 from time import time
 
 import numpy as np
@@ -261,11 +261,11 @@ class server(object):
         dsconf['weights'] = w/np.sum(w)
 
         cID = _createID(dsconf)
-        cacheName = curCountry['cache'] + '/{0}.json'.format(cID)
-        if (exists(cacheName)):
-            with open(cacheName, 'r') as fc:
-                buff = json.loads(fc.read())
-            return(buff)
+        # cacheName = join(curCountry['cache'], '/{0}.json'.format(cID))
+        # if (exists(cacheName)):
+        #     with open(cacheName, 'r') as fc:
+        #         buff = json.loads(fc.read())
+        #     return(buff)
 
         G = basegraph.copy()
 
@@ -490,8 +490,8 @@ class server(object):
 
         ret['conf'] = [{"var": ds.getVarName(dsconf['ivars'][i]), 'w':w[i]} for i in range(len(dsconf['ivars']))]
 
-        with open(cacheName, 'w') as fc:
-            json.dump(ret,fc)
+        # with open(cacheName, 'w') as fc:
+        #     json.dump(ret,fc)
         return(ret)
 
     @cherrypy.expose
@@ -507,7 +507,7 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         res={'name':myFile.filename,'ok':True}
         with tempfile.TemporaryDirectory() as tempDir:
-            fname=tempDir+'/'+myFile.filename
+            fname=join(tempDir,myFile.filename)
             with open(fname,'wb') as outFile:        
                 while True:
                     data = myFile.file.read(8192)
@@ -515,6 +515,7 @@ class server(object):
                         break
                     outFile.write(data)      
             # try:
+            
             res.update(processUploadFolder(tempDir))
             # except:
                 # res['ok']=False      
@@ -549,7 +550,11 @@ if __name__ == '__main__':
         exit(-1)
 
     countries = []
-    webapp = server()
+    #freshly uploaded (and unconfigured) data goes here
+    baseconf={'upload':'./upload'}
+    if (not exists(baseconf['upload'])):
+        makedirs(baseconf['upload'])
+
     with open(sys.argv[1],'r') as fin:
         countriesConfig=json.load(fin)
 
@@ -558,20 +563,13 @@ if __name__ == '__main__':
 
         baseFolder = v['folder']
         cData['folder'] = baseFolder
-        cacheDir = baseFolder + '/cache'
-        if (not exists(cacheDir)):
-            makedirs(cacheDir)
-
-        cData['cache'] = cacheDir
-
-        # cData['centroid'] = v['centroid']
 
         cName = v['name']
         print('\n\n'+cName)
         cData['name'] = cName
         cData['kind'] = v['kind']
 
-        cData['basegraph'] = nx.read_gpickle(baseFolder + '/basegraph.gp')
+        cData['basegraph'] = nx.read_gpickle(join(baseFolder,'basegraph.gp'))
         
         years = []
         cData['years'] = sorted(list(set(years)))
@@ -583,23 +581,24 @@ if __name__ == '__main__':
 
         
         del(years)
-        with open(baseFolder+'/basegraph.gp.tpaths','r') as fin:
-            cData['temporalPaths'] = json.load(fin)
-        for ii,p in enumerate(cData['temporalPaths']):
-            cData['temporalPaths'][ii]=[tuple(n) for n in p]
-        cData['raw']=baseFolder+'/raw/'
-        cData['aspects']=baseFolder+'/aspects/'
+        # with open(join(baseFolder,'basegraph.gp.tpaths'),'r') as fin:
+        #     cData['temporalPaths'] = json.load(fin)
+        # for ii,p in enumerate(cData['temporalPaths']):
+        #     cData['temporalPaths'][ii]=[tuple(n) for n in p]
+        cData['raw']=join(baseFolder,'raw')
+        cData['aspects']=join(baseFolder,'aspects')
         if not exists(cData['raw']):
             makedirs(cData['raw'])
         if not exists(cData['aspects']):
             makedirs(cData['aspects'])
         cData['ds'] = dataStore()
-        # cData['ds'].loadAndPrep(baseFolder + '/data', cData['basegraph'])
+        # cData['ds'].loadAndPrep(baseFolder, cData['basegraph'])
 
         countries.append(cData)
         # webapp.getSegmentation(countryID=i)#,variables='1,3,5,6,7')
         # break
 
+    webapp = server()
     conf = {
         '/': {
             'tools.sessions.on': True,
