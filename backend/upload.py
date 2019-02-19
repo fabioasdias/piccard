@@ -8,6 +8,7 @@ from glob import glob
 import pandas as pd
 import numpy as np
 import json
+from datetime import datetime
 
 def _extractErase(fname,tempDir):
     zip_ref = zipfile.ZipFile(fname, 'r')
@@ -46,12 +47,90 @@ def _get_year(fname):
     for i in range(1,len(vals)):
         if (vals[i]=='tract'):
             return(int(vals[i-1]))
-    return(-1)
+    return(-1)        
+
+def _infer_aspects_nhgis(df):
+    #for nhgis, the 3 first letters of the column name are roughly equivalent to
+    #aspects. 
+    ret=[]
+
+    cols=df.columns
+    prefixes=list(set([x[:3] for x in cols if (len(x)==6) and all([y.isdigit() for y in x[4:]]) ]))
+    for p in prefixes:
+        ret.append([x for x in cols if x.startswith(p)])
+
+    return(ret)
+
+def _process_nhgis(nh,uploadDir,remoteIP):
+    descriptions={}
+    ret={}
+    df={}
+
+    for i in range(len(nh)):
+        try:
+            print(nh[i])
+            code=nh[i][0]
+            csv=nh[i][1]
+
+            year=_get_year(basename(code))
+
+            cdf=pd.read_csv(csv,low_memory=False,encoding = 'latin1',dtype={'GISJOIN': object},index_col=False)
+            cdf=cdf.set_index('GISJOIN').dropna(axis=1,how='all') #drops columns that are empty
+                
+            cols=cdf.columns
+            if year not in descriptions:
+                descriptions[year]={}
+                df[year]=cdf
+            else:
+                df[year]=pd.merge(cdf,df[year],on='GISJOIN',suffixes=['','_x'])
+                df[year]=_fix_duplicated_columns(df[year])
+                
+
+            with open(code,'r') as ffin:
+                for line in ffin:
+                    for c in cols:
+                        if (c in line):
+                            descriptions[year][c]=line.strip()
+        except:
+            ret['errors'].append(nh[i][0])
+
+    ret['ids']=[]
+
+    for year in df:
+        print(year)
+        id=str(uuid4())
+        ret['ids'].append(id)
+        #lets save the file first, so if the json is in there, the data is also
+        #guaranteed to be
+        with open(join(uploadDir,'{0}.tsv'.format(id)),'w') as ftsv:
+            df[year].to_csv(ftsv,sep='\t')
+
+        info={'id':id,
+              'year':year,
+              'ip': str(remoteIP),
+              'UTC' : str(datetime.utcnow()),
+              'aspects': _infer_aspects_nhgis(df[year]),
+              'columns':{}, 
+              'samples':{}}
+        for c in df[year].columns:
+            info['samples'][c]=str(df[year][c][df[year][c].first_valid_index()])
+
+            if (c in descriptions[year]):
+                info['columns'][c]=descriptions[year][c]
+            elif (c[:-2] in descriptions[year]):
+                info['columns'][c]=descriptions[year][c[:-2]]
+            else:
+                info['columns'][c]=''
+
+        dtypes=dict(df[year].dtypes)
+        dtypes={k:str(dtypes[k]) for k in dtypes.keys()}
+        info['dtypes']=dtypes
+        with open(join(uploadDir,'{0}.info.json'.format(id)),'w') as finfo:
+            json.dump(info,finfo, indent=4, sort_keys=True)
+    return(ret)
 
 
-        
-
-def processUploadFolder(tempDir,uploadDir):    
+def processUploadFolder(tempDir,uploadDir,remoteIP):    
     csvs=[]
     jsons=[]
     nh=[]
@@ -84,60 +163,22 @@ def processUploadFolder(tempDir,uploadDir):
     print(jsons)
     print(nh)
     
-    df={}
-    descriptions={}
-
-    for i in range(len(nh)):
-        print(nh[i])
-        code=nh[i][0]
-        csv=nh[i][1]
-
-        year=_get_year(basename(code))
-
-        cdf=pd.read_csv(csv,low_memory=False,encoding = 'latin1',dtype={'GISJOIN': object},index_col=False)
-        cdf=cdf.set_index('GISJOIN')
-            
-        cols=cdf.columns
-        if year not in descriptions:
-            descriptions[year]={}
-            df[year]=cdf
-        else:
-            df[year]=pd.merge(cdf,df[year],on='GISJOIN',suffixes=['','_x'])
-            df[year]=_fix_duplicated_columns(df[year])
-            
-
-        with open(code,'r') as ffin:
-            for line in ffin:
-                for c in cols:
-                    if (c in line):
-                        descriptions[year][c]=line.strip()
-
     ret={}
-    ret['ids']=[]
-
-    for year in df:
-        print(year)
-        id=str(uuid4())
-        ret['ids'].append(id)
-        #lets save the file first, so if the json is in there, the data is also
-        #guaranteed to be
-        with open(join(uploadDir,'{0}.tsv'.format(id)),'w') as ftsv:
-            df[year].to_csv(ftsv,sep='\t')
-
-        info={'id':id,'year':year,'description':{}}
-        for c in df[year].columns:
-            if (c in descriptions[year]):
-                info['description'][c]=descriptions[year][c]
-            elif (c[:-2] in descriptions[year]):
-                info['description'][c]=descriptions[year][c[:-2]]
-            else:
-                info['description'][c]=''
-        dtypes=dict(df[year].dtypes)
-        dtypes={k:str(dtypes[k]) for k in dtypes.keys()}
-        info['dtypes']=dtypes
-        with open(join(uploadDir,'{0}.info.json'.format(id)),'w') as finfo:
-            json.dump(info,finfo)
+    ret.update(_process_nhgis(nh,uploadDir,remoteIP))
+    #TODO: CSV
+    #TODO: json
                 
     return(ret)
 
     
+def gatherInfoJsons(jsondir):
+    ret=[]
+    for f in glob(join(jsondir,'*.info.json')):
+        with open(f,'r') as fin:
+            data=json.load(fin)
+        del(data['dtypes'])
+        del(data['ip'])
+        del(data['UTC'])
+        ret.append(data)
+    return(ret)
+

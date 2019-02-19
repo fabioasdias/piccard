@@ -1,19 +1,15 @@
 import React, { Component } from 'react';
-// import './Upload.css';
+import './upload.css';
 import FileUploadProgress  from 'react-fileupload-progress';
 //https://www.npmjs.com/package/react-fileupload-progress
 import {getURL} from './reducers';
 // import ConfigWeights from './configWeights';
 
 class Upload extends Component {
-    constructor(props){
-        super(props);
-        this.state={showPicker:false,tables:undefined,id:undefined,avStuff:undefined,hiers:undefined}
-    }
-
     render(){
         return(
             <div className="upload">
+                Upload a new data file:
                 <FileUploadProgress key='fup' url={getURL.Upload()}
                     // onProgress={(e, request, progress) => {
                     //     console.log('progress', e, request, progress);
@@ -21,6 +17,7 @@ class Upload extends Component {
                     onLoad={ (e, request) => {
                         let data=JSON.parse(e.target.response);
                         console.log(data);
+
                         // let errorList='';
                         // for (let v in data.status){
                         //     if (parseInt(data.status[v],10)===-1){

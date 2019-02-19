@@ -69,9 +69,6 @@ export const actionCreators = {
     ShowConfig: (show) => {
         return {type: types.SHOW_CONFIG, payload:show}
     },
-    ShowLoading: (show) => {
-        return {type: types.SHOW_LOADING, payload:show}
-    },    
     ShowDetails: (show) => {
         return {type: types.SHOW_DETAILS, payload:show}
     },
@@ -102,7 +99,6 @@ function findTraj(colours, traj, chain, usedYears, val){
 export const reducer = (state={
                                 tID:[],
                                 nids:{},
-                                showLoading:true,
                                 selMode:selModes.SET,
                                 globalPath: true,
                             }, action)=>{
@@ -215,7 +211,7 @@ export const reducer = (state={
             return({...state, region:payload});
 
         case types.SET_COUNTRY_OPTIONS:
-            return({...state, COUNTRYOptions: payload});
+            return({...state, CountryOptions: payload});
 
         case types.SET_COUNTRY:
             return({...state, countryID:payload});
@@ -224,8 +220,6 @@ export const reducer = (state={
             return({...state, showConfig:payload});
         case types.SHOW_DETAILS:
             return({...state, showDetails:payload});
-        case types.SHOW_LOADING:
-            return({...state, showLoading:payload});
         default:
             return(state);
     }
@@ -234,7 +228,7 @@ export const reducer = (state={
 
 export const requestType ={
     SEGMENTATION : 'Segmentation',
-    COUNTRY_OPTIONS : 'COUNTRYOptions',
+    COUNTRY_OPTIONS : 'CountryOptions',
     PATH         : 'Path',
     REGION_DETAILS : 'RegionDetails',
     GEO_JSON       : 'GeoJSON',
@@ -257,6 +251,9 @@ export const getURL  = {
     Path: () => {
         return(baseURL()+'getPath');
     },
+    getUploadedData: () => {
+        return(baseURL()+'getUploadedData');
+    },
     Segmentation: (country,vars,filters,weights) => {
         let args=[];
         if (country!==undefined){
@@ -272,9 +269,6 @@ export const getURL  = {
             args.push('filters='+filters);
         }
         return(baseURL()+'getSegmentation?'+ args.join('&'));
-    },
-    GeoJSON: (countryID) => {
-        return(baseURL()+'getGJ?countryID='+countryID);
     }
 };
 

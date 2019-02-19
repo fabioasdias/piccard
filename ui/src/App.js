@@ -11,11 +11,13 @@ import FileUploadProgress  from 'react-fileupload-progress';
 import TrajDet from './trajectoryDetails';
 import CurConf from './curConf';
 import Upload from './upload';
+import { Stats } from 'fs';
+import Aspects from './aspects';
 // import TransMat from './transMat';
 
 const mapStateToProps = (state) => ({
-  showLoading: state.showLoading,
-  traj: state.traj
+  traj: state.traj,
+  CountryOptions: state.CountryOptions
 });
 
 //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -31,20 +33,42 @@ function getParams(location) {
 
 
 class App extends Component {
+  constructor(props){
+    super(props);
+    this.state={showLoading:true,showAdvancedConfig:true}
+  }
   render() {
     let retJSX=[];
-    let {showLoading}=this.props;
-    retJSX.push(<ConfigPanel key='cop' />);
+    let {showLoading,showAdvancedConfig}=this.state;
+    
 
     if (showLoading===true){
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }else{
-      retJSX.push(<Upload key='upp'/>);
-      retJSX.push(<CurConf key='cc'/>);
-      retJSX.push(<TempEvo key='tp'/>);
-      retJSX.push(<Overview key='op'/>);
-      // retJSX.push(<TrajDet key='tj'/>);
-      retJSX.push(<Detail key='dp'/>);  
+      if (showAdvancedConfig===true){
+        retJSX.push(<div>
+            <button onClick={(e)=>{
+              this.setState({showAdvancedConfig:false});
+            }}>Hide Advanced</button>
+          </div>);  
+        console.log('pre',this.props.CountryOptions)
+        retJSX.push(<Aspects 
+                      availableCountries={this.props.CountryOptions}
+                      key='asp'/>);
+        retJSX.push(<Upload key='upp'/>);
+      }else{
+        retJSX.push(<div>
+          <button onClick={(e)=>{
+            this.setState({showAdvancedConfig:true});
+          }}>Show Advanced</button>
+          </div>)  
+        retJSX.push(<ConfigPanel key='cop' />);        
+        retJSX.push(<CurConf key='cc'/>);
+        retJSX.push(<TempEvo key='tp'/>);
+        retJSX.push(<Overview key='op'/>);
+        // retJSX.push(<TrajDet key='tj'/>);
+        retJSX.push(<Detail key='dp'/>);    
+      }
     }
     return (
         <div key='base' className="App">    
@@ -71,14 +95,14 @@ class App extends Component {
     };
 
     let doCountry=(country_id, nc, cluster_IDs)=>{
-      dispatch(actionCreators.ShowLoading(true));
+      this.setState({showLoading:true});
+      // dispatch(actionCreators.ShowLoading(true));
       console.log("doing country ",country_id," nc ",nc, 'cid',cluster_IDs);
       dispatch(actionCreators.SetCountry(country_id));
       // getData(getURL.GeoJSON(country_id),(gj)=>{
       //   dispatch(actionCreators.SetGeoJson(gj));
       // });
 
-      
 
       // getData(getURL.Segmentation(country_id),function(data) {    
       //   // console.log(data);
@@ -94,12 +118,13 @@ class App extends Component {
       //     fromCIDtoTID(cluster_IDs[i]);
       //   }
       //   dispatch(actionCreators.SetSelectionMode(selModes.SET));
-        dispatch(actionCreators.ShowLoading(false));
+        // dispatch(actionCreators.ShowLoading(false));
+      this.setState({showLoading:false})
       // });
     }
 
     getData(getURL.CountryOptions(), function(data) {
-      console.log(data);
+      console.log('country options received', data);
       dispatch(actionCreators.SetCountryOptions(data))
       let params=getParams(window.location);
       let country=0; //default country and number of clusters

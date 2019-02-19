@@ -21,7 +21,7 @@ from networkx.readwrite import json_graph
 from scipy.spatial.distance import pdist, sqeuclidean, squareform
 from sklearn.manifold import TSNE
 from dataStore import dataStore
-from upload import processUploadFolder
+from upload import processUploadFolder, gatherInfoJsons
 HBINS=50
 
 
@@ -194,8 +194,7 @@ class server(object):
             ret.append({'id': i,
                         'name': city['name'],
                         'kind': city['kind'],
-                        'years': city['years'],
-                        'variables': []});#[{'id': v['id'], 'name': v['name']} for v in city['ds'].avVars()]})
+                        'years': city['years']})
         return(ret)
 
     @cherrypy.expose
@@ -502,6 +501,15 @@ class server(object):
     @cherrypy.config(**{'tools.cors.on': True})    
     @cherrypy.tools.gzip()
     @cherrypy.tools.json_out()
+    def getUploadedData(self):
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        return(gatherInfoJsons(baseconf['upload']))
+
+
+    @cherrypy.expose
+    @cherrypy.config(**{'tools.cors.on': True})    
+    @cherrypy.tools.gzip()
+    @cherrypy.tools.json_out()
     def upload(self, file):
         myFile=file
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
@@ -514,11 +522,11 @@ class server(object):
                     if not data:
                         break
                     outFile.write(data)      
-            # try:
-            
-            res.update(processUploadFolder(tempDir, baseconf['upload']))
-            # except:
-                # res['ok']=False      
+            try:
+                res.update(processUploadFolder(tempDir, baseconf['upload'],cherrypy.request.remote.ip))
+            except:
+                raise
+                res['ok']=False      
         return(res)
 
 

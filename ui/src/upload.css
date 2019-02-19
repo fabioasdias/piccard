@@ -1,4 +1,7 @@
 .upload {
     width:fit-content;
     height: fit-content;
+    border: solid;
+    border-color: lightgray;
+    border-width: thin;
 }
