@@ -516,7 +516,7 @@ class server(object):
                     outFile.write(data)      
             # try:
             
-            res.update(processUploadFolder(tempDir))
+            res.update(processUploadFolder(tempDir, baseconf['upload']))
             # except:
                 # res['ok']=False      
         return(res)

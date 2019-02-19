@@ -6,6 +6,8 @@ from os import remove
 from os.path import isdir,join
 from glob import glob
 import pandas as pd
+import numpy as np
+import json
 
 def _extractErase(fname,tempDir):
     zip_ref = zipfile.ZipFile(fname, 'r')
@@ -26,6 +28,28 @@ def _nhgis(folder):
             print('not found',c)
 
     return(ret)    
+
+def _fix_duplicated_columns(df, dupPrefix='_x'):
+    dupes=[x for x in df.columns if x.endswith(dupPrefix)]
+    # to_remove=[]
+    # for col in dupes:
+    #     print(col,col[:-2])
+    #     if (np.all(df[col]==df[col[:-2]])):            
+    #         to_remove.append(col)
+    # print(set(dupes)-set(to_remove))
+    # return(df.drop(labels=to_remove,axis=1))
+    return(df.drop(labels=dupes,axis=1))
+
+def _get_year(fname):
+    #nhgis0013_ds176_20105_2010_tract_E_codebook.txt
+    vals=basename(fname).split('_')
+    for i in range(1,len(vals)):
+        if (vals[i]=='tract'):
+            return(int(vals[i-1]))
+    return(-1)
+
+
+        
 
 def processUploadFolder(tempDir,uploadDir):    
     csvs=[]
@@ -59,23 +83,17 @@ def processUploadFolder(tempDir,uploadDir):
     print(csvs)
     print(jsons)
     print(nh)
-
-    id=uuid4()
-    ret={}
-    ret['id']=str(id)
-    ret['status']={}
     
     df={}
     descriptions={}
 
     for i in range(len(nh)):
-        print(i)
+        print(nh[i])
         code=nh[i][0]
         csv=nh[i][1]
-        year=int(basename(code).split('_')[2])
-        # try:
-        #     cdf=pd.read_csv(csv,low_memory=False)
-        # except:
+
+        year=_get_year(basename(code))
+
         cdf=pd.read_csv(csv,low_memory=False,encoding = 'latin1',dtype={'GISJOIN': object},index_col=False)
         cdf=cdf.set_index('GISJOIN')
             
@@ -85,7 +103,8 @@ def processUploadFolder(tempDir,uploadDir):
             df[year]=cdf
         else:
             df[year]=pd.merge(cdf,df[year],on='GISJOIN',suffixes=['','_x'])
-            df[year]=df[year].drop(labels=[x for x in df[year].columns if '_x' in x],axis=1)
+            df[year]=_fix_duplicated_columns(df[year])
+            
 
         with open(code,'r') as ffin:
             for line in ffin:
@@ -93,15 +112,31 @@ def processUploadFolder(tempDir,uploadDir):
                     if (c in line):
                         descriptions[year][c]=line.strip()
 
-    print('cols')
-    for y in df:
-        print(y)
-        for c in df[y].columns:
-            if (c in descriptions[y]):
-                print(descriptions[y][c])
+    ret={}
+    ret['ids']=[]
+
+    for year in df:
+        print(year)
+        id=str(uuid4())
+        ret['ids'].append(id)
+        #lets save the file first, so if the json is in there, the data is also
+        #guaranteed to be
+        with open(join(uploadDir,'{0}.tsv'.format(id)),'w') as ftsv:
+            df[year].to_csv(ftsv,sep='\t')
+
+        info={'id':id,'year':year,'description':{}}
+        for c in df[year].columns:
+            if (c in descriptions[year]):
+                info['description'][c]=descriptions[year][c]
+            elif (c[:-2] in descriptions[year]):
+                info['description'][c]=descriptions[year][c[:-2]]
             else:
-                print('dont have ',c)
-        print('\n')
+                info['description'][c]=''
+        dtypes=dict(df[year].dtypes)
+        dtypes={k:str(dtypes[k]) for k in dtypes.keys()}
+        info['dtypes']=dtypes
+        with open(join(uploadDir,'{0}.info.json'.format(id)),'w') as finfo:
+            json.dump(info,finfo)
                 
     return(ret)
 
