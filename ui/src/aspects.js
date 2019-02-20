@@ -69,20 +69,15 @@ class Aspects extends Component {
 
             for (let i=0;i<aspects.length;i++){
                 let columnsJSX=[];
-                console.log(aspects);
-                console.log(files.filter((f)=>{
+                let curCols=files.filter((f)=>{
                     return(aspects[i].id===f.fileID);
-                })[0])
+                })[0].columns;
 
                 for(let j=0; j<aspects[i].columns.length;j++){
-                    // columnsJSX.push(<p>{files.filter((f)=>{
-                        // return(aspects[i].id===f.fileID);
-                    // })
-                    // aspects[i].columns[j]}</p>)
+                    columnsJSX.push(<p>{curCols[aspects[i].columns[j]]}</p>)
                 }
 
                 retJSX.push(<div className="aspects">
-
                     <div> Name: 
                         <input 
                             type="text" 
