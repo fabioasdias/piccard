@@ -110,6 +110,7 @@ def _process_nhgis(nh,uploadDir,remoteIP):
               'ip': str(remoteIP),
               'UTC' : str(datetime.utcnow()),
               'aspects': _infer_aspects_nhgis(df[year]),
+              'country': 'US',
               'columns':{}, 
               'samples':{}}
         for c in df[year].columns:
