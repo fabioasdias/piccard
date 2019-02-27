@@ -48,9 +48,6 @@ export const actionCreators = {
     UpdateDetails: details => {
         return {type: types.UPDATE_DETAILS, payload: details};
     },
-    SetGeoJson: gj => {
-      return { type: types.SET_GEOJSON, payload: gj };
-    },
     SetCountry: countryID => {
         return {type: types.SET_COUNTRY, payload: countryID};
     },
@@ -107,9 +104,6 @@ export const reducer = (state={
     let tid;
     // console.log(payload);
     switch (type){
-        case types.SET_GEOJSON:
-            return({...state, gj:payload,origGJ:payload});
-
         case types.SET_COLOUR_OPT:
             return({...state, simpleColours:payload});
 
@@ -214,7 +208,7 @@ export const reducer = (state={
             return({...state, CountryOptions: payload});
 
         case types.SET_COUNTRY:
-            return({...state, countryID:payload});
+            return({...state, countryID:payload, curCountryOptions:state.CountryOptions[payload]});
             
         case types.SHOW_CONFIG:
             return({...state, showConfig:payload});

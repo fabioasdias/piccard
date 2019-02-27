@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 import { actionCreators, getURL, getData, selModes } from './reducers';
 import ConfigPanel from './configPanel';
 import FileUploadProgress  from 'react-fileupload-progress';
-// import NewMap from './newmap';
+import NewMap from './newmap';
 import TrajDet from './trajectoryDetails';
 import CurConf from './curConf';
 import Upload from './upload';
@@ -35,13 +35,12 @@ function getParams(location) {
 class App extends Component {
   constructor(props){
     super(props);
-    this.state={showLoading:true,showAdvancedConfig:true}
+    this.state={showLoading:true,showAdvancedConfig:false}
   }
   render() {
     let retJSX=[];
     let {showLoading,showAdvancedConfig}=this.state;
     
-
     if (showLoading===true){
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }else{
@@ -57,14 +56,15 @@ class App extends Component {
                       key='asp'/>);
         retJSX.push(<Upload key='upp'/>);
       }else{
-        retJSX.push(<div>
+        retJSX.push(<div key="adv">
           <button onClick={(e)=>{
             this.setState({showAdvancedConfig:true});
           }}>Show Advanced</button>
           </div>)  
         retJSX.push(<ConfigPanel key='cop' />);        
         retJSX.push(<CurConf key='cc'/>);
-        retJSX.push(<TempEvo key='tp'/>);
+        retJSX.push(<NewMap key='nm'/>);
+        // retJSX.push(<TempEvo key='tp'/>);
         retJSX.push(<Overview key='op'/>);
         // retJSX.push(<TrajDet key='tj'/>);
         retJSX.push(<Detail key='dp'/>);    

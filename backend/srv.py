@@ -191,10 +191,12 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
         for i, city in enumerate(countries):
-            ret.append({'id': i,
+            ret.append({'id': i, 
                         'name': city['name'],
                         'kind': city['kind'],
-                        'years': city['years']})
+                        'years': city['years'],
+                        'layers':city['layers'],
+                        })
         return(ret)
 
     @cherrypy.expose
@@ -568,27 +570,20 @@ if __name__ == '__main__':
 
     for i, v in enumerate(countriesConfig):
         cData = dict()
+        cData.update(v)
 
         baseFolder = v['folder']
-        cData['folder'] = baseFolder
 
         cName = v['name']
         print('\n\n'+cName)
-        cData['name'] = cName
-        cData['kind'] = v['kind']
 
         cData['basegraph'] = nx.read_gpickle(join(baseFolder,'basegraph.gp'))
         
-        years = []
-        cData['years'] = sorted(list(set(years)))
         cData['i2n']={}
         for n in cData['basegraph']:
-            years.append(n[0])
             cData['i2n'][cData['basegraph'].node[n]['nid']]=n
-        cData['years'] = sorted(list(set(years)))
+        cData['years'] = sorted(v['years'])
 
-        
-        del(years)
         # with open(join(baseFolder,'basegraph.gp.tpaths'),'r') as fin:
         #     cData['temporalPaths'] = json.load(fin)
         # for ii,p in enumerate(cData['temporalPaths']):

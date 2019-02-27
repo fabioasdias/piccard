@@ -5,19 +5,15 @@ import Map from './glmap';
 
 
 const mapStateToProps = (state) => ({
-  gj: state.gj,
   tID: state.tID,
   level: state.level,
-  simpleColours: state.simpleColours,
+  curCountryOptions: state.curCountryOptions,
 });
 
 
 class NewMap extends Component {
   render() {
-    let {level,tID,simpleColours}=this.props;
-    let {dispatch}=this.props;
-    let {gj}=this.props;
-
+    let {level,tID,dispatch,curCountryOptions}=this.props;
 
     let doHighlight = (d) => {
       let dtid=toInt(d.features["0"].properties.tID);
@@ -25,14 +21,15 @@ class NewMap extends Component {
     }
 
     
-
-    if (gj!==undefined){
+    if (curCountryOptions!==undefined){
+      console.log(curCountryOptions)
       return (
         <Map 
-          data={gj}
-          className='mainMap'
+          layers={curCountryOptions.layers}
+          activeLayer={0}
+          // className='mainMap'
           level={level}
-          paintProp={simpleColours?'simplified':'colour'}
+          paintProp={'colour'}
           onClick={doHighlight}
           tids={tID}
         />

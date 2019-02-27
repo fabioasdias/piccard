@@ -1,9 +1,9 @@
-/* .mapboxgl-map{
-    width:600px;
-    height:350px;
+.mapboxgl-map{
+    width:800px;
+    height:600px;
     border: solid;
     margin: 1px;
     border-color: darkgray;
     border-width: medium;
     float:left;
-  } */
+  }
