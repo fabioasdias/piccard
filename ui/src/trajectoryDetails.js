@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { toInt, requestPath} from './reducers';
+import { toInt} from './reducers';//requestPath
 import './style.css';
 import './trajectoryDetails.css';
 import { XYPlot, XAxis, YAxis, LineSeries, HorizontalGridLines, VerticalGridLines, AreaSeries  } from 'react-vis';
@@ -51,7 +51,7 @@ class TrajDet extends Component {
         if ((k.length>0)&&(!objSameProps(this.props.nids,nids))){
             console.log('request')
             console.log(k)
-            dispatch(requestPath(cityID,dsconf.vars,dsconf.fs,k));    
+            // dispatch(requestPath(cityID,dsconf.vars,dsconf.fs,k));    
         }
     }
 

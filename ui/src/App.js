@@ -4,7 +4,8 @@ import TempEvo from './sankey';
 import Overview from './overview';
 import Detail from './detail';
 import { connect } from 'react-redux';
-import { actionCreators, getURL, getData, selModes } from './reducers';
+import { actionCreators} from './reducers';
+import {getURL, getData} from './urls';
 import ConfigPanel from './configPanel';
 import FileUploadProgress  from 'react-fileupload-progress';
 import NewMap from './newmap';
@@ -35,7 +36,7 @@ function getParams(location) {
 class App extends Component {
   constructor(props){
     super(props);
-    this.state={showLoading:true,showAdvancedConfig:false}
+    this.state={showLoading:true,showAdvancedConfig:true}
   }
   render() {
     let retJSX=[];

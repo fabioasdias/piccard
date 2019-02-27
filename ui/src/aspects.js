@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import './aspects.css';
-import {getData,getURL} from './reducers';
+import {sendData,getData,getURL} from './urls';
 
 class Aspects extends Component {
     constructor(props){
@@ -19,12 +19,15 @@ class Aspects extends Component {
                             console.log(data);
                             let asp=[];
                             for (let i=0;i<data.length;i++){
+                                console.log(data[i].aspects);
                                 for (let j=0;j<data[i].aspects.length;j++){
-                                    asp.push({country:data[i].country,
+                                    asp.push({
+                                            enabled:true,
+                                            country:data[i].country,
                                             year:data[i].year,
+                                            geomYear:data[i].geomYear,
                                             name:data[i].aspects[j][0].slice(0,3),
                                             normalized:false,
-                                            normalizingField:'',
                                             fileID:data[i].id,
                                             columns:data[i].aspects[j]});
                                     }
@@ -35,17 +38,11 @@ class Aspects extends Component {
                     Refresh available data
                     </button>
                     <button onClick={()=>{
-                        let a=aspects.slice();
-                        a.push({country:'',
-                                name:'',
-                                year:'', 
-                                fileID:'',
-                                normalized:false,
-                                normalizingField:'',
-                                columns:[]});
-                        this.setState({aspects:a.slice()});
+                        sendData(getURL.createAspects(),this.state.aspects,(d)=>{
+                            console.log('data sent', d)
+                        })
                     }}>
-                    Add aspect
+                        Save aspects                    
                     </button>
                 </div>);
 
@@ -53,31 +50,51 @@ class Aspects extends Component {
 
             let {files,aspects}=this.state;
             let onChange = (e)=>{
-                console.log(e.target);
                 let which=e.target.getAttribute('data-which');
                 let k=parseInt(e.target.getAttribute('data-k'),10);
-                console.log('change',which,k);
                 let tarray=this.state.aspects.slice();
                 if (which==='year'){
                     tarray[k][which]=parseInt(e.target.value,10);
                 }else{
-                    tarray[k][which]=e.target.value;
+                    if ((which==='enabled')||(which==='normalized')){
+                        tarray[k][which]=e.target.checked;
+                    }
+                    else{
+                        tarray[k][which]=e.target.value;
+                    }
                 }
-                
                 this.setState({aspects:tarray.slice()})
             }
 
             for (let i=0;i<aspects.length;i++){
                 let columnsJSX=[];
-                let curCols=files.filter((f)=>{
+                let curFile=files.filter((f)=>{
                     return(aspects[i].id===f.fileID);
-                })[0].columns;
+                })[0];
+                let curCols=curFile.columns;
+
+                columnsJSX.push(<div style={{'display':'flex','fontWeight': 'bold'}}>
+                    <div style={{'paddingRight':'15px'}}>Column</div>
+                    <div style={{'marginLeft':'auto'}}>Sample</div>
+                    </div>)
 
                 for(let j=0; j<aspects[i].columns.length;j++){
-                    columnsJSX.push(<p>{curCols[aspects[i].columns[j]]}</p>)
+                    columnsJSX.push(<div style={{'display':'flex'}}>
+                        <div style={{'paddingRight':'15px'}}>{curCols[aspects[i].columns[j]]}</div>
+                        <div style={{'marginLeft':'auto'}}>{curFile.samples[aspects[i].columns[j]]}</div>
+                        </div>)
                 }
-
+                console.log(aspects[i])
                 retJSX.push(<div className="aspects">
+                    <div>
+                        <input 
+                            type="checkbox" 
+                            onChange={onChange}
+                            data-k={i}
+                            data-which={'enabled'}
+                            checked={this.state.aspects[i].enabled}/>                        
+                    </div>
+
                     <div> Name: 
                         <input 
                             type="text" 
@@ -85,6 +102,15 @@ class Aspects extends Component {
                             data-k={i}
                             data-which={'name'}
                             defaultValue={this.state.aspects[i].name}/>                        
+                    </div>
+
+                    <div> Normalized:
+                        <input 
+                            type="checkbox" 
+                            onChange={onChange}
+                            data-k={i}
+                            data-which={'normalized'}
+                            checked={this.state.aspects[i].normalized}/>                        
                     </div>
 
 
@@ -105,11 +131,20 @@ class Aspects extends Component {
                     </div>
                         
                     <div> Year: 
+                        <input
+                            type="text"
+                            onChange={onChange}
+                            data-k={i}
+                            data-which={'year'}
+                            defaultValue={aspects[i].year}/>
+                    </div>
+
+                    <div> Geometry: 
                         <select 
                             onChange={onChange}
                             data-k={i}
-                            data-which={'year'}>
-                            defaultValue={aspects[i].year}
+                            data-which={'geomYear'}
+                            defaultValue={aspects[i].geomYear}>
                         {this.props.availableCountries.filter((e)=>{
                             return(e.kind===aspects[i].country);
                           })[0].years.map((d)=>{
@@ -122,10 +157,7 @@ class Aspects extends Component {
                     </div>
 
                     <div>
-                        <p>Columns</p>
-                        <div>
-                            {columnsJSX}
-                        </div>
+                        {columnsJSX}
                     </div>
 
                 </div>);

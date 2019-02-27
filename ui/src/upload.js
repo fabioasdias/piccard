@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './upload.css';
 import FileUploadProgress  from 'react-fileupload-progress';
 //https://www.npmjs.com/package/react-fileupload-progress
-import {getURL} from './reducers';
+import {getURL} from './urls';
 // import ConfigWeights from './configWeights';
 
 class Upload extends Component {

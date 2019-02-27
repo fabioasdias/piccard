@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import './style.css';
 import { XYPlot, XAxis, YAxis, VerticalBarSeries} from 'react-vis';
-import { actionCreators, getURL } from './reducers';
+import { actionCreators } from './reducers';
+import {getURL } from './urls';
 import './detail.css';
 
 const mapStateToProps = (state) => ({

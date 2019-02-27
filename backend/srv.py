@@ -198,6 +198,18 @@ class server(object):
                         'layers':city['layers'],
                         })
         return(ret)
+    @cherrypy.expose
+    @cherrypy.config(**{'tools.cors.on': True})
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.gzip()
+    def createAspects(self):
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        input_json = cherrypy.request.json
+        print(input_json)
+        return({'msg':'it works'})
+
+
 
     @cherrypy.expose
     @cherrypy.config(**{'tools.cors.on': True})

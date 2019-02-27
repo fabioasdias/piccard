@@ -107,6 +107,7 @@ def _process_nhgis(nh,uploadDir,remoteIP):
 
         info={'id':id,
               'year':year,
+              'geomYear': year,
               'ip': str(remoteIP),
               'UTC' : str(datetime.utcnow()),
               'aspects': _infer_aspects_nhgis(df[year]),

@@ -1,10 +1,5 @@
 import clone from '@turf/clone';
 
-const baseURL=()=>{
-    return('http://localhost:8080/');
-    // return('http://142.1.190.14/ct/');// clr
-}
-
 export const selModes={
     SET:'Set',
     ADD:'Add',
@@ -74,24 +69,6 @@ export const actionCreators = {
     }
     
   };
-function findTraj(colours, traj, chain, usedYears, val){
-    for (let i=0; (i<traj.length); i++){
-        let allEq=traj[i].chain.length===chain.length;
-        for (let j=0;((allEq) &&(j<chain.length));j++){
-            if ((traj[i].chain[j]!==chain[j])||(traj[i].years[j]!==usedYears[j]))
-                allEq=false;
-        }
-        if (allEq) {            
-            if (traj[i].colour===undefined){
-                traj[i]={...traj[i],value:val,normal:'blue', faded:'lightgrey'};            
-            }else{
-                traj[i].value+=val;
-            }
-            return(i);
-        }
-    }
-    return(undefined);
-};
 
 export const reducer = (state={
                                 tID:[],
@@ -219,61 +196,11 @@ export const reducer = (state={
     }
 }
 
-
-export const requestType ={
-    SEGMENTATION : 'Segmentation',
-    COUNTRY_OPTIONS : 'CountryOptions',
-    PATH         : 'Path',
-    REGION_DETAILS : 'RegionDetails',
-    GEO_JSON       : 'GeoJSON',
-};
-
 export function toInt(d){
     return(parseInt(d,10));
 }
 
-export const getURL  = {
-    CountryOptions: () => {
-        return(baseURL()+'availableCountries');
-    },
-    RegionDetails: (countryID,displayID) => {
-        return(baseURL()+'getRegionDetails?countryID='+countryID+'&displayID='+displayID);
-    },
-    Upload: () => {
-        return(baseURL()+'upload');
-    },
-    Path: () => {
-        return(baseURL()+'getPath');
-    },
-    getUploadedData: () => {
-        return(baseURL()+'getUploadedData');
-    },
-    Segmentation: (country,vars,filters,weights) => {
-        let args=[];
-        if (country!==undefined){
-            args.push('countryID='+country);
-        }
-        if (vars!==undefined){
-            args.push('variables='+vars);
-        }
-        if (weights!==undefined){
-            args.push('weights='+weights);
-        }
-        if (filters!==undefined){
-            args.push('filters='+filters);
-        }
-        return(baseURL()+'getSegmentation?'+ args.join('&'));
-    }
-};
 
-export const getData = (url,actionThen) => {
-    fetch(url)
-    .then((response) => {
-      if (response.status >= 400) {throw new Error("Bad response from server");}
-      return response.json();
-    })
-    .then(actionThen);
-}
 export const getColour =(colours, id) => { //color brewer ftw
     return(getC(colours[id]));
   };
@@ -294,42 +221,3 @@ export const getClass = (labels, year, did) => {
         
 };
 
-export function requestPath(country,vars,filters,nodes) {
-    let args={};
-    if (country!==undefined){
-        args['countryID']=country;
-    }
-    if (vars!==undefined){
-        args['variables']=vars;
-    }
-    if (filters!==undefined){
-
-        args['filters']=filters;
-    }
-    if (nodes!==undefined){
-        args['nodes']=nodes;
-    }
-    console.log('path',args)
-    return function (dispatch) {
-        return fetch(getURL.Path(), {
-            body: JSON.stringify(args), // must match 'Content-Type' header
-            cache: 'no-cache', // *default, cache, reload, force-cache, only-if-cached
-            credentials: 'same-origin', // include, *omit
-            headers: {
-            'user-agent': 'Mozilla/4.0 MDN Example',
-            'content-type': 'application/json'
-            },
-            method: 'POST', // *GET, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *same-origin
-            redirect: 'follow', // *manual, error
-            referrer: 'no-referrer', // *client
-          }).then(
-            path => {
-                path.json().then((d)=> {//promise of a promise. really.
-                    dispatch(actionCreators.SetPath(d));
-                })
-            },
-            error => console.log('ERRORRRRR')
-        );
-    }
-}

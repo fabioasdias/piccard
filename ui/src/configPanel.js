@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { actionCreators, getData, getURL, toInt } from './reducers';
+import { actionCreators, toInt } from './reducers';
+import {getData, getURL} from './urls';
 import './configPanel.css';
 
 const mapStateToProps = (state) => ({
