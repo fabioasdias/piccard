@@ -21,7 +21,7 @@ from networkx.readwrite import json_graph
 from scipy.spatial.distance import pdist, sqeuclidean, squareform
 from sklearn.manifold import TSNE
 from dataStore import dataStore
-from upload import processUploadFolder, gatherInfoJsons
+from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
 HBINS=50
 
 
@@ -206,7 +206,11 @@ class server(object):
     def createAspects(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        print(input_json)
+        print()
+        create_aspect_from_upload(input_json,baseconf['upload'],countries)
+
+                
+
         return({'msg':'it works'})
 
 

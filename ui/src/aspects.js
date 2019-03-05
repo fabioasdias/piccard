@@ -22,13 +22,14 @@ class Aspects extends Component {
                                 console.log(data[i].aspects);
                                 for (let j=0;j<data[i].aspects.length;j++){
                                     asp.push({
-                                            enabled:true,
+                                            enabled:false,
                                             country:data[i].country,
                                             year:data[i].year,
                                             geomYear:data[i].geomYear,
                                             name:data[i].aspects[j][0].slice(0,3),
                                             normalized:false,
                                             fileID:data[i].id,
+                                            index:data[i].index,
                                             columns:data[i].aspects[j]});
                                     }
                             }
