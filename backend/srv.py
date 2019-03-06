@@ -15,12 +15,12 @@ import cherrypy
 import networkx as nx
 import tempfile
 
-from hierMWW import hierMWW
-from mmg import segmentation
+from hierMWW import ComputeClustering
+# from mmg import segmentation
 from networkx.readwrite import json_graph
-from scipy.spatial.distance import pdist, sqeuclidean, squareform
-from sklearn.manifold import TSNE
-from dataStore import dataStore
+# from scipy.spatial.distance import pdist, sqeuclidean, squareform
+# from sklearn.manifold import TSNE
+# from dataStore import dataStore
 from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
 HBINS=50
 
@@ -206,12 +206,9 @@ class server(object):
     def createAspects(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        print()
-        create_aspect_from_upload(input_json,baseconf['upload'],countries)
+        aspects=create_aspect_from_upload(input_json,baseconf['upload'],countries)
 
-                
-
-        return({'msg':'it works'})
+        return(aspects)
 
 
 

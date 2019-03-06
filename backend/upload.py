@@ -186,35 +186,40 @@ def gatherInfoJsons(jsondir):
     return(ret)
 
 def create_aspect_from_upload(aspects, uploadDir, countries):
+    ret=[]
     for aspect in aspects:
         if aspect['enabled']:
-            for c in countries:
-                if (c['kind']==aspect['country']):
-                    curCountry=c
-            # print(curCountry['raw'])
-            with open(join(uploadDir,aspect['fileID']+'.info.json')) as fin:
-                info=json.load(fin)
-            data=pd.read_csv(join(uploadDir, aspect['fileID']+'.tsv'), 
-                             sep='\t', dtype=info['dtypes'], 
-                             usecols=aspect['columns']+[aspect['index'],])
-            data=data.set_index([aspect['index'],])
+            try:
+                for c in countries:
+                    if (c['kind']==aspect['country']):
+                        curCountry=c
+                # print(curCountry['raw'])
+                with open(join(uploadDir,aspect['fileID']+'.info.json')) as fin:
+                    info=json.load(fin)
+                data=pd.read_csv(join(uploadDir, aspect['fileID']+'.tsv'), 
+                                sep='\t', dtype=info['dtypes'], 
+                                usecols=aspect['columns']+[aspect['index'],])
+                data=data.set_index([aspect['index'],])
 
-            #dict_keys(['enabled', 'country', 'year', 'geomYear', 
-            # 'name', 'normalized', 'fileID', 'columns'])
-            VarInfo={**aspect}
-            dtypes=dict(data.dtypes)
-            dtypes={k:str(dtypes[k]) for k in dtypes.keys()}
+                #dict_keys(['enabled', 'country', 'year', 'geomYear', 
+                # 'name', 'normalized', 'fileID', 'columns'])
+                VarInfo={**aspect}
+                dtypes=dict(data.dtypes)
+                dtypes={k:str(dtypes[k]) for k in dtypes.keys()}
 
-            VarInfo.update({'id':str(uuid4()), 
-                  'descriptions':{c:info['columns'][c] for c in aspect['columns']},
-                  'dtypes':dtypes,
-                  })
-            del(VarInfo['enabled'])
-            with open(join(curCountry['raw'],VarInfo['id']+'.tsv'),'w') as fout:
-                data.to_csv(fout, sep='\t')
-            print(VarInfo)
-            with open(join(curCountry['raw'],VarInfo['id']+'.info.json'),'w') as fout:
-                json.dump(VarInfo, fout)
+                VarInfo.update({'id':str(uuid4()), 
+                    'descriptions':{c:info['columns'][c] for c in aspect['columns']},
+                    'dtypes':dtypes,
+                    })
+                del(VarInfo['enabled'])
+                with open(join(curCountry['raw'],VarInfo['id']+'.tsv'),'w') as fout:
+                    data.to_csv(fout, sep='\t')
+                with open(join(curCountry['raw'],VarInfo['id']+'.info.json'),'w') as fout:
+                    json.dump(VarInfo, fout)
+                ret.append(VarInfo)
+            except:
+                pass
+    return(ret)
 
 
 
