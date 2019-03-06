@@ -201,8 +201,9 @@ class server(object):
                 if (n in G):
                     G.node[n]['data']=np.array(data.loc[gis_index].values)
             G=ComputeClustering(G,'data')
-            print('done')
-            exit()
+            with open(join(country['aspects'],aspect['id']+'_level.tsv'),'w') as flevel:
+                for e in G.edges():
+                    flevel.write('\t'.join(['{0}'.format(x) for x in [e[0],e[1],G[e[0]][e[1]]['level']]])+'\n')
 
         return(aspects)
 
