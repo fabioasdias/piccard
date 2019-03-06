@@ -15,15 +15,10 @@ import cherrypy
 import networkx as nx
 import tempfile
 
-from hierMWW import ComputeClustering
-# from mmg import segmentation
+from clustering import ComputeClustering
 from networkx.readwrite import json_graph
-# from scipy.spatial.distance import pdist, sqeuclidean, squareform
-# from sklearn.manifold import TSNE
-# from dataStore import dataStore
 from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
-HBINS=50
-
+import pandas as pd
 
 
 def cors():
@@ -42,19 +37,6 @@ cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
 
 def _doStats(V):
     return(np.nanmedian(V,axis=0),np.nanmin(V,axis=0),np.nanmax(V,axis=0),np.percentile(V,25,axis=0),np.percentile(V,75,axis=0))
-
-def _getD(dsconf, X):
-    def _parD(x):
-        return(squareform(pdist(x, 'cosine')))
-    w = dsconf['weights']
-    if len(w)==0:
-        return(np.atleast_2d([]))
-    N = X[0].shape[0]
-    D = np.zeros((N,N))
-    for i in range(len(dsconf['ivars'])):
-        D = D + w[i] * _parD(X[i])
-    return(D)
-
 
 def _createID(dsconf, useOnly=[]):
     ID = 'cache'
@@ -173,16 +155,6 @@ def _computeTrajectories(G, L, curCountry, corr):
 
 
 
-
-
-def _runAll(webapp, countryID):
-    ds = countries[countryID]['ds']
-    V = [x['id'] for x in ds.avVars()]
-    for i in range(1, len(V) + 1):
-        for cv in combinations(V, i):
-            webapp.getSegmentation(countryID=countryID, variables=','.join(['{0}'.format(x) for x in cv]))
-
-
 @cherrypy.expose
 class server(object):
     @cherrypy.expose
@@ -190,12 +162,11 @@ class server(object):
     def availableCountries(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
-        for i, city in enumerate(countries):
-            ret.append({'id': i, 
-                        'name': city['name'],
-                        'kind': city['kind'],
-                        'years': city['years'],
-                        'layers':city['layers'],
+        for c in enumerate(countries):
+            ret.append({'name':  c['name'],
+                        'kind':  c['kind'],
+                        'years': c['years'],
+                        'layers':c['layers']
                         })
         return(ret)
     @cherrypy.expose
@@ -207,6 +178,31 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         aspects=create_aspect_from_upload(input_json,baseconf['upload'],countries)
+
+        for aspect in aspects:
+            country=countries[aspect['country']]
+
+            H=country['basegraph']
+            strYear=str(aspect['geomYear'])
+
+            correct_nodes=[n for n in H.nodes() if n[0]==strYear]
+            G=H.subgraph(correct_nodes)            
+
+            data=pd.read_csv(join(country['raw'],aspect['id']+'.tsv'), 
+                             sep='\t', dtype=aspect['dtypes'])
+            data=data.set_index(aspect['index'])
+            ncols=len(data.columns)
+
+            for n in G.nodes():
+                G.node[n]['data']=np.array((ncols,))
+                            
+            for gis_index in data.index:
+                n=(strYear,gis_index)
+                if (n in G):
+                    G.node[n]['data']=np.array(data.loc[gis_index].values)
+            G=ComputeClustering(G,'data')
+            print('done')
+            exit()
 
         return(aspects)
 
@@ -572,7 +568,7 @@ if __name__ == '__main__':
         print(".py conf.json")
         exit(-1)
 
-    countries = []
+    countries = {}
     #freshly uploaded (and unconfigured) data goes here
     baseconf={'upload':'./upload'}
     if (not exists(baseconf['upload'])):
@@ -607,10 +603,10 @@ if __name__ == '__main__':
             makedirs(cData['raw'])
         if not exists(cData['aspects']):
             makedirs(cData['aspects'])
-        cData['ds'] = dataStore()
+        # cData['ds'] = dataStore()
         # cData['ds'].loadAndPrep(baseFolder, cData['basegraph'])
 
-        countries.append(cData)
+        countries[cData['kind']]=cData
         # webapp.getSegmentation(countryID=i)#,variables='1,3,5,6,7')
         # break
 

@@ -84,9 +84,6 @@ def ComputeClustering(G,layer):
     allVals=[]
     nToVisit=[]
 
-    pos={}
-    for n in G.nodes():
-        pos[n]=[G.node[n]['x'],G.node[n]['y']]
     for e in G.edges():
         G[e[0]][e[1]]['level']=-1
 

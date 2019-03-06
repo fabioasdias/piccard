@@ -190,10 +190,6 @@ def create_aspect_from_upload(aspects, uploadDir, countries):
     for aspect in aspects:
         if aspect['enabled']:
             try:
-                for c in countries:
-                    if (c['kind']==aspect['country']):
-                        curCountry=c
-                # print(curCountry['raw'])
                 with open(join(uploadDir,aspect['fileID']+'.info.json')) as fin:
                     info=json.load(fin)
                 data=pd.read_csv(join(uploadDir, aspect['fileID']+'.tsv'), 
@@ -212,9 +208,9 @@ def create_aspect_from_upload(aspects, uploadDir, countries):
                     'dtypes':dtypes,
                     })
                 del(VarInfo['enabled'])
-                with open(join(curCountry['raw'],VarInfo['id']+'.tsv'),'w') as fout:
+                with open(join(countries[aspect['country']]['raw'],VarInfo['id']+'.tsv'),'w') as fout:
                     data.to_csv(fout, sep='\t')
-                with open(join(curCountry['raw'],VarInfo['id']+'.info.json'),'w') as fout:
+                with open(join(countries[aspect['country']]['raw'],VarInfo['id']+'.info.json'),'w') as fout:
                     json.dump(VarInfo, fout)
                 ret.append(VarInfo)
             except:
