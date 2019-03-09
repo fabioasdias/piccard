@@ -20,7 +20,6 @@ from networkx.readwrite import json_graph
 from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
 import pandas as pd
 
-
 def cors():
   if cherrypy.request.method == 'OPTIONS':
     # preflign request 
@@ -162,11 +161,11 @@ class server(object):
     def availableCountries(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
-        for c in enumerate(countries):
+        for kind in countries:
+            c=countries[kind]
             ret.append({'name':  c['name'],
                         'kind':  c['kind'],
-                        'years': c['years'],
-                        'layers':c['layers']
+                        'geometries':c['geometries']
                         })
         return(ret)
     @cherrypy.expose
@@ -182,11 +181,7 @@ class server(object):
         for aspect in aspects:
             country=countries[aspect['country']]
 
-            H=country['basegraph']
-            strYear=str(aspect['geomYear'])
-
-            correct_nodes=[n for n in H.nodes() if n[0]==strYear]
-            G=H.subgraph(correct_nodes)            
+            G=country['graphs'][aspect['geometry']].copy()
 
             data=pd.read_csv(join(country['raw'],aspect['id']+'.tsv'), 
                              sep='\t', dtype=aspect['dtypes'])
@@ -194,12 +189,12 @@ class server(object):
             ncols=len(data.columns)
 
             for n in G.nodes():
-                G.node[n]['data']=np.array((ncols,))
-                            
-            for gis_index in data.index:
-                n=(strYear,gis_index)
-                if (n in G):
-                    G.node[n]['data']=np.array(data.loc[gis_index].values)
+                if n[1] in data.index:
+                    G.node[n]['data']=np.array(data.loc[n[1]].values)
+                else:
+                    G.node[n]['data']=np.empty((ncols,))
+                    G.node[n]['data'][:]=np.nan
+                                                
             G=ComputeClustering(G,'data')
             with open(join(country['aspects'],aspect['id']+'_level.tsv'),'w') as flevel:
                 for e in G.edges():
@@ -587,29 +582,26 @@ if __name__ == '__main__':
         cName = v['name']
         print('\n\n'+cName)
 
-        cData['basegraph'] = nx.read_gpickle(join(baseFolder,'basegraph.gp'))
+        G = nx.read_gpickle(join(baseFolder,'basegraph.gp'))
+        cData['graphs']={}
+        pos={}
+        for n in G.nodes():
+            pos[n]=[G.node[n]['pos'][0],G.node[n]['pos'][1]]
+        for g in cData['geometries']:
+            strYear=str(g['year'])
+            H=G.subgraph([n for n in G.nodes() if (n[0]==strYear)])
+            cData['graphs'][g['name']]=H
         
-        cData['i2n']={}
-        for n in cData['basegraph']:
-            cData['i2n'][cData['basegraph'].node[n]['nid']]=n
-        cData['years'] = sorted(v['years'])
+        cData['basegraph']=G
 
-        # with open(join(baseFolder,'basegraph.gp.tpaths'),'r') as fin:
-        #     cData['temporalPaths'] = json.load(fin)
-        # for ii,p in enumerate(cData['temporalPaths']):
-        #     cData['temporalPaths'][ii]=[tuple(n) for n in p]
         cData['raw']=join(baseFolder,'raw')
         cData['aspects']=join(baseFolder,'aspects')
         if not exists(cData['raw']):
             makedirs(cData['raw'])
         if not exists(cData['aspects']):
             makedirs(cData['aspects'])
-        # cData['ds'] = dataStore()
-        # cData['ds'].loadAndPrep(baseFolder, cData['basegraph'])
 
         countries[cData['kind']]=cData
-        # webapp.getSegmentation(countryID=i)#,variables='1,3,5,6,7')
-        # break
 
     webapp = server()
     conf = {

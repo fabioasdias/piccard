@@ -25,7 +25,7 @@ class NewMap extends Component {
       console.log(curCountryOptions)
       return (
         <Map 
-          layers={curCountryOptions.layers}
+          geometries={curCountryOptions.geometries}
           activeLayer={0}
           // className='mainMap'
           level={level}

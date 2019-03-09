@@ -25,9 +25,8 @@ class Aspects extends Component {
                                             enabled:false,
                                             country:data[i].country,
                                             year:data[i].year,
-                                            geomYear:data[i].geomYear,
+                                            geometry:data[i].geometry.name,
                                             name:data[i].aspects[j][0].slice(0,3),
-                                            normalized:false,
                                             fileID:data[i].id,
                                             index:data[i].index,
                                             columns:data[i].aspects[j]});
@@ -57,7 +56,7 @@ class Aspects extends Component {
                 if (which==='year'){
                     tarray[k][which]=parseInt(e.target.value,10);
                 }else{
-                    if ((which==='enabled')||(which==='normalized')){
+                    if (which==='enabled'){
                         tarray[k][which]=e.target.checked;
                     }
                     else{
@@ -86,6 +85,7 @@ class Aspects extends Component {
                         </div>)
                 }
                 console.log(aspects[i])
+                console.log('here',this.props.availableCountries)
                 retJSX.push(<div className="aspects">
                     <div>
                         <input 
@@ -104,16 +104,6 @@ class Aspects extends Component {
                             data-which={'name'}
                             defaultValue={this.state.aspects[i].name}/>                        
                     </div>
-
-                    <div> Normalized:
-                        <input 
-                            type="checkbox" 
-                            onChange={onChange}
-                            data-k={i}
-                            data-which={'normalized'}
-                            checked={this.state.aspects[i].normalized}/>                        
-                    </div>
-
 
                     <div> Country: 
                         <select 
@@ -144,15 +134,15 @@ class Aspects extends Component {
                         <select 
                             onChange={onChange}
                             data-k={i}
-                            data-which={'geomYear'}
-                            defaultValue={aspects[i].geomYear}>
+                            data-which={'geometry'}
+                            defaultValue={aspects[i].geometry}>
                         {this.props.availableCountries.filter((e)=>{
                             return(e.kind===aspects[i].country);
-                          })[0].years.map((d)=>{
+                          })[0].geometries.map((d)=>{
                             return(<option
-                                    value={d}
+                                    value={d.name}
                                 >
-                                {d}
+                                {d.name}
                             </option>)})}
                         </select>
                     </div>

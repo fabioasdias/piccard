@@ -107,7 +107,7 @@ def _process_nhgis(nh,uploadDir,remoteIP):
 
         info={'id':id,
               'year':year,
-              'geomYear': year,
+              'geometry': {'name': 'US_CT_{0}'.format(year)}, #check in conf.json
               'ip': str(remoteIP),
               'index': 'GISJOIN',
               'UTC' : str(datetime.utcnow()),
@@ -197,7 +197,7 @@ def create_aspect_from_upload(aspects, uploadDir, countries):
                                 usecols=aspect['columns']+[aspect['index'],])
                 data=data.set_index([aspect['index'],])
 
-                #dict_keys(['enabled', 'country', 'year', 'geomYear', 
+                #dict_keys(['enabled', 'country', 'year', 'geometry', 
                 # 'name', 'normalized', 'fileID', 'columns'])
                 VarInfo={**aspect}
                 dtypes=dict(data.dtypes)

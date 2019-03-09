@@ -123,7 +123,7 @@ let Map = class Map extends React.Component {
     // this.map.on('moveend',()=>{this.moving=false;});
 
     this.map.on('load', () => {
-      for (let layer of this.props.layers){
+      for (let layer of this.props.geometries){
         console.log(layer,'adding source',layer.year);
         this.map.addSource('s_'+layer.year, {
           type: 'vector',
