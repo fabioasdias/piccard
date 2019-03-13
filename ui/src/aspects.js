@@ -44,6 +44,26 @@ class Aspects extends Component {
                     }}>
                         Save aspects                    
                     </button>
+
+                    <button onClick={()=>{
+                        sendData(getURL.GetAspects(),{countryID:'US'},(d)=>{
+                            console.log('GetAspects', d)
+                        })
+                    }}>
+                        Get aspects                    
+                    </button>
+
+                    <button onClick={()=>{
+                        sendData(getURL.GetAspectComparison(),
+                            {countryID:'US', aspects:['a99afd8c-1170-41cd-82cf-066bb4d0c396',
+                                                      'f1aac678-cd63-433f-9a0d-515275dec1bc']},
+                            (d)=>{
+                            console.log('Comparison', d)
+                        })
+                    }}>
+                        Get Comparison    
+                    </button>
+
                 </div>);
 
 

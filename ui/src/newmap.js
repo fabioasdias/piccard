@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { actionCreators, toInt} from './reducers';
+import {sendData,getURL} from './urls';
 import Map from './glmap';
 
 
@@ -12,6 +13,19 @@ const mapStateToProps = (state) => ({
 
 
 class NewMap extends Component {
+  constructor(props){
+    super(props);
+    this.state={cmap:undefined};
+  }
+  componentDidMount(){
+    sendData(getURL.GetAspectComparison(),
+    {countryID:'US', aspects:['a99afd8c-1170-41cd-82cf-066bb4d0c396',
+                              'f1aac678-cd63-433f-9a0d-515275dec1bc']},
+    (d)=>{
+    this.setState({cmap:d});
+})
+
+  }
   render() {
     let {level,tID,dispatch,curCountryOptions}=this.props;
 
@@ -26,12 +40,12 @@ class NewMap extends Component {
       return (
         <Map 
           geometries={curCountryOptions.geometries}
-          activeLayer={0}
+          paintProp={'GISJOIN'}
           // className='mainMap'
-          level={level}
-          paintProp={'colour'}
-          onClick={doHighlight}
-          tids={tID}
+          // level={level}
+          cmap={this.state.cmap}
+          // onClick={doHighlight}
+          // tids={tID}
         />
         //   <Control
         //     position="bottomleft">

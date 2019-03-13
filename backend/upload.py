@@ -179,9 +179,12 @@ def gatherInfoJsons(jsondir):
     for f in glob(join(jsondir,'*.info.json')):
         with open(f,'r') as fin:
             data=json.load(fin)
-        del(data['dtypes'])
-        del(data['ip'])
-        del(data['UTC'])
+        if 'dtypes' in data:
+            del(data['dtypes'])
+        if 'ip' in data:
+            del(data['ip'])
+        if 'UTC' in data:
+            del(data['UTC'])
         ret.append(data)
     return(ret)
 

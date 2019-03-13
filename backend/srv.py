@@ -18,6 +18,7 @@ import tempfile
 from clustering import ComputeClustering
 from networkx.readwrite import json_graph
 from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
+from aspects import compareAspects, showAspect
 import pandas as pd
 
 def cors():
@@ -196,9 +197,7 @@ class server(object):
                     G.node[n]['data'][:]=np.nan
                                                 
             G=ComputeClustering(G,'data')
-            with open(join(country['aspects'],aspect['id']+'_level.tsv'),'w') as flevel:
-                for e in G.edges():
-                    flevel.write('\t'.join(['{0}'.format(x) for x in [e[0],e[1],G[e[0]][e[1]]['level']]])+'\n')
+            nx.write_gpickle(G,join(country['aspects'],aspect['id']+'.gp'))
 
         return(aspects)
 
@@ -232,273 +231,19 @@ class server(object):
         return(ret)
 
     @cherrypy.expose
+    @cherrypy.config(**{'tools.cors.on': True})
     @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
-    def getSegmentation(self, countryID, variables=None, weights=None):
-        """Returns a json containing the segmentation results considering the variables
-           The results are composed by the initial set of labels + the merges done at each level"""
+    def getAspectComparison(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        # cherrypy.request.config.update({'tools.sessions.timeout': 1200})
-        ret = dict()
+        input_json = cherrypy.request.json
+        countryID=input_json['countryID']
+        aspect1=input_json['aspects'][0]
+        aspect2=input_json['aspects'][1]
+        return(showAspect(countries[countryID],aspect1))
+        # return(compareAspects(countries[countryID],aspect1,aspect2))
 
-        dsconf = {}
-        curCountry = countries[int(countryID)]
-        ds = curCountry['ds']
-        basegraph = curCountry['basegraph']
-
-        if (variables):
-            ivars = np.array([int(x) for x in variables.split(',')])
-        else:
-            ivars = np.array([x['id'] for x in ds.avVars()])
-
-        rightOrder = np.argsort(ivars)
-        dsconf['ivars'] = ivars[rightOrder]
-
-        ret['dsconf']={'vars':dsconf['ivars'].tolist()} #easier to get back later
-
-        if (weights):
-            w = np.array([float(x) for x in weights.split(',')])
-            w = w[rightOrder]
-        else:
-            w = np.array([1.0, ] * len(ivars))
-
-        ret['dsconf']={'vars':dsconf['ivars'].tolist(),'w': w.tolist()} #easier to get back later
-
-        dsconf['weights'] = w/np.sum(w)
-
-        cID = _createID(dsconf)
-        # cacheName = join(curCountry['cache'], '/{0}.json'.format(cID))
-        # if (exists(cacheName)):
-        #     with open(cacheName, 'r') as fc:
-        #         buff = json.loads(fc.read())
-        #     return(buff)
-
-        G = basegraph.copy()
-
-        NaNs = []
-        for n in G:
-            for tVar in ds.getValue(n, dsconf):
-                if ((len(tVar) == 1) and (np.isnan(tVar[0]))) or ((len(tVar) > 1) and (np.sum(tVar) < 0.5)):
-                    NaNs.append(n)
-                    break
-        G.remove_nodes_from(NaNs)
-
-
-        ret['years'] = curCountry['years']
-
-        print('segmentation')
-        t0 = time()
-        X, NbI = ds.tabDataList(dsconf, G.nodes())
-        D = _getD(dsconf, X)
-
-        baseLabels, corr, clusterNodes = hierMWW(
-            D, G, NbI, dsconf, maxClusters=8)
-            
-        ret['levelCorr'] = corr
-        print(time() - t0)
-
-        print('traj')
-        t0 = time()        
-        ret['traj']= _computeTrajectories(G, baseLabels, curCountry, corr)
-        print(time() - t0)
-        print('display labels')
-        t0 = time()        
-
-        ret['labels'] = {}
-        for (y,CTID) in baseLabels:
-            if y not in ret['labels']:
-                ret['labels'][y]={}
-            ret['labels'][y][CTID]=baseLabels[(y,CTID)]
-        print(time() - t0)
-
-
-
-        print('temporal differences')
-        t0 = time()
-        tdsconf={**dsconf}
-        tdsconf['ivars']=np.array([x['id'] for x in ds.avVars()])
-        ret['basepath']=_TemporalDifferences(curCountry, tdsconf, G)
-        print(time() - t0)
-
-        print(time() - t0)
-        
-
-        print('cluster stats')
-        t0 = time()
-
-        Q = dict()
-        aspects=set()
-        for c in clusterNodes:
-            temp = {y:{} for y in curCountry['years']}
-            Q[c] = dict()
-            for n in clusterNodes[c]:
-                y=n[0]
-                cData = ds.getValue(n)
-                for i, v in enumerate(cData):
-                    if (i not in temp[y]):
-                        temp[y][i] = []
-                    aspects.add(i)
-                    temp[y][i].append(v)
-
-            for vi in aspects:
-                cTemp=[]
-                for y in temp:
-                    if (vi in temp[y]):
-                        cTemp=cTemp+temp[y][vi]
-                cTemp = np.array(cTemp).squeeze()
-                q1 = np.atleast_1d(np.percentile(cTemp, q=25, axis=0).squeeze()).tolist()
-                q3 = np.atleast_1d(np.percentile(cTemp, q=75, axis=0).squeeze()).tolist()
-                med = np.atleast_1d(np.percentile(cTemp, q=50, axis=0).squeeze()).tolist()
-
-
-                vmin = np.atleast_1d(np.amin(cTemp, axis=0).squeeze()).tolist()
-                vmax = np.atleast_1d(np.amax(cTemp, axis=0).squeeze()).tolist()
-                q1q3 = (np.array(q3) - np.array(q1))
-                H=dict()
-                for vv in range(cTemp.shape[1]):
-                    hh={}
-                    for y in temp:
-                        if (vi not in temp[y]):
-                            h=np.zeros((HBINS,)).tolist()
-                        else:
-                            curT=np.array(temp[y][vi])
-                            h,_=np.histogram(curT[:,vv],bins=HBINS,range=(0,1))
-                            h=h.astype(int).squeeze().tolist()
-                        hh[y]=h
-                    H[vv]=hh
-
-                Q[c][vi] = {'q1': q1,
-                            'q3': q3,
-                            'hist':H,
-                            'min': vmin,
-                            'max': vmax,
-                            'med': med,
-                            'q1q3': q1q3,
-                            'numel': len(clusterNodes[c]),
-                            'var': ds.getVarName(vi),
-                            'short': ds.getVarShortLabels(vi),
-                            'range': ds.getVarLabels(vi)}
-
-
-        AllOverlaps = dict()
-        importances = dict()
-        for lvl in range(len(corr)):
-            AllOverlaps[lvl] = dict()
-            importances[lvl] = dict()
-            tClusters = sorted(set(corr[lvl]))
-            # plt.figure()
-            for c1 in tClusters:
-                if (c1 not in importances[lvl]):
-                    importances[lvl][c1] = dict()
-
-                for v in Q[c1]:
-                    if (len(tClusters) == 1):
-                        importances[lvl][c1][v]=[1,]*len(Q[c1][v]['q3']) #nobody to compare
-                        continue
-
-                    # it would be faster if c2>c1, but then it would more complicated afterwards. This runs fast enough.
-                    for c2 in tClusters:
-                        if (c2 == c1):
-                            continue
-                        if (c1 not in AllOverlaps[lvl]):
-                            AllOverlaps[lvl][c1] = dict()
-                        if (c2 not in AllOverlaps[lvl][c1]):
-                            AllOverlaps[lvl][c1][c2] = dict()
-                        if (v not in AllOverlaps[lvl][c1][c2]):
-                            AllOverlaps[lvl][c1][c2][v] = (np.min([Q[c1][v]['q3'], Q[c2][v]['q3']], axis=0) - np.max(
-                                [Q[c1][v]['q1'], Q[c2][v]['q1']], axis=0)) #/ len(Q[c1][v]['q1'])
-
-                    overlaps = np.max([AllOverlaps[lvl][c1][c2][v]
-                                          for c2 in AllOverlaps[lvl][c1]], axis=0)
-                    # plt.plot(overlaps)
-                    importances[lvl][c1][v] = (-overlaps+1.0)/2.0 #overlap: -1 spread, 0 touch, 1 full overlap
-            # plt.show()
-            # if len(tClusters) > 1:
-            #     D = np.zeros((len(tClusters), len(tClusters)))
-            #     C2I = {c: i for i, c in enumerate(tClusters)}
-            #     for c1 in tClusters:
-            #         for c2 in tClusters:
-            #             if c2 <= c1:
-            #                 continue
-            #             D[C2I[c1]][C2I[c2]] = - np.sum(
-            #                 [np.sum(AllOverlaps[lvl][c1][c2][x]) for x in AllOverlaps[lvl][c1][c2]])
-
-            #     D = D + D.T - D.min()
-            #     for i in range(D.shape[0]):
-            #         D[i, i] = 0.0
-
-        ret['centroid'] = curCountry['centroid']
-
-        ret['patt'] = []
-        # impMin = dict()
-        # impMax = dict()
-        # for lvl in importances:
-        #     impMin[lvl] = dict()
-        #     impMax[lvl] = dict()
-        #     for c in importances[lvl]:
-        #         if (c == lastCluster):
-        #             continue
-        #         flVersion = []
-        #         for v in importances[lvl][c]:
-        #             flVersion.extend(importances[lvl][c][v])
-        #         flVersion = np.array(flVersion)
-        #         impMin[lvl][c] = np.amin(flVersion)
-        #         impMax[lvl][c] = np.amax(flVersion)
-
-        for c in clusterNodes:
-            V = []
-            names = []
-            for v in Q[c]:
-                cVar = []
-                for i in range(len(Q[c][v]['q1'])):
-                    importance = []
-                    for lvl in importances:
-                        if c in importances[lvl]:
-                            importance.append(importances[lvl][c][v][i])
-                                # (importances[lvl][c][v][i] - impMin[lvl][c]) / abs(impMax[lvl][c] - impMin[lvl][c]))
-                        else:
-                            importance.append(-1.0)
-                                #  'y': (Q[c][v]['q1'][i] + Q[c][v]['q3'][i]) / 2.0,
-                    cVar.append({'xx': i,
-                                 'hist': Q[c][v]['hist'][i],
-                                 'y': Q[c][v]['med'][i],
-                                 'yMin': Q[c][v]['min'][i],
-                                 'yMax': Q[c][v]['max'][i],
-                                 'yQ1': Q[c][v]['q1'][i],
-                                 'yQ3': Q[c][v]['q3'][i],
-                                 'importance': importance,
-                                 'x': Q[c][v]['short'][i]
-                                 })
-
-                V.append(cVar)
-                names.append(Q[c][v]['var'])
-
-            ret['patt'].append({'id': c, 'variables': V, 'names': names})#, 'gmetric': _GeoMetric(basegraph,clusterNodes[c])})
-
-        print(time() - t0)
-
-        print('colours')
-        colours = dict()
-        used = dict()
-        colours[0] = dict()
-        for j, c in enumerate(sorted(set(corr[0]))):
-            used[c] = j
-            colours[0][c] = j
-        for level in range(1, len(corr)):
-            colours[level] = dict()
-            for c in set(corr[level]):
-                if (c not in used):
-                    newColour = list(
-                        set(range(len(corr[0]))) - set([used[x] for x in corr[level] if x != c]))[0]
-                    used[c] = newColour
-                colours[level][c] = used[c]
-        ret['colours'] = colours
-
-        ret['conf'] = [{"var": ds.getVarName(dsconf['ivars'][i]), 'w':w[i]} for i in range(len(dsconf['ivars']))]
-
-        # with open(cacheName, 'w') as fc:
-        #     json.dump(ret,fc)
-        return(ret)
 
     @cherrypy.expose
     def index(self):
@@ -511,6 +256,18 @@ class server(object):
     def getUploadedData(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         return(gatherInfoJsons(baseconf['upload']))
+
+
+    @cherrypy.expose
+    @cherrypy.config(**{'tools.cors.on': True})
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.gzip()
+    def getAspects(self):
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        input_json = cherrypy.request.json
+        countryID=input_json['countryID']
+        return(gatherInfoJsons(countries[countryID]['raw']))
 
 
     @cherrypy.expose

@@ -32,7 +32,9 @@ export const requestType ={
     COUNTRY_OPTIONS : 'CountryOptions',
     PATH         : 'Path',
     REGION_DETAILS : 'RegionDetails',
-    CREATE_ASPECT : 'CreateAspects'
+    CREATE_ASPECT : 'CreateAspects',
+    GET_ASPECTS : 'GetAspects',
+    COMPARE_ASPECTS: 'GetAspectComparison'
 };
 export const getData = (url,actionThen) => {
     fetch(url)
@@ -46,6 +48,12 @@ export const getData = (url,actionThen) => {
 export const getURL  = {
     CountryOptions: () => {
         return(baseURL()+'availableCountries');
+    },
+    GetAspectComparison: () => {
+        return(baseURL()+'getAspectComparison');
+    },
+    GetAspects: () => {
+        return(baseURL()+'getAspects');
     },
     RegionDetails: (countryID,displayID) => {
         return(baseURL()+'getRegionDetails?countryID='+countryID+'&displayID='+displayID);

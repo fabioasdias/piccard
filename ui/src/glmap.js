@@ -17,9 +17,9 @@ let Map = class Map extends React.Component {
   //   data: PropTypes.object.isRequired,
   // };
 
-  // componentDidUpdate() {
-  //   this.setFill();
-  // }
+  componentDidUpdate() {
+    this.setFill();
+  }
 
   // componentWillUpdate(nextProps, nextState) {
   //   let bounds;
@@ -106,6 +106,7 @@ let Map = class Map extends React.Component {
     console.log(this.props)
     this.map = new mapboxgl.Map({
       container: this.mapContainer,
+      zoom: 5,
       style: 'mapbox://styles/mapbox/light-v9'
     });
 
@@ -138,9 +139,8 @@ let Map = class Map extends React.Component {
           'layout': {
             'visibility': layer.visibility
             },
-          paint:{'fill-color':'blue'},
+          // paint:{'fill-color':'blue'},
         }, 'country-label-lg'); 
-
       }
 
       // this.map.addLayer({
@@ -174,11 +174,45 @@ let Map = class Map extends React.Component {
       //   this.map.getCanvas().style.cursor = 'pointer';
       // });
 
-      // this.setFill();
+      this.setFill();
 
       // this.map.fitBounds(bounds);
       this.setState({'map':this.map});
     });
+  }
+
+  setFill(){
+    if (this.props.cmap!==undefined){
+      console.log(this.props.cmap);
+      for (let layer of this.props.geometries){
+        this.map.setPaintProperty('l_'+layer.year, 
+        'fill-color', [
+          'case',
+          [
+            'has',
+            ['to-string', ['get', this.props.paintProp]],
+            [
+              'literal',
+              this.props.cmap
+            ]
+          ],
+          ["interpolate",
+            ["linear"], 
+            [
+              'get',
+              ['to-string', ['get', this.props.paintProp]],
+              [
+                'literal',
+                this.props.cmap
+              ]
+            ],
+          0, 'green',
+          1, 'red',
+          ],
+          'white'
+        ]);
+      }  
+    }    
   }
 
   // setFill() {
