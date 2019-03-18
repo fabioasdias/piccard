@@ -100,10 +100,10 @@ class indexedPols:
 
     def getProps(self,polID):
         return(self._properties[polID])
-    def getProperty(self,polID,prop='CT_ID'):
+    def getProperty(self,polID,prop='Geom_ID'):
         return(self._properties[polID][prop])
 
-    def iterIDGeom(self,idfield='CT_ID'):
+    def iterIDGeom(self,idfield='Geom_ID'):
         """Returns a generator that goes over the geometries, 
            returning them along the property named by idfield"""
         for i in range(len(self._pols)):
