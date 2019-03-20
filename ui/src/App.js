@@ -36,7 +36,7 @@ function getParams(location) {
 class App extends Component {
   constructor(props){
     super(props);
-    this.state={showLoading:true,showAdvancedConfig:false}
+    this.state={showLoading:true,showAdvancedConfig:true}
   }
   render() {
     let retJSX=[];

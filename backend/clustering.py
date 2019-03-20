@@ -13,19 +13,22 @@ import matplotlib.pylab as plt
 NBINS=100
 
 def _clusterDistance(G,C1,C2,layer):
+    if np.any(np.isnan(C1['histogram'])) or np.any(np.isnan(C2['histogram'])):
+        return(1)
+
     h1=C1['histogram']
     s1=np.sum(h1)
     if (s1>0):
         h1=h1/s1
-
-    C1=np.cumsum(h1)
+    X1=np.cumsum(h1)
+    
     h2=C2['histogram']
     s2=np.sum(h2)
     if (s2>0):
         h2=h2/s2
-    C2=np.cumsum(h2)
+    X2=np.cumsum(h2)
 
-    D=np.sum(np.abs(C1-C2))/NBINS
+    D=np.sum(np.abs(X1-X2))/NBINS
     return(D)
 
 
@@ -65,7 +68,7 @@ def _createHist(vals,minVal,maxVal):
 
 def ComputeClustering(G,layer):
     """This function changes the graph G"""
-    print('start CC')
+    # print('start CC')
     e2i={}
     i2e={}
     i=0
@@ -115,7 +118,7 @@ def ComputeClustering(G,layer):
     level=0
 
     while (NE>0):
-        print('-----------------\n\nlevel ',level)
+        # print('-----------------\n\nlevel ',level)
 
         level+=1
 
@@ -145,10 +148,7 @@ def ComputeClustering(G,layer):
             break
 
         quantileThreshold=np.percentile(dv,25)
-        print('QT {0:2.3f} (min:{1:2.3f}, max:{2:2.3f}, median:{3:2.3f}'.format(quantileThreshold,np.min(dv),np.max(dv),np.median(dv)))
-
-
-        print('Weights done',len(H))
+        # print('Weights done',len(H))
         to_merge = []
         used = {}
         el=[]
@@ -164,7 +164,7 @@ def ComputeClustering(G,layer):
                 used[y['id']]=True
                 to_merge.append((x,y))
 
-        print('merge selection done: {0} clusters to merge '.format(len(used)))
+        # print('merge selection done: {0} clusters to merge '.format(len(used)))
 
         removedEdges=0
         for (x,y) in to_merge:
@@ -181,9 +181,9 @@ def ComputeClustering(G,layer):
                 NE-=1
                     
             Union(x,y)
-        print('merging done', removedEdges)
+        # print('merging done', removedEdges)
 
 
         roots=set([Find(G.node[x])['id'] for x in G.nodes()])
-        print('level {0} #clusters {1}'.format(level,len(roots)))
+        print('level {0} #clusters {1}'.format(level,len(roots))+'QT {0:2.3f} (min:{1:2.3f}, max:{2:2.3f}, median:{3:2.3f})'.format(quantileThreshold,np.min(dv),np.max(dv),np.median(dv)))
     return(G)

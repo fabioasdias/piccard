@@ -16,10 +16,10 @@ class Aspects extends Component {
                     <button 
                     onClick={()=>{
                         getData(getURL.getUploadedData(),(data)=>{
-                            console.log(data);
+                            console.log('answer',data);
                             let asp=[];
                             for (let i=0;i<data.length;i++){
-                                console.log(data[i].aspects);
+                                console.log('data[i].aspects',data[i].aspects);
                                 for (let j=0;j<data[i].aspects.length;j++){
                                     asp.push({
                                             enabled:false,
@@ -32,6 +32,7 @@ class Aspects extends Component {
                                             columns:data[i].aspects[j]});
                                     }
                             }
+                            console.log(data,asp);
                             this.setState({files:data,aspects:asp});
                         });                
                     }}>
@@ -89,8 +90,10 @@ class Aspects extends Component {
             for (let i=0;i<aspects.length;i++){
                 let columnsJSX=[];
                 let curFile=files.filter((f)=>{
-                    return(aspects[i].id===f.fileID);
+                    // console.log(i,f.id,aspects[i].fileID);
+                    return(aspects[i].fileID===f.id);
                 })[0];
+                // console.log(i,curFile);
                 let curCols=curFile.columns;
 
                 columnsJSX.push(<div style={{'display':'flex','fontWeight': 'bold'}}>
@@ -104,8 +107,6 @@ class Aspects extends Component {
                         <div style={{'marginLeft':'auto'}}>{curFile.samples[aspects[i].columns[j]]}</div>
                         </div>)
                 }
-                console.log(aspects[i])
-                console.log('here',this.props.availableCountries)
                 retJSX.push(<div className="aspects">
                     <div>
                         <input 

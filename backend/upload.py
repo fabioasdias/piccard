@@ -198,7 +198,7 @@ def create_aspect_from_upload(aspects, uploadDir, countries):
                 data=pd.read_csv(join(uploadDir, aspect['fileID']+'.tsv'), 
                                 sep='\t', dtype=info['dtypes'], 
                                 usecols=aspect['columns']+[aspect['index'],])
-                data=data.set_index([aspect['index'],])
+                data=data.set_index([aspect['index'],]).dropna(how='all')
 
                 #dict_keys(['enabled', 'country', 'year', 'geometry', 
                 # 'name', 'normalized', 'fileID', 'columns'])
@@ -217,6 +217,7 @@ def create_aspect_from_upload(aspects, uploadDir, countries):
                     json.dump(VarInfo, fout)
                 ret.append(VarInfo)
             except:
+                print('problem with ',aspect)
                 pass
     return(ret)
 

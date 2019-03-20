@@ -1,20 +1,19 @@
 import sys
 import networkx as nx
 import fiona
-from util import indexedPols
+from util import indexedPols, crossGeomFileName
+from os.path import join
 from shapely.geometry import shape   
 import geojson
 import json
+from datetime import datetime
 
-def _crossGeomFileName(name1,name2):
-    minName=min([name1,name2])
-    maxName=max([name1,name2])
-    return('{0}_2_{1}.gp'.format(minName,maxName))
+
 
 
 if __name__ == '__main__':
     nargs=len(sys.argv)
-    if (nargs<8) or ((nargs-2)%3)==0:
+    if (nargs<8) or ((nargs-2)%3)!=0:
         print(".py outputfolder PK1 geomName1 shp1 PK2 geomName2 shp2...")
         exit(-1)
 
@@ -39,11 +38,12 @@ if __name__ == '__main__':
         #if it can't find gcs.csv, $> declare -x GDAL_DATA="/usr/share/gdal"
         with fiona.open(shps[i], 'r') as source:
             for feat in source:
-                geo[bGeom].insertJSON(G=feat['geometry'],props={'Geom_ID':feat['properties'][field],})
+                geo[bGeom].insertJSON(G=feat['geometry'],props={'Geom_ID':feat['properties'][fields[i]],})
 
 
-    for ign,thisbGeom in baseGeometries:
+    for ign,thisbGeom in enumerate(baseGeometries):
         for nextbGeom in baseGeometries[ign+1:]:
+            print(thisbGeom, nextbGeom)
 
             B = nx.Graph()
             for tid,tgeom in geo[thisbGeom].iterIDGeom('Geom_ID'):
@@ -58,4 +58,6 @@ if __name__ == '__main__':
             print('edges',len(B.edges()))
                         
             print('saving')
-            nx.write_gpickle(B,_crossGeomFileName(thisbGeom,nextbGeom))
+            nx.write_gpickle(B,join(outName, _crossGeomFileName(thisbGeom,nextbGeom)))
+    with open(join(outName,'cross.done'),'w') as fout: #just a "file flag" for makefile
+        fout.write(datetime.now())

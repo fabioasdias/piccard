@@ -17,15 +17,14 @@ class NewMap extends Component {
     super(props);
     this.state={cmap:undefined};
   }
-  componentDidMount(){
-    sendData(getURL.GetAspectComparison(),
-    {countryID:'US', aspects:['a99afd8c-1170-41cd-82cf-066bb4d0c396',
-                              'f1aac678-cd63-433f-9a0d-515275dec1bc']},
-    (d)=>{
-    this.setState({cmap:d});
-})
-
-  }
+  // componentDidMount(){
+  //       sendData(getURL.GetAspectComparison(),
+  //       {countryID:'US', aspects:['a99afd8c-1170-41cd-82cf-066bb4d0c396',
+  //                                 'f1aac678-cd63-433f-9a0d-515275dec1bc']},
+  //       (d)=>{
+  //       this.setState({cmap:d});
+  //   });
+  // }
   render() {
     let {level,tID,dispatch,curCountryOptions}=this.props;
 

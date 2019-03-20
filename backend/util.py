@@ -11,6 +11,12 @@ from geojson import Feature, FeatureCollection
 from copy import deepcopy
 import json
 
+def crossGeomFileName(name1,name2):
+    minName=min([name1,name2])
+    maxName=max([name1,name2])
+    return('{0}_2_{1}.gp'.format(minName,maxName))
+
+
 def polOnly(geom):
     if (not geom) or ('Polygon' not in geom.type):
         if ('Collection' in geom.geom_type):
