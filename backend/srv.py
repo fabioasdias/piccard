@@ -116,8 +116,9 @@ class server(object):
     def learnPredictions(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
+        print(input_json)
         return(learnPredictions(countries[input_json['countryID']],
-                input_json['aspects'][0],input_json['aspects'][1]))
+                input_json['from'],input_json['to']))
 
 
     @cherrypy.expose
