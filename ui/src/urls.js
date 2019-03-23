@@ -34,7 +34,8 @@ export const requestType ={
     REGION_DETAILS : 'RegionDetails',
     CREATE_ASPECT : 'CreateAspects',
     GET_ASPECTS : 'GetAspects',
-    COMPARE_ASPECTS: 'GetAspectComparison'
+    COMPARE_ASPECTS: 'GetAspectComparison',
+    LEARN_PREDICTIONS: 'LearnPredictions'
 };
 export const getData = (url,actionThen) => {
     fetch(url)
@@ -48,6 +49,9 @@ export const getData = (url,actionThen) => {
 export const getURL  = {
     CountryOptions: () => {
         return(baseURL()+'availableCountries');
+    },
+    LearnPredictions: () => {
+        return(baseURL()+'learnPredictions')
     },
     GetAspectComparison: () => {
         return(baseURL()+'getAspectComparison');
