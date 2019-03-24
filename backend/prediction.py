@@ -18,16 +18,8 @@ def _hierMerge(G1:nx.Graph, G2: nx.Graph, X :nx.Graph = None, level:str='level')
             H[e[0]][e[1]][level]=max([H[e[0]][e[1]][level],G2[e[0]][e[1]][level]])
     else:
         for e in H.edges():
-            maxYet=H[e[0]][e[1]][level]
-
-            for n1 in X.neighbors(e[0]):
-                for n2 in X.neighbors(e[1]):
-                    if nx.has_path(G2,n1,n2):
-                        for p in nx.all_shortest_paths(G2,n1,n2):
-                            g2p=G2.subgraph(p)
-                            maxYet=max([maxYet,]+[x[2] for x in g2p.edges(data=level)])
-
-            H[e[0]][e[1]][level]=maxYet
+            g2p=G2.subgraph(list(X.neighbors(e[0]))+list(X.neighbors(e[1])))
+            H[e[0]][e[1]][level]=max([H[e[0]][e[1]][level],]+[x[2] for x in g2p.edges(data=level)])
     return(H)
         
 
@@ -96,30 +88,15 @@ def learnPredictions(conf:dict, FromAspects:list, ToAspects:list) -> dict:
 
     print('all Rs ready')
 
+    matches=[]
+
     for GF in nx.connected_component_subgraphs(RF):
         otherside=[]
         for n in GF.nodes():
             otherside.extend(X.neighbors(n))
 
         GT = max(nx.connected_component_subgraphs(nx.subgraph(RT,otherside)), key=len)
-        if (nx.number_connected_components(GT)!=1):
-            # GT=nx.subgraph(T,otherside)
-            posF={}
-            for n in GF:
-                posF[n]=GF.node[n]['pos'][:2]
-            posT={}
-            for n in GT:
-                posT[n]=GT.node[n]['pos'][:2]
-
-            plt.figure()
-            nx.draw(GF,pos=posF)
-            plt.figure()
-            nx.draw(GT,pos=posT)
-            print('NOT')
-            print(len(GF),len(GF.edges()),nx.number_connected_components(GF))
-            print(len(GT),len(GT.edges()),nx.number_connected_components(GT))
-            plt.show()
-            input('.')
+        matches.append([list(GF.nodes()),list(GT.nodes())])
             
 
 
