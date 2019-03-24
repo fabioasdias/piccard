@@ -11,22 +11,23 @@ def _hierMerge(G1:nx.Graph, G2: nx.Graph, X :nx.Graph = None, level:str='level')
     """Merge two different hierarchies represented by G1 and G2. 
        Cross geometry represented by X. Level is the data label associated 
        with the edge representing the hierarchical level of joining (0-1)"""
+
     H=G1.copy()
     if (X is None):
         for e in H.edges():
             H[e[0]][e[1]][level]=max([H[e[0]][e[1]][level],G2[e[0]][e[1]][level]])
     else:
         for e in H.edges():
-            g2p=G2.subgraph(list(X.neighbors(e[0]))+list(X.neighbors(e[1])))
-            if (len(g2p.edges())>0):
-                try:
-                    H[e[0]][e[1]][level]=max([H[e[0]][e[1]][level],max([x[2] for x in g2p.edges(data=level)])])
-                except:
-                    print(e)
-                    print(g2p.nodes())
-                    print([x[2] for x in g2p.edges(data=level)])
-                    input('.')
-                    raise
+            maxYet=H[e[0]][e[1]][level]
+
+            for n1 in X.neighbors(e[0]):
+                for n2 in X.neighbors(e[1]):
+                    if nx.has_path(G2,n1,n2):
+                        for p in nx.all_shortest_paths(G2,n1,n2):
+                            g2p=G2.subgraph(p)
+                            maxYet=max([maxYet,]+[x[2] for x in g2p.edges(data=level)])
+
+            H[e[0]][e[1]][level]=maxYet
     return(H)
         
 
@@ -49,7 +50,7 @@ def _mergeAll(conf:dict,aspects:list,aspectInfo:dict)->nx.Graph:
             F=G
         else:
             curGeometry=aspectInfo[a]['geometry']
-            if (curGeometry!=lastGeometry):
+            if (curGeometry!=lastGeometry): #pylint: disable=used-before-assignment
                 X=nx.read_gpickle(join(conf['folder'],crossGeomFileName(curGeometry,lastGeometry)))
             else:
                 X=None
@@ -67,9 +68,13 @@ def learnPredictions(conf:dict, FromAspects:list, ToAspects:list) -> dict:
             aspectInfo[a]=possibles[0]
     del(temp)
 
+    print('starting merges From')
+
     #merge "projects" everyone into the first geom on the list
     F=_mergeAll(conf,FromAspects,aspectInfo)
     FG=aspectInfo[FromAspects[0]]['geometry']
+
+    print('starting merges To')
 
     T=_mergeAll(conf,ToAspects,aspectInfo)
     TG=aspectInfo[ToAspects[0]]['geometry']
@@ -79,18 +84,56 @@ def learnPredictions(conf:dict, FromAspects:list, ToAspects:list) -> dict:
     else:
         X=None
 
-    R=_hierMerge(F,T,X)
+    print('final merges')
+    #resulting hierarchy using both geometries as base
+    RF=_hierMerge(F,T,X)
+    RT=_hierMerge(T,F,X)
 
-    pos={}
-    for n in R:
-        pos[n]=R.node[n]['pos'][0:2]
-
-    nx.draw_networkx_nodes(R,pos,node_size=5)
-    E=list(R.edges())
-    W=[10*R[e[0]][e[1]]['level'] for e in E]
-    nx.draw_networkx_edges(R,pos,edgelist=E,width=W)
-    plt.show()
+    print('removing >0.5')
     
-    return({})
+    RF.remove_edges_from([e[:2] for e in RF.edges(data='level') if (e[2]>0.5)])
+    RT.remove_edges_from([e[:2] for e in RT.edges(data='level') if (e[2]>0.5)])
+
+    print('all Rs ready')
+
+    for GF in nx.connected_component_subgraphs(RF):
+        otherside=[]
+        for n in GF.nodes():
+            otherside.extend(X.neighbors(n))
+
+        GT = max(nx.connected_component_subgraphs(nx.subgraph(RT,otherside)), key=len)
+        if (nx.number_connected_components(GT)!=1):
+            # GT=nx.subgraph(T,otherside)
+            posF={}
+            for n in GF:
+                posF[n]=GF.node[n]['pos'][:2]
+            posT={}
+            for n in GT:
+                posT[n]=GT.node[n]['pos'][:2]
+
+            plt.figure()
+            nx.draw(GF,pos=posF)
+            plt.figure()
+            nx.draw(GT,pos=posT)
+            print('NOT')
+            print(len(GF),len(GF.edges()),nx.number_connected_components(GF))
+            print(len(GT),len(GT.edges()),nx.number_connected_components(GT))
+            plt.show()
+            input('.')
+            
+
+
+
+
+
+    res={}
+    N=nx.number_connected_components(RF)
+    S=[]
+    for i,GG in enumerate(nx.connected_component_subgraphs(RF)):
+        S.append(len(GG))
+        for n in GG:
+            res[n[1]]=i/N
+
+    return(res)
     # G1=nx.read_gpickle(crossGeomFileName(aspectInfo[a1],aspectInfo[a2]))
     
