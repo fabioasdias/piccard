@@ -23,7 +23,7 @@ def _hierMerge(G1:nx.Graph, G2: nx.Graph, X :nx.Graph = None, level:str='level')
     return(H)
         
 
-def _getMaxLevel(G:nx.Graph,level:str='level')-> int:
+def _getMaxLevel(G:nx.Graph, level:str='level')-> int:
     return(max([x[2] for x in G.edges(data=level)]))
 
 def _read_and_normalize(PickledGraphPath:str, level:str='level')->nx.Graph:
@@ -51,25 +51,36 @@ def _mergeAll(conf:dict,aspects:list,aspectInfo:dict)->nx.Graph:
         lastGeometry=aspectInfo[a]['geometry']                
     return(F)
 
-def learnPredictions(conf:dict, FromAspects:list, ToAspects:list) -> dict:
+def mapHierarchies(conf:dict, aspects:list, threshold:float=0.5) -> dict:
+    """
+    conf: base configuration from srv.py
+    aspects: list of list of aspects (hierarchies) [ [a1,a2], [a3,a4], ] 
+    threshold: where to cut the resulting hierarchies
+
+    This function will merge the aspects in the sublists and compare them across the lists
+    """
+    if len(aspects)<2:
+        print('mapHierarchies - need at least 2 geometries/bases')
+        return({})
+        
     temp=gatherInfoJsons(conf['raw'])
     aspectInfo={}
-    for a in FromAspects+ToAspects:
-        possibles=[x for x in temp if (x['id']==a)]
-        if possibles:
-            aspectInfo[a]=possibles[0]
+    for sublist in aspects:
+        for a in sublist:
+            possibles=[x for x in temp if (x['id']==a)]
+            if possibles:
+                aspectInfo[a]=possibles[0]
     del(temp)
 
     print('starting merges From')
 
+    geoms=[]
+    merged=[]
     #merge "projects" everyone into the first geom on the list
-    F=_mergeAll(conf,FromAspects,aspectInfo)
-    FG=aspectInfo[FromAspects[0]]['geometry']
+    for sublist in aspects:
+        merged.append(_mergeAll(conf,sublist,aspectInfo))
+        geoms.append(aspectInfo[sublist[0]]['geometry'])
 
-    print('starting merges To')
-
-    T=_mergeAll(conf,ToAspects,aspectInfo)
-    TG=aspectInfo[ToAspects[0]]['geometry']
     
     if (TG!=FG):
         X=nx.read_gpickle(join(conf['folder'],crossGeomFileName(TG,FG)))
@@ -83,8 +94,8 @@ def learnPredictions(conf:dict, FromAspects:list, ToAspects:list) -> dict:
 
     print('removing >0.5')
     
-    RF.remove_edges_from([e[:2] for e in RF.edges(data='level') if (e[2]>0.5)])
-    RT.remove_edges_from([e[:2] for e in RT.edges(data='level') if (e[2]>0.5)])
+    RF.remove_edges_from([e[:2] for e in RF.edges(data='level') if (e[2]>threshold)])
+    RT.remove_edges_from([e[:2] for e in RT.edges(data='level') if (e[2]>threshold)])
 
     print('all Rs ready')
 

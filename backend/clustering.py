@@ -186,5 +186,5 @@ def ComputeClustering(G,layer):
 
 
         roots=set([Find(G.node[x])['id'] for x in G.nodes()])
-        print('level {0} #clusters {1}'.format(level,len(roots))+'QT {0:2.3f} (min:{1:2.3f}, max:{2:2.3f}, median:{3:2.3f})'.format(quantileThreshold,np.min(dv),np.max(dv),np.median(dv)))
+        print('level {0} #clusters {1} '.format(level,len(roots))+'QT {0:2.3f} (min:{1:2.3f}, max:{2:2.3f}, median:{3:2.3f})'.format(quantileThreshold,np.min(dv),np.max(dv),np.median(dv)))
     return(G)

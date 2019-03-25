@@ -19,7 +19,7 @@ from clustering import ComputeClustering
 from networkx.readwrite import json_graph
 from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
 from aspects import compareAspects, showAspect
-from hierarchies import learnPredictions
+from hierarchies import mapHierarchies
 import pandas as pd
 
 def cors():
@@ -113,11 +113,11 @@ class server(object):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
-    def learnPredictions(self):
+    def mapHierarchies(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         print(input_json)
-        return(learnPredictions(countries[input_json['countryID']],
+        return(mapHierarchies(countries[input_json['countryID']],
                 input_json['from'],input_json['to']))
 
 

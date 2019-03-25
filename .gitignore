@@ -1,0 +1,13 @@
+ui/node_modules*
+ui/build*
+backend/US
+backend/data
+backend/upload
+*.tex.bak
+*.pyc
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+sup/sup.pdf
