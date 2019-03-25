@@ -19,7 +19,7 @@ from clustering import ComputeClustering
 from networkx.readwrite import json_graph
 from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
 from aspects import compareAspects, showAspect
-from prediction import learnPredictions
+from hierarchies import learnPredictions
 import pandas as pd
 
 def cors():

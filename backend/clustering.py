@@ -12,6 +12,7 @@ import matplotlib.pylab as plt
 
 NBINS=100
 
+
 def _clusterDistance(G,C1,C2,layer):
     if np.any(np.isnan(C1['histogram'])) or np.any(np.isnan(C2['histogram'])):
         return(1)
