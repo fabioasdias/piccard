@@ -1,4 +1,4 @@
-from upload import gatherInfoJsons
+from upload import gatherInfoJsons_AsDict
 from os.path import join
 import networkx as nx
 from util import crossGeomFileName
@@ -44,7 +44,7 @@ def _read_and_normalize(PickledGraphPath:str, level:str='level')->nx.Graph:
 def _mergeAll(conf:dict,aspects:list,aspectInfo:dict)->nx.Graph:
     F=None
     for a in aspects:
-        G=_read_and_normalize(join(conf['aspects'],a+'.gp'))
+        G=_read_and_normalize(join(conf['data'],a+'.gp'))
         
         if F is None:
             F=G
@@ -71,7 +71,7 @@ def mapHierarchies(conf:dict, aspects:list, threshold:float=0.5) -> dict:
         print('mapHierarchies - need at least 2 geometries/bases')
         return({})
 
-    temp=gatherInfoJsons(conf['raw'])
+    temp=gatherInfoJsons_AsDict(conf['data'])
     aspectInfo={}
     for sublist in aspects:
         for a in sublist:
@@ -117,32 +117,32 @@ def mapHierarchies(conf:dict, aspects:list, threshold:float=0.5) -> dict:
 
     for i in range(len(final)):
         final[i].remove_edges_from([e[:2] for e in final[i].edges(data='level') if (e[2]>threshold)])
+        for cc, n in nx.connected_components(final[i]):
+            final[i].node[n]['cc']=cc
+            final[i].node[n]['used']=False
     
 
-
-    matches=[]
-
-    for GF in nx.connected_component_subgraphs(RF):
-        otherside=[]
-        for n in GF.nodes():
-            otherside.extend(X.neighbors(n))
-
-        GT = max(nx.connected_component_subgraphs(nx.subgraph(RT,otherside)), key=len)
-        matches.append([list(GF.nodes()),list(GT.nodes())])
+    paths=[]
+    for i in range(len(final)):
+        if (i!=(len(final)-1)):
+            curX=X[crossGeomFileName(geoms[i],geoms[i+1])]
             
 
+        todo=[n for n in final[i].nodes() if not final[i].node[n]['used']]
+        while todo:
+            cpath=todo.pop(0)
+            options=[]
 
+            if (i!=(len(final)-1)):
+                options=curX.neighbors(cpath[-1])
 
-
-
-    res={}
-    N=nx.number_connected_components(RF)
-    S=[]
-    for i,GG in enumerate(nx.connected_component_subgraphs(RF)):
-        S.append(len(GG))
-        for n in GG:
-            res[n[1]]=i/N
-
-    return(res)
-    # G1=nx.read_gpickle(crossGeomFileName(aspectInfo[a1],aspectInfo[a2]))
+            if not options:
+                paths.append(cpath)
+                print(cpath)
+            else:
+                for op in options:
+                    final[i+1].node[op]['used']=True
+                    todo.append(cpath+[op,])
+    return({})
+    
     

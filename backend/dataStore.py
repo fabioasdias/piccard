@@ -1,137 +1,60 @@
-from scipy.stats import skew
-from os.path import exists
+from os.path import exists, join
 import numpy as np
-from util import geoJsons
-from copy import deepcopy
-from scipy.spatial.distance import sqeuclidean
-
-def _norm(X):
-    if (len(X)==1):
-        return(X)
-    sX=np.sum(X)
-    if (sX>0):
-        ret=X/sX
-    else:
-        ret=np.zeros_like(X)
-    return(ret)
-def _varDist(v1, v2):
-    if len(v1)==1:
-        return(sqeuclidean(v1,v2))
-    else:
-        return(1-np.sum(np.sqrt(np.multiply(v1,v2))))
+import pandas as pd
+import json
 
 
 class dataStore(object):
-    def __init__(self):
-        self._avVars=[]       # variables included
-        self._nodes=[]        # list of nodes (year,rid)
-        self._rawdata=dict()  # raw data
-        self._normdata=dict() # normalized data
-        self._rowByVarID={}   # row ranges for each var
-        self._varById={}      # variable name (key) by varID
-        self._distCache={}    # cache of computed distances
-
-    def avVars(self):
-        return(self._avVars)
-    def getVarName(self,varInd):
-        return(self._avVars[varInd]['name'])
-    def getVarLabels(self,varInd):
-        return(self._avVars[varInd]['labels'])    
-    def getVarShortLabels(self,varInd):
-        return(self._avVars[varInd]['short'])    
-    def getRaw(self,n):
-        return(list(self._rawdata[n].values()))
-    def getPopulation(self,n):
-        return(self._rawdata[n]['Population']['values'][0])
-    def getValue(self, n, dsconf=None):
-        """If dsconf==None, returns all variables, original data, in the avVars order"""
-        if (dsconf):
-            ivars=dsconf['ivars']
-        else:
-            ivars=[v['id'] for v in self._avVars]
-
-        ret=[]
-        for i in range(len(ivars)):
-            r=self._rowByVarID[ivars[i]]
-            ret.append(self._tabdata[self._IDbyN[n],r[0]:r[1]])
-        return(ret)
-    def distance(self, node1, node2, dsconf):
-        ivars=dsconf['ivars']
+    def __init__(self, folder:str):
+        self._aspects=[]   # aspects included
+        self._info={}
+        self._data={}  # raw data
+        self._folder=folder # data folder
         
-        kid=' '.join(['{0}'.format(x) for x in ivars])
-        if (kid not in self._distCache):
-            self._distCache[kid]={}
-        n1=min((node1,node2))
-        n2=max((node1,node2))
-        if (n1 not in self._distCache[kid]):
-            self._distCache[kid][n1]={}
-        
-        if (n2 in self._distCache[kid][n1]):
-            return(self._distCache[kid][n1][n2])
+    def _check_and_read(self,aspectID:str) -> None:
+        """
+        Checks if a given aspect is in memory, reads it from disk otherwise
+        """
+        if (aspectID not in self._info):
+            infoFile=join(self._folder,'{0}.info.json'.format(aspectID))
+            tableFile=join(self._folder,'{0}.tsv'.format(aspectID))
+            if (not exists(infoFile)) or (not exists(tableFile)):
+                print("Trying to read non-existent aspect ",aspectID)
+                return
 
-        ind=[]
-        for i in ivars:
-            r=self._rowByVarID[i]
-            for t in range(r[0],r[1]):
-                ind.append(t)
+            with open(infoFile,'r') as fin:
+                self._info[aspectID]=json.load(fin)
+            self._data[aspectID]=pd.read_csv(tableFile, 
+                                sep='\t', dtype=self._info[aspectID]['dtypes'], 
+                                usecols=self._info[aspectID]['columns']+[self._info[aspectID]['index'],])
+            self._data[aspectID]=self._data[aspectID].set_index([self._info[aspectID]['index'],]).dropna(how='all')
 
-        res=[]
-        for i in range(len(ivars)):
-            val1=self._normdata[n1][self._varById[ivars[i]]]['values']
-            val2=self._normdata[n2][self._varById[ivars[i]]]['values']
-            res.append(_varDist(val1,val2))
-        res=sum(res)/len(ivars)
-        self._distCache[kid][n1][n2]=res
-        return(res)
-    def read(self,gjzip):
-        """reads a zipped set of geojsons. Use loadAndPrep instead!"""
-        with geoJsons(gjzip) as gj:
-            for year, cgj in gj:
-                for feat in cgj['features']:
-                    rid = feat['properties']['CT_ID']
-                    n=(year,rid)              
-                    self._rawdata[n]=dict()
-                    self._nodes.append(n)
-                    for v in feat['properties']['variables']:
-                        self._rawdata[n][v['name']]=v
-        self._varById=dict()
-        self._avVars=[]
 
-        tVar=self._rawdata[self._nodes[0]]
-        for i,vName in enumerate(sorted([x for x in tVar if tVar[x]['type']!='internal'])):
-            V=tVar[vName]
-            self._avVars.append({'id':i, 
-                                 'name':V['name'],
-                                 'labels':V['labels'],
-                                 'short':V['short'], 
-                                 'type':V['type']})
+    def aspects(self)->list:
+        return(self._aspects)
 
-        for V in self._avVars:
-            self._varById[V['id']]=V['name']        
-    def normalize(self):
-        self._normdata=deepcopy(self._rawdata)
-        divs=dict()
+    def getAspectName(self, aspectID:str) -> str:
+        self._check_and_read(aspectID)
+        return(self._info[aspectID]['name'])
 
-        for n in self._nodes:
-            for v in self._rawdata[n]:
-                if (v not in divs):
-                    if (len(self._rawdata[n][v]['values'])==1): #scalar data
-                        divs[v]=max([1,]+[self._rawdata[nn][v]['values'][0] for nn in self._nodes])
-                        print('Max {0}-{1}'.format(self._rawdata[n][v]['name'],divs[v]))
-                    else:   
-                        divs[v]=1.0
-                self._normdata[n][v]['values']=[x/divs[v] for x in _norm(self._rawdata[n][v]['values'])]
-            #     print('-------',self._normdata[n][v]['name'],self._rawdata[n][v]['values'],self._normdata[n][v]['values'])
-            # input('.')
+    def getGeometry(self, aspectID:str) -> str:
+        self._check_and_read(aspectID)
+        return(self._info[aspectID]['geometry'])
 
-        self._buildtabdata()
-    def clean(self,basegraph):
-        for n in self._nodes:
-            for v in self._rawdata[n]:
-                for j,val in enumerate(self._rawdata[n][v]['values']):
-                        if (isinstance(val,str)):
-                            self._rawdata[n][v]['values'][j]=np.float('NaN')
-    def loadAndPrep(self,gjzip,basegraph):
-        self.read(gjzip)
-        self.clean(basegraph)
-        self.normalize()
+    def getColumns(self,aspectID:str) -> list:
+        self._check_and_read(aspectID)
+        return(self._info[aspectID]['columns'])    
+
+    def getDescriptions_AsDict(self,aspectID:str) -> dict:
+        self._check_and_read(aspectID)
+        return(self._info[aspectID]['descriptions'])    
+
+    def getDescriptions_AsList(self,aspectID:str) -> list:
+        self._check_and_read(aspectID)
+        return([self._info[aspectID]['descriptions'][x] for x in self._info[aspectID]['columns']])    
+
+
+    def getData(self, aspectID:str, id:any) -> list:
+        self._check_and_read(aspectID)
+        return(list(self._data[aspectID].loc[id]))
+

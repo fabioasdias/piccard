@@ -21,6 +21,7 @@ from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_uplo
 from aspects import compareAspects, showAspect
 from hierarchies import mapHierarchies
 import pandas as pd
+from dataStore import dataStore
 
 def cors():
   if cherrypy.request.method == 'OPTIONS':
@@ -75,7 +76,7 @@ class server(object):
 
             G=country['graphs'][aspect['geometry']].copy()
 
-            data=pd.read_csv(join(country['raw'],aspect['id']+'.tsv'), 
+            data=pd.read_csv(join(country['data'],aspect['id']+'.tsv'), 
                              sep='\t', dtype=aspect['dtypes'])
             data=data.set_index(aspect['index'])
             ncols=len(data.columns)
@@ -89,7 +90,7 @@ class server(object):
             print(aspect['name'])                                    
             G=ComputeClustering(G,'data')
             print('Done ', aspect)
-            nx.write_gpickle(G,join(country['aspects'],aspect['id']+'.gp'))
+            nx.write_gpickle(G,join(country['data'],aspect['id']+'.gp'))
 
         return(aspects)
 
@@ -103,8 +104,8 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         countryID=input_json['countryID']
-        aspect1=input_json['aspects'][0]
-        aspect2=input_json['aspects'][1]
+        aspect1=input_json['data'][0]
+        aspect2=input_json['data'][1]
         return(showAspect(countries[countryID],aspect1))
         # return(compareAspects(countries[countryID],aspect1,aspect2))
 
@@ -118,7 +119,7 @@ class server(object):
         input_json = cherrypy.request.json
         print(input_json)
         return(mapHierarchies(countries[input_json['countryID']],
-                input_json['from'],input_json['to']))
+                input_json['aspects']))
 
 
     @cherrypy.expose
@@ -143,7 +144,7 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         countryID=input_json['countryID']
-        return(gatherInfoJsons(countries[countryID]['raw']))
+        return(gatherInfoJsons(countries[countryID]['data']))
 
 
     @cherrypy.expose
@@ -197,13 +198,10 @@ if __name__ == '__main__':
         for geom in v['geometries']:
             cData['graphs'][geom['name']]=nx.read_gpickle(join(v['folder'],geom['name']+'.gp'))
         
-        cData['raw']=join(baseFolder,'raw')
-        cData['aspects']=join(baseFolder,'aspects')
-        if not exists(cData['raw']):
-            makedirs(cData['raw'])
-        if not exists(cData['aspects']):
-            makedirs(cData['aspects'])
-
+        cData['data']=join(baseFolder,'data')
+        if not exists(cData['data']):
+            makedirs(cData['data'])
+        cData['ds']=dataStore(cData['data'])
         countries[cData['kind']]=cData
 
     webapp = server()
@@ -214,10 +212,10 @@ if __name__ == '__main__':
             'tools.gzip.on': True,
             'tools.gzip.mime_types': ['text/*','application/*']
         },
-        '/public': {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': './public'
-        }
+        # '/public': {
+        #     'tools.staticdir.on': True,
+        #     'tools.staticdir.dir': './public'
+        # }
     }
     cherrypy.server.max_request_body_size = 0 #for upload
     cherrypy.server.socket_host = '0.0.0.0'

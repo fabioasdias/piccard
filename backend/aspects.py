@@ -1,19 +1,14 @@
-from upload import gatherInfoJsons
+from upload import gatherInfoJsons_AsDict
 from os.path import join
 import networkx as nx
 
 def compareAspects(conf,a1,a2):
-    temp=gatherInfoJsons(conf['raw'])
-    aspectInfo={}
+    aspectInfo=gatherInfoJsons_AsDict(conf['data'])
     graphs={}
     maxLevel={}
     for a in [a1,a2]:
         maxLevel[a]=0
-
-        possibles=[x for x in temp if (x['id']==a)]
-        if possibles:
-            aspectInfo[a]=possibles[0]
-        graphs[a]=nx.read_gpickle(join(conf['aspects'],a+'.gp'))
+        graphs[a]=nx.read_gpickle(join(conf['data'],a+'.gp'))
         for e in graphs[a].edges():
             maxLevel[a]=max([maxLevel[a],graphs[a][e[0]][e[1]]['level']])
     
@@ -41,15 +36,11 @@ def compareAspects(conf,a1,a2):
     return(res)
 
 def showAspect(conf,a):
-    temp=gatherInfoJsons(conf['raw'])
-    aspectInfo={}
+    aspectInfo=gatherInfoJsons_AsDict(conf['data'])
     maxLevel={}
     maxLevel=0
 
-    possibles=[x for x in temp if (x['id']==a)]
-    if possibles:
-        aspectInfo[a]=possibles[0]
-    G=nx.read_gpickle(join(conf['aspects'],a+'.gp'))
+    G=nx.read_gpickle(join(conf['data'],a+'.gp'))
     for e in G.edges():
         maxLevel=max([maxLevel,G[e[0]][e[1]]['level']])
     

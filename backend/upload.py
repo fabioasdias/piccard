@@ -55,7 +55,9 @@ def _infer_aspects_nhgis(df):
     ret=[]
 
     cols=df.columns
-    prefixes=list(set([x[:3] for x in cols if (len(x)==6) and all([y.isdigit() for y in x[4:]]) ]))
+    #2010 starts to get different!
+    prefixes=list(set([x[:3] for x in cols if ((len(x)==6) and all([y.isdigit() for y in x[4:]]))]))
+    prefixes=prefixes+list(set([x[:4] for x in cols if ((len(x)==7) and all([y.isdigit() for y in x[5:]])) ]))    
     for p in prefixes:
         ret.append([x for x in cols if x.startswith(p)])
 
@@ -173,6 +175,19 @@ def processUploadFolder(tempDir,uploadDir,remoteIP):
                 
     return(ret)
 
+def gatherInfoJsons_AsDict(jsondir):
+    ret={}
+    for f in glob(join(jsondir,'*.info.json')):
+        with open(f,'r') as fin:
+            data=json.load(fin)
+        if 'dtypes' in data:
+            del(data['dtypes'])
+        if 'ip' in data:
+            del(data['ip'])
+        if 'UTC' in data:
+            del(data['UTC'])
+        ret[data['id']]=data
+    return(ret)
     
 def gatherInfoJsons(jsondir):
     ret=[]
@@ -211,9 +226,9 @@ def create_aspect_from_upload(aspects, uploadDir, countries):
                     'dtypes':dtypes,
                     })
                 del(VarInfo['enabled'])
-                with open(join(countries[aspect['country']]['raw'],VarInfo['id']+'.tsv'),'w') as fout:
+                with open(join(countries[aspect['country']]['data'],VarInfo['id']+'.tsv'),'w') as fout:
                     data.to_csv(fout, sep='\t')
-                with open(join(countries[aspect['country']]['raw'],VarInfo['id']+'.info.json'),'w') as fout:
+                with open(join(countries[aspect['country']]['data'],VarInfo['id']+'.info.json'),'w') as fout:
                     json.dump(VarInfo, fout)
                 ret.append(VarInfo)
             except:

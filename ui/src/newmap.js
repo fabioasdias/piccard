@@ -21,11 +21,12 @@ class NewMap extends Component {
     sendData(getURL.LearnPredictions(),
       {
           countryID:'US', 
-          from:['37565672-939c-4f1b-9d97-b5c324d631af', //ed
-                '59370c7f-edf6-4911-aa6f-404dd8249e6a'], //marit s
-          to: ['450af207-7502-4902-a89d-0359efd2b40e', //ed
-              'a4fabb78-aad5-4894-80f1-99ffba6a9d3b'//income
-              ]
+          aspects:[ ['198264d5-307d-499d-9732-f1ff8153f268',],
+                    ['1dcb4801-4ef5-4cdc-a15b-4cc4b4c3f0c1',],
+                    ['3a619ce0-bd26-440d-afca-c14a3ff842ed',],
+                    ['2efeaa77-9fef-4c5b-9a79-3575f624abf1',],
+                    ['507c76db-20e5-40d8-8775-e2771393f58e',]
+                  ]
       },
       (d)=>{this.setState({cmap:d});}
     );

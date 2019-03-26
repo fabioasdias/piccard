@@ -35,7 +35,7 @@ export const requestType ={
     CREATE_ASPECT : 'CreateAspects',
     GET_ASPECTS : 'GetAspects',
     COMPARE_ASPECTS: 'GetAspectComparison',
-    LEARN_PREDICTIONS: 'LearnPredictions'
+    MAP_HIERARCHIES: 'mapHierarchies'
 };
 export const getData = (url,actionThen) => {
     fetch(url)
@@ -50,8 +50,8 @@ export const getURL  = {
     CountryOptions: () => {
         return(baseURL()+'availableCountries');
     },
-    LearnPredictions: () => {
-        return(baseURL()+'learnPredictions')
+    mapHierarchies: () => {
+        return(baseURL()+'mapHierarchies')
     },
     GetAspectComparison: () => {
         return(baseURL()+'getAspectComparison');
