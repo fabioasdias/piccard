@@ -2,15 +2,23 @@ from upload import gatherInfoJsons
 from os.path import join
 import networkx as nx
 from util import crossGeomFileName
-
+from itertools import combinations
 
 import matplotlib.pylab as plt
 
 
 def _hierMerge(G1:nx.Graph, G2: nx.Graph, X :nx.Graph = None, level:str='level') -> nx.Graph:
-    """Merge two different hierarchies represented by G1 and G2. 
-       Cross geometry represented by X. Level is the data label associated 
-       with the edge representing the hierarchical level of joining (0-1)"""
+    """
+    Merges two different hierarchies represented by G1 and G2. 
+    Cross geometry represented by X. Level is the data label associated 
+    with the edge representing the hierarchical level of joining (0-1).
+    -> Always returns a new graph.
+    """
+
+    if (G1 is None) and (G2 is not None):
+        return(G2.copy())
+    if (G1 is not None) and (G2 is None):
+        return(G1.copy())
 
     H=G1.copy()
     if (X is None):
@@ -62,7 +70,7 @@ def mapHierarchies(conf:dict, aspects:list, threshold:float=0.5) -> dict:
     if len(aspects)<2:
         print('mapHierarchies - need at least 2 geometries/bases')
         return({})
-        
+
     temp=gatherInfoJsons(conf['raw'])
     aspectInfo={}
     for sublist in aspects:
@@ -82,22 +90,35 @@ def mapHierarchies(conf:dict, aspects:list, threshold:float=0.5) -> dict:
         geoms.append(aspectInfo[sublist[0]]['geometry'])
 
     
-    if (TG!=FG):
-        X=nx.read_gpickle(join(conf['folder'],crossGeomFileName(TG,FG)))
-    else:
-        X=None
+    X={}
+    for g1,g2 in combinations(set(geoms)):
+        X[crossGeomFileName(g1,g2)]=nx.read_gpickle(join(conf['folder'],crossGeomFileName(g1,g2)))
 
+    #holds the resulting hierarchy on each original geometry
     print('final merges')
-    #resulting hierarchy using both geometries as base
-    RF=_hierMerge(F,T,X)
-    RT=_hierMerge(T,F,X)
+    final=[]
+    for i,g1 in enumerate(geoms):
+        backwards = None
+        forwards = None
+        
+        if i != (len(geoms)-1):
+            backwards = merged[-1]
+            for j in range(len(geoms)-2,i-1,-1):
+                backwards = _hierMerge(merged[j], backwards, X[crossGeomFileName(geoms[j],geoms[j+1])])
 
-    print('removing >0.5')
+        if i != 0:
+            forwards = merged[0]
+            for j in range(1, i+1):
+                forwards = _hierMerge(merged[j], forwards, X[crossGeomFileName(geoms[j],geoms[j-1])])
+
+        final.append(_hierMerge(backwards, forwards)) #same geometry, no cross needed
+
+    print('removing >',threshold)
+
+    for i in range(len(final)):
+        final[i].remove_edges_from([e[:2] for e in final[i].edges(data='level') if (e[2]>threshold)])
     
-    RF.remove_edges_from([e[:2] for e in RF.edges(data='level') if (e[2]>threshold)])
-    RT.remove_edges_from([e[:2] for e in RT.edges(data='level') if (e[2]>threshold)])
 
-    print('all Rs ready')
 
     matches=[]
 
