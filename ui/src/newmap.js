@@ -18,7 +18,7 @@ class NewMap extends Component {
     this.state={cmap:undefined};
   }
   componentDidMount(){
-    sendData(getURL.LearnPredictions(),
+    sendData(getURL.mapHierarchies(),
       {
           countryID:'US', 
           aspects:[ ['198264d5-307d-499d-9732-f1ff8153f268',],

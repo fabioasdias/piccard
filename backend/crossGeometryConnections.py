@@ -8,8 +8,7 @@ import geojson
 import json
 from datetime import datetime
 
-
-
+import matplotlib.pylab as plt
 
 if __name__ == '__main__':
     nargs=len(sys.argv)
@@ -42,11 +41,22 @@ if __name__ == '__main__':
 
 
     for ign,thisbGeom in enumerate(baseGeometries):
+        pos={}
         for nextbGeom in baseGeometries[ign+1:]:
             print(thisbGeom, nextbGeom)
 
             B = nx.Graph()
+            #adds all possible nodes (also on the next for)
+            for tid,tgeom in geo[nextbGeom].iterIDGeom('Geom_ID'):
+                B.add_node((nextbGeom,tid))
+                point=tgeom.representative_point()
+                pos[(nextbGeom,tid)]=[point.x+0.001,point.y+0.001]
+
             for tid,tgeom in geo[thisbGeom].iterIDGeom('Geom_ID'):
+                B.add_node((thisbGeom,tid))
+                point=tgeom.representative_point()
+                pos[(thisbGeom,tid)]=[point.x,point.y]
+
                 for polID in geo[nextbGeom].search(shape(tgeom).buffer(-1e-6)):   
                     matched=geo[nextbGeom].getPolygon(polID) 
                     nID=geo[nextbGeom].getProperty(polID,'Geom_ID')
@@ -56,8 +66,12 @@ if __name__ == '__main__':
                         B.add_edge((thisbGeom, tid),(nextbGeom, nID))
 
             print('edges',len(B.edges()))
-                        
+
+            nx.draw(B,pos=pos,nodelist=[x for x in B.nodes() if x[0]==thisbGeom],node_size=5,node_color='red')
+            nx.draw(B,pos=pos,nodelist=[x for x in B.nodes() if x[0]==nextbGeom],node_size=5,node_color='blue')
+            plt.show()
+
             print('saving')
-            nx.write_gpickle(B,join(outName, _crossGeomFileName(thisbGeom,nextbGeom)))
+            nx.write_gpickle(B,join(outName, crossGeomFileName(thisbGeom,nextbGeom)))
     with open(join(outName,'cross.done'),'w') as fout: #just a "file flag" for makefile
-        fout.write(datetime.now())
+        fout.write(' ')
