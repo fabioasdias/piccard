@@ -1,0 +1,10 @@
+numpy
+cherrypy
+networkx
+scipy
+python-magic
+pandas
+geojson
+rtree
+shapely
+matplotlib
