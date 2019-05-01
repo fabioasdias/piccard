@@ -20,6 +20,16 @@ let Map = class Map extends React.Component {
   componentDidUpdate() {
     this.setFill();
   }
+  componentWillReceiveProps(props){
+    let ids=Object.keys(props.cmap);
+    let cMin = props.cmap[ids[0]];
+    let cMax = props.cmap[ids[0]];
+    for (let i=1; i<ids.length;i++){
+      cMin=Math.min(cMin,props.cmap[ids[i]]);
+      cMax=Math.max(cMax,props.cmap[ids[i]]);
+    }
+    this.setState({minCC:cMin,maxCC:cMax});
+  }
 
   // componentWillUpdate(nextProps, nextState) {
   //   let bounds;
@@ -125,7 +135,7 @@ let Map = class Map extends React.Component {
 
     this.map.on('load', () => {
       for (let layer of this.props.geometries){
-        console.log(layer,'adding source',layer.year);
+        // console.log(layer,'adding source',layer.year);
         this.map.addSource('s_'+layer.year, {
           type: 'vector',
           url: 'mapbox://'+layer.url,
@@ -183,7 +193,7 @@ let Map = class Map extends React.Component {
 
   setFill(){
     if (this.props.cmap!==undefined){
-      console.log(this.props.cmap);
+      // console.log(this.props.cmap);
       for (let layer of this.props.geometries){
         this.map.setPaintProperty('l_'+layer.year, 
         'fill-color', [
@@ -206,8 +216,8 @@ let Map = class Map extends React.Component {
                 this.props.cmap
               ]
             ],
-          0, 'green',
-          1, 'red',
+          this.state.minCC, 'green',
+          this.state.maxCC, 'red',
           ],
           'white'
         ]);

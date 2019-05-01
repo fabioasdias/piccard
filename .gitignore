@@ -11,3 +11,4 @@ backend/upload
 *.log
 *.out
 sup/sup.pdf
+backend/env

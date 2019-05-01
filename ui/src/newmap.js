@@ -28,44 +28,21 @@ class NewMap extends Component {
                     ['507c76db-20e5-40d8-8775-e2771393f58e',]
                   ]
       },
-      (d)=>{this.setState({cmap:d});}
+      (d)=>{this.setState({cmap:d["US_CT_1990"]});}
     );
   }
   render() {
-    let {level,tID,dispatch,curCountryOptions}=this.props;
-
-    let doHighlight = (d) => {
-      let dtid=toInt(d.features["0"].properties.tID);
-      dispatch(actionCreators.SetTID(dtid));
-    }
-
+    let {dispatch,curCountryOptions}=this.props;
     
     if (curCountryOptions!==undefined){
-      console.log(curCountryOptions)
+      console.log(curCountryOptions);
+      console.log('-',this.state.cmap)
       return (
         <Map 
           geometries={curCountryOptions.geometries}
           paintProp={'GISJOIN'}
-          // className='mainMap'
-          // level={level}
           cmap={this.state.cmap}
-          // onClick={doHighlight}
-          // tids={tID}
         />
-        //   <Control
-        //     position="bottomleft">
-        //     <div key='clearSels'>            
-        //      <button 
-        //         key={'clearBtn'}
-        //         disabled={!(((selClassYear!==undefined)&&(selClassYear.length>0))||(selTID>=0))}
-        //         onClick={(e) => {
-        //             dispatch(actionCreators.SelectClassYear(undefined));
-        //             dispatch(actionCreators.SetHighlightChain(-1));
-        //         }}>                 
-        //         Clear selection
-        //      </button>
-        //     </div>
-        //   </Control>
       );
     }
     else
