@@ -72,13 +72,14 @@ def _mergeAll(conf: dict, aspects: list, aspectInfo: dict) -> nx.Graph:
     return(F)
 
 
-def mapHierarchies(conf: dict, aspects: list, threshold: float = 0.5) -> dict:
+def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0.2]) -> dict:
     """
     conf: base configuration from srv.py
     aspects: list of list of aspects (hierarchies) [ [a1,a2], [a3,a4], ] 
-    threshold: where to cut the resulting hierarchies
-
-    This function will merge the aspects in the sublists and compare them across the lists
+    thresholds: _lists_ of cutting points for the normalized hierarchies.
+    
+    This function will merge the aspects in the sublists returning the connected
+    components for each in their original geometries.
     """
     if len(aspects) < 2:
         print('mapHierarchies - need at least 2 geometries/bases')
@@ -125,21 +126,18 @@ def mapHierarchies(conf: dict, aspects: list, threshold: float = 0.5) -> dict:
         # same geometry, no cross needed
         final.append(_hierMerge(backwards, forwards))
 
-    print('removing >', threshold)
-
-    for i in range(len(final)):
-        final[i].remove_edges_from(
-            [e[:2] for e in final[i].edges(data='level') if (e[2] > threshold)])
-        for cc, nodes in enumerate(nx.connected_components(final[i])):
-            for n in nodes:
-                final[i].node[n]['cc'] = cc
-
     ret={}
     for i, g in enumerate(geoms):
         ret[g]={}
         for n in final[i]:
-            print(n)
-            ret[g][n[1]]=final[i].node[n]['cc']
+            ret[g][n[1]]=[]
+
+    for threshold in thresholds:
+        for i in range(len(final)):
+            final[i].remove_edges_from([e[:2] for e in final[i].edges(data='level') if (e[2] > threshold)])
+            for cc, nodes in enumerate(nx.connected_components(final[i])):
+                for n in nodes:
+                    ret[g][n[1]].append(cc)
 
     return(ret)
 

@@ -20,16 +20,16 @@ let Map = class Map extends React.Component {
   componentDidUpdate() {
     this.setFill();
   }
-  componentWillReceiveProps(props){
-    let ids=Object.keys(props.cmap);
-    let cMin = props.cmap[ids[0]];
-    let cMax = props.cmap[ids[0]];
-    for (let i=1; i<ids.length;i++){
-      cMin=Math.min(cMin,props.cmap[ids[i]]);
-      cMax=Math.max(cMax,props.cmap[ids[i]]);
-    }
-    this.setState({minCC:cMin,maxCC:cMax});
-  }
+  // componentWillReceiveProps(props){
+  //   let ids=Object.keys(props.cmap);
+  //   let cMin = props.cmap[ids[0]];
+  //   let cMax = props.cmap[ids[0]];
+  //   for (let i=1; i<ids.length;i++){
+  //     cMin=Math.min(cMin,props.cmap[ids[i]]);
+  //     cMax=Math.max(cMax,props.cmap[ids[i]]);
+  //   }
+  //   this.setState({minCC:cMin,maxCC:cMax});
+  // }
 
   // componentWillUpdate(nextProps, nextState) {
   //   let bounds;
@@ -153,37 +153,6 @@ let Map = class Map extends React.Component {
         }, 'country-label-lg'); 
       }
 
-      // this.map.addLayer({
-      //   id: 'faded',
-      //   type: 'fill',
-      //   source: 'gj',
-      //   paint: {'fill-opacity':0.3, 
-      //           'fill-outline-color':'rgba(0,0,0,0)'},
-      //   filter: ["==", "tID", -1]
-      // }, 'country-label-lg');
-
-
-      // if (this.props.onClick!==undefined){
-      //   this.map.on('click', 'gjlayer', this.props.onClick);
-      //   this.map.on('click', 'faded', this.props.onClick);
-      // }
-
-      // this.map.on('mouseenter', 'gjlayer', ()=> {
-      //   this.map.getCanvas().style.cursor = 'pointer';
-      // });
-      // this.map.on('mouseleave', 'gjlayer', ()=> {
-      //     this.map.getCanvas().style.cursor = '';
-      // });
-      // this.map.on('mouseenter', 'faded', ()=> {
-      //   this.map.getCanvas().style.cursor = 'pointer';
-      // });
-      // this.map.on('mouseleave', 'faded', ()=> {
-      //     this.map.getCanvas().style.cursor = '';
-      // });
-      // this.map.on('mouseover', 'gjlayer', ()=> {
-      //   this.map.getCanvas().style.cursor = 'pointer';
-      // });
-
       this.setFill();
 
       // this.map.fitBounds(bounds);
@@ -206,37 +175,66 @@ let Map = class Map extends React.Component {
               this.props.cmap
             ]
           ],
-          ["interpolate",
-            ["linear"], 
+          ['get',
+            ['to-string', ['get', this.props.paintProp]],
             [
-              'get',
-              ['to-string', ['get', this.props.paintProp]],
-              [
-                'literal',
-                this.props.cmap
+              'literal',
+              ["at",
+                ["step",
+                  ["zoom"],
+                  1, 3,
+                  8, 2,
+                  12, 1,
+                  16, 0
+                ],
+              this.props.cmap
               ]
             ],
-          this.state.minCC, 'green',
-          this.state.maxCC, 'red',
-          ],
           'white'
+          ]
         ]);
       }  
     }    
-  }
 
-  // setFill() {
-  //   this.map.setPaintProperty('gjlayer', 'fill-color', ['get', this.props.paintProp]);    
-  //   this.map.setPaintProperty('faded', 'fill-color', ['get', this.props.paintProp]);   
+      // for (let layer of this.props.geometries){
+      //   this.map.setPaintProperty('l_'+layer.year, 
+      //   'fill-color', ['literal', '#' + (Math.random().toString(16) + "000000").substring(2, 8)]);
+    }
+      // }
 
-  //   if (Object.keys(this.props.nids).length>0){
-  //     this.map.setFilter('faded',['!', ["has", ["to-string", ['get', "nid"]], ['literal', this.props.nids]]]);
-  //     this.map.setFilter('gjlayer',["has", ["to-string", ['get', "nid"]], ['literal', this.props.nids]]);
-  //   } else {
-  //     this.map.setFilter('faded',["==", "nid", -1]);
-  //     this.map.setFilter('gjlayer',["!=", "nid", -1]);    
-  //   }
-  // }
+    
+    // if (this.props.cmap!==undefined){
+    //   // console.log(this.props.cmap);
+    //   for (let layer of this.props.geometries){
+    //     this.map.setPaintProperty('l_'+layer.year, 
+    //     'fill-color', [
+    //       'case',
+    //       [
+    //         'has',
+    //         ['to-string', ['get', this.props.paintProp]],
+    //         [
+    //           'literal',
+    //           this.props.cmap
+    //         ]
+    //       ],
+    //       ["interpolate",
+    //         ["linear"], 
+    //         [
+    //           'get',
+    //           ['to-string', ['get', this.props.paintProp]],
+    //           [
+    //             'literal',
+    //             this.props.cmap
+    //           ]
+    //         ],
+    //       this.state.minCC, 'green',
+    //       this.state.maxCC, 'red',
+    //       ],
+    //       'white'
+    //     ]);
+    //   }  
+    // }    
+
 
   render() {
     return (
