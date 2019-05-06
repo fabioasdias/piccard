@@ -36,7 +36,7 @@ function getParams(location) {
 class App extends Component {
   constructor(props){
     super(props);
-    this.state={showLoading:true,showAdvancedConfig:true}
+    this.state={showLoading:true,showAdvancedConfig:false}
   }
   render() {
     let retJSX=[];
@@ -62,13 +62,13 @@ class App extends Component {
             this.setState({showAdvancedConfig:true});
           }}>Show Advanced</button>
           </div>)  
-        retJSX.push(<ConfigPanel key='cop' />);        
-        retJSX.push(<CurConf key='cc'/>);
+        // retJSX.push(<ConfigPanel key='cop' />);        
+        // retJSX.push(<CurConf key='cc'/>);
         retJSX.push(<NewMap key='nm'/>);
         // retJSX.push(<TempEvo key='tp'/>);
-        retJSX.push(<Overview key='op'/>);
+        // retJSX.push(<Overview key='op'/>);
         // retJSX.push(<TrajDet key='tj'/>);
-        retJSX.push(<Detail key='dp'/>);    
+        // retJSX.push(<Detail key='dp'/>);    
       }
     }
     return (

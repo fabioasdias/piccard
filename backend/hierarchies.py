@@ -133,7 +133,7 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
             ret[g][n[1]]=[]
 
     for threshold in thresholds:
-        for i in range(len(final)):
+        for i, g in enumerate(geoms):
             final[i].remove_edges_from([e[:2] for e in final[i].edges(data='level') if (e[2] > threshold)])
             for cc, nodes in enumerate(nx.connected_components(final[i])):
                 for n in nodes:

@@ -1,9 +1,10 @@
 import React from 'react';
 // import PropTypes from 'prop-types'
 
-import mapboxgl from 'mapbox-gl'
+import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import './glmap.css'
+import './glmap.css';
+import randomColor from 'randomcolor';
 
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pzbmNqd2c3MGIxZDQ0bjVpa2RsZXU1YSJ9.udvxholRALOFEV4ciCh-Lg';
@@ -11,127 +12,42 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pzbmNqd2c3MGIxZDQ0bjVpa2RsZ
 
 let Map = class Map extends React.Component {
   map;
-    
-
-  // static propTypes = {
-  //   data: PropTypes.object.isRequired,
-  // };
 
   componentDidUpdate() {
     this.setFill();
   }
-  // componentWillReceiveProps(props){
-  //   let ids=Object.keys(props.cmap);
-  //   let cMin = props.cmap[ids[0]];
-  //   let cMax = props.cmap[ids[0]];
-  //   for (let i=1; i<ids.length;i++){
-  //     cMin=Math.min(cMin,props.cmap[ids[i]]);
-  //     cMax=Math.max(cMax,props.cmap[ids[i]]);
-  //   }
-  //   this.setState({minCC:cMin,maxCC:cMax});
-  // }
+  componentWillReceiveProps(props){
+    let ids=Object.keys(props.cmap);
+  
+    let cMin = props.cmap[ids[0]][0];
+    let cMax = props.cmap[ids[0]][0];
+    for (let i=0; i<ids.length;i++){
+      for (let j=0; j<props.cmap[ids[i]].length; j++)
+      {
+        cMin=Math.min(cMin,props.cmap[ids[i]][j]);
+        cMax=Math.max(cMax,props.cmap[ids[i]][j]);  
+      }
+    }
+    let colours=[];
+    for (let i = 0; i<=cMax;i++){
+      colours.push(randomColor());
+    }
 
-  // componentWillUpdate(nextProps, nextState) {
-  //   let bounds;
-  //   if ((this.moving!==undefined)&&(this.moving)){
-  //     return;
-  //   }
-  //   let objSameProps=(a1,a2)=>{
-  //     let a=Object.keys(a1);
-  //     let b=Object.keys(a2);
-  //     if ((a===undefined)&&(b===undefined)){
-  //       return(true);
-  //     }
-  //     if ((a===undefined)||(b===undefined)){
-  //       return(false);
-  //     }
-  //     if (a.length!==b.length){
-  //       return(false)
-  //     }
-  //     for (let i=0;i<a.length;i++){
-  //       if (!a2.hasOwnProperty(b[i])){
-  //         return(false);
-  //       }
-  //     }
-  //     return(true);
-  //   }
-  //   if (!objSameProps(this.props.nids,nextProps.nids)){
-  //     if ((nextProps.nids!==undefined)&&(Object.keys(nextProps.nids).length>0)){
-  //       let tempGJ={type:'FeatureCollection',features:[]}
-  //       for (let feat of nextProps.data.features){
-  //         if (nextProps.nids.hasOwnProperty(feat.properties.nid)){
-  //           tempGJ.features.push(feat);
-  //         }
-  //       }
-  //       if (tempGJ.features.length>0){
-  //         bounds=bbox(tempGJ);
-  //         this.map.fitBounds([[bounds[0],bounds[1]],
-  //           [bounds[2],bounds[3]]]);         
-  //         this.moving=true;
-  //       }
-  //     }else{
-  //       if (Object.keys(nextProps.nids).length===0){
-  //         bounds=bbox(this.props.data);
-  //         this.map.fitBounds([[bounds[0],bounds[1]],
-  //                             [bounds[2],bounds[3]]]);         
-  //         this.moving=true;
-  //       }
-  //     }  
-  //     if (nextProps.boundsCallback!==undefined){
-  //       nextProps.boundsCallback(undefined);
-  //     }
-  //   }  
-  //   else{
-  //       if (nextProps.bbox!==undefined){
-  //         this.map.fitBounds(nextProps.bbox);
-  //         this.moving=true;
-  //       }  
-  //     }
-
-  //   if (this.props.level!==nextProps.level){
-  //     if (nextState!==null){
-  //       const { map} = nextState;
-  //       if (map) {
-  //         map.getSource('gj').setData(nextProps.data);
-  //         if (nextProps.onClick!==undefined){
-  //           map.on('click', 'gjlayer', nextProps.onClick);
-  //           map.on('click', 'faded', nextProps.onClick);
-  //         }  
-  //       }  
-  //     }  
-  //   }
-  // }
-
+    // let colObj = {};
+    // for (let i=1; i< ids.length;i++){
+    //   colObj[ids[i]]=colours[props.cmap[ids[i]][index]];
+    // }
+    console.log('min',cMin,'max',cMax);
+    this.setState({colours: colours});
+  }
 
   componentDidMount() {
-    // let bounds;
-    // if (this.props.bbox===undefined){
-    //   bounds=bbox(this.props.data);
-    //   bounds=[[bounds[0],bounds[1]],
-    //           [bounds[2],bounds[3]]];         
-    // }
-    // else{
-    //   bounds=this.props.bbox;
-    // }    
-    console.log(this.props)
     this.map = new mapboxgl.Map({
       container: this.mapContainer,
       zoom: 5,
       style: 'mapbox://styles/mapbox/light-v9'
     });
 
-    // let BoundsChange=(d)=>{
-    //     if (d.originalEvent!==undefined){
-    //       if (this.props.boundsCallback!==undefined){
-    //         this.props.boundsCallback(this.map.getBounds());
-    //       }
-    //   }
-    // }
-
-    // this.map.on('dragend',BoundsChange);
-    // this.map.on('zoomend',BoundsChange);    
-    // this.map.on('movestart',()=>{this.moving=true;});
-    // this.map.on('moveend',()=>{this.moving=false;});
 
     this.map.on('load', () => {
       for (let layer of this.props.geometries){
@@ -149,60 +65,61 @@ let Map = class Map extends React.Component {
           'layout': {
             'visibility': layer.visibility
             },
-          // paint:{'fill-color':'blue'},
         }, 'country-label-lg'); 
       }
 
-      this.setFill();
-
-      // this.map.fitBounds(bounds);
       this.setState({'map':this.map});
+      this.setFill();
     });
   }
 
   setFill(){
-    if (this.props.cmap!==undefined){
-      // console.log(this.props.cmap);
+    let exp=['case',
+              [
+                'has',
+                ['to-string', ['get', this.props.paintProp]],
+                ['literal', this.props.cmap]
+              ],
+              ['to-color', 
+                ["at", 
+                  ['at', 
+                    ['var','detail'],
+                    ['get',
+                      ['to-string', ['get', this.props.paintProp]],
+                      ['literal', this.props.cmap]
+                    ],
+                  ],  
+                  ['literal', this.state.colours]
+                ]
+              ],
+              "rgba(255, 255, 255, 0)"
+            ];
+
+    if ((this.state!==null)&&(this.state.colours!==undefined)){
       for (let layer of this.props.geometries){
-        this.map.setPaintProperty('l_'+layer.year, 
-        'fill-color', [
-          'case',
-          [
-            'has',
-            ['to-string', ['get', this.props.paintProp]],
-            [
-              'literal',
-              this.props.cmap
-            ]
-          ],
-          ['get',
-            ['to-string', ['get', this.props.paintProp]],
-            [
-              'literal',
-              ["at",
-                ["step",
-                  ["zoom"],
-                  1, 3,
-                  8, 2,
-                  12, 1,
-                  16, 0
-                ],
-              this.props.cmap
-              ]
-            ],
-          'white'
-          ]
-        ]);
-      }  
+        if (this.map.getLayoutProperty('l_'+layer.year,"visibility")==='visible'){
+          this.map.setPaintProperty('l_'+layer.year, 
+          'fill-color', 
+              ['let', 'detail', 0, exp]
+          );
+          // This may work or not, but runs out of memory...
+          // this.map.setPaintProperty('l_'+layer.year, 
+          // 'fill-color', 
+          //   ["step",
+          //     ["zoom"],
+          //     ['let', 'detail', 0, exp],
+          //     8, ['let', 'detail', 1, exp],
+          //     12, ['let', 'detail', 2, exp],
+          //     16, ['let', 'detail', 3, exp]
+          //   ]
+          // );
+        }
+    }  
     }    
+  }
 
-      // for (let layer of this.props.geometries){
-      //   this.map.setPaintProperty('l_'+layer.year, 
-      //   'fill-color', ['literal', '#' + (Math.random().toString(16) + "000000").substring(2, 8)]);
-    }
-      // }
 
-    
+
     // if (this.props.cmap!==undefined){
     //   // console.log(this.props.cmap);
     //   for (let layer of this.props.geometries){
@@ -217,18 +134,10 @@ let Map = class Map extends React.Component {
     //           this.props.cmap
     //         ]
     //       ],
-    //       ["interpolate",
-    //         ["linear"], 
-    //         [
-    //           'get',
+    //         ['get',
     //           ['to-string', ['get', this.props.paintProp]],
-    //           [
-    //             'literal',
-    //             this.props.cmap
-    //           ]
-    //         ],
-    //       this.state.minCC, 'green',
-    //       this.state.maxCC, 'red',
+    //           ['literal', this.state.colours]
+    //         ] //G55002500127
     //       ],
     //       'white'
     //     ]);
