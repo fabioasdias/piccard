@@ -7,6 +7,40 @@ from itertools import combinations
 import matplotlib.pylab as plt
 
 
+def compareHierarchies(conf: dict, a1: str, a2: str, level: str = 'level') -> float:
+    """
+        Computes a distance between hierarchies/aspects a1 and a2.
+        Returns 0-1.
+    """
+    aspectInfo = gatherInfoJsons_AsDict(conf['data'])
+
+    g1 = aspectInfo[a1]['geometry']
+    g2 = aspectInfo[a2]['geometry']
+
+    G1 = _read_and_normalize(join(conf['data'], a1+'.gp'))
+    G2 = _read_and_normalize(join(conf['data'], a2+'.gp'))
+
+    D = 0
+
+    if g1 != g2:
+        X = nx.read_gpickle(join(conf['folder'], crossGeomFileName(g1, g2)))
+        for e in G1.edges():
+            otherside = []
+            for ee in e:
+                if ee in X:
+                    otherside.extend(X.neighbors(ee))
+            if otherside:
+                g2p = G2.subgraph(otherside)
+                if len(g2p.edges())>0:
+                    D += abs(G1[e[0]][e[1]][level]-max([x[2]
+                                                        for x in g2p.edges(data=level)]))
+    else:
+        for e in G1.edges():
+            D += abs([G1[e[0]][e[1]][level] - G2[e[0]][e[1]][level]])
+
+    return(D/len(G1))
+
+
 def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph = None, level: str = 'level') -> nx.Graph:
     """
     Merges two different hierarchies represented by G1 and G2. 
@@ -77,7 +111,7 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
     conf: base configuration from srv.py
     aspects: list of list of aspects (hierarchies) [ [a1,a2], [a3,a4], ] 
     thresholds: _lists_ of cutting points for the normalized hierarchies.
-    
+
     This function will merge the aspects in the sublists returning the connected
     components for each in their original geometries.
     """
@@ -126,22 +160,23 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
         # same geometry, no cross needed
         final.append(_hierMerge(backwards, forwards))
 
-    ret={}
+    ret = {}
     for i, g in enumerate(geoms):
-        ret[g]={}
+        ret[g] = {}
         for n in final[i]:
-            ret[g][n[1]]=[]
+            ret[g][n[1]] = []
 
     for threshold in thresholds:
         for i, g in enumerate(geoms):
-            final[i].remove_edges_from([e[:2] for e in final[i].edges(data='level') if (e[2] > threshold)])
+            final[i].remove_edges_from(
+                [e[:2] for e in final[i].edges(data='level') if (e[2] > threshold)])
             for cc, nodes in enumerate(nx.connected_components(final[i])):
                 for n in nodes:
                     ret[g][n[1]].append(cc)
 
     return(ret)
 
-    for i in range(len(final)):                
+    for i in range(len(final)):
         for cc, nodes in enumerate(nx.connected_components(final[i])):
             for n in nodes:
                 final[i].node[n]['used'] = False
@@ -174,5 +209,6 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
 
     with open('nothing.txt', 'w') as fout:
         for p in paths:
-            fout.write(' '.join(['({0},{1})'.format(n[0], n[1]) for n in p])+'\n')
+            fout.write(
+                ' '.join(['({0},{1})'.format(n[0], n[1]) for n in p])+'\n')
     return({})
