@@ -10,7 +10,7 @@ import randomColor from 'randomcolor';
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pzbmNqd2c3MGIxZDQ0bjVpa2RsZXU1YSJ9.udvxholRALOFEV4ciCh-Lg';
 
 
-let Map = class Map extends React.Component {
+let MapboxMap = class MapboxMap extends React.Component {
   map;
 
   componentDidUpdate() {
@@ -154,4 +154,4 @@ let Map = class Map extends React.Component {
 }
 
 
-export default Map;
+export default MapboxMap;

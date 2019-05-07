@@ -5,7 +5,7 @@ from util import crossGeomFileName
 from itertools import combinations
 
 import matplotlib.pylab as plt
-
+from numpy import median
 
 def compareHierarchies(conf: dict, a1: str, a2: str, level: str = 'level') -> float:
     """
@@ -31,14 +31,14 @@ def compareHierarchies(conf: dict, a1: str, a2: str, level: str = 'level') -> fl
                     otherside.extend(X.neighbors(ee))
             if otherside:
                 g2p = G2.subgraph(otherside)
-                if len(g2p.edges())>0:
-                    D += abs(G1[e[0]][e[1]][level]-max([x[2]
-                                                        for x in g2p.edges(data=level)]))
+                if len(g2p.edges()) > 0:
+                    D += abs(G1[e[0]][e[1]][level]-max([x[2] for x in g2p.edges(data=level)]))
     else:
         for e in G1.edges():
-            D += abs([G1[e[0]][e[1]][level] - G2[e[0]][e[1]][level]])
-
-    return(D/len(G1))
+            D += abs(G1[e[0]][e[1]][level] - G2[e[0]][e[1]][level])
+    #each edge contributes to a maximum of 1
+    #(although a distance of 1 seems unlikely)
+    return(D/len(G1.edges()))
 
 
 def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph = None, level: str = 'level') -> nx.Graph:
@@ -134,6 +134,8 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
         fname = crossGeomFileName(g1, g2)
         if fname not in allCrosses:
             allCrosses[fname] = nx.read_gpickle(join(conf['folder'], fname))
+    for g1 in set(geoms):
+        allCrosses[crossGeomFileName(g1,g1)]=None
 
     # holds the resulting hierarchy on each original geometry
     print('final merges')

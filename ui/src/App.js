@@ -1,23 +1,15 @@
 import React, {Component } from 'react';
 import './App.css';
 import TempEvo from './sankey';
-import Overview from './overview';
-import Detail from './detail';
 import { connect } from 'react-redux';
 import { actionCreators} from './reducers';
 import {getURL, getData} from './urls';
-import ConfigPanel from './configPanel';
 import FileUploadProgress  from 'react-fileupload-progress';
-import NewMap from './newmap';
-import TrajDet from './trajectoryDetails';
-import CurConf from './curConf';
+import Map from './map';
 import Upload from './upload';
-import { Stats } from 'fs';
 import Aspects from './aspects';
-// import TransMat from './transMat';
 
 const mapStateToProps = (state) => ({
-  traj: state.traj,
   CountryOptions: state.CountryOptions
 });
 
@@ -62,9 +54,8 @@ class App extends Component {
             this.setState({showAdvancedConfig:true});
           }}>Show Advanced</button>
           </div>)  
-        // retJSX.push(<ConfigPanel key='cop' />);        
         // retJSX.push(<CurConf key='cc'/>);
-        retJSX.push(<NewMap key='nm'/>);
+        retJSX.push(<Map key='map'/>);
         // retJSX.push(<TempEvo key='tp'/>);
         // retJSX.push(<Overview key='op'/>);
         // retJSX.push(<TrajDet key='tj'/>);

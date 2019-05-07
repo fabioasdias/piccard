@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { actionCreators, toInt} from './reducers';
 import {sendData,getURL} from './urls';
-import Map from './glmap';
+import MapboxMap from './glmap';
 
 
 const mapStateToProps = (state) => ({
@@ -12,7 +12,7 @@ const mapStateToProps = (state) => ({
 });
 
 
-class NewMap extends Component {
+class Map extends Component {
   constructor(props){
     super(props);
     this.state={cmap:undefined};
@@ -22,7 +22,8 @@ class NewMap extends Component {
       {
           countryID:'US', 
           aspects:[ ['198264d5-307d-499d-9732-f1ff8153f268',],
-                    ['1dcb4801-4ef5-4cdc-a15b-4cc4b4c3f0c1',],
+                    ['198264d5-307d-499d-9732-f1ff8153f268',],
+                    // ['1dcb4801-4ef5-4cdc-a15b-4cc4b4c3f0c1',],
                     // ['3a619ce0-bd26-440d-afca-c14a3ff842ed',],
                     // ['2efeaa77-9fef-4c5b-9a79-3575f624abf1',],
                     // ['507c76db-20e5-40d8-8775-e2771393f58e',]
@@ -38,7 +39,7 @@ class NewMap extends Component {
       console.log(curCountryOptions);
       console.log('-',this.state.cmap)
       return (
-        <Map 
+        <MapboxMap 
           geometries={curCountryOptions.geometries}
           paintProp={'GISJOIN'}
           cmap={this.state.cmap}
@@ -49,4 +50,4 @@ class NewMap extends Component {
       return(null);
   }
 }
-export default connect(mapStateToProps)(NewMap);
+export default connect(mapStateToProps)(Map);

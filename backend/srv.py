@@ -96,10 +96,8 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         print(input_json)
-        print('distance', compareHierarchies(
-            countries[input_json['countryID']], 
-            input_json['aspects'][0][0], 
-            input_json['aspects'][1][0]))
+        print('distance', compareHierarchies(countries[input_json['countryID']],
+            input_json['aspects'][0][0], input_json['aspects'][1][0]))
         return(mapHierarchies(countries[input_json['countryID']],
                               input_json['aspects']))
 
