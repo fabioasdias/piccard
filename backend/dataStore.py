@@ -55,17 +55,17 @@ class dataStore(object):
                     self, e[0], e[1])
         nx.write_gpickle(self._distances, self._saved)
 
-    def getDistances(self, aspects: list = []):
+    def getDistances(self, aspects:list):
         """
             Returns a list of objects with a 1D projection of the existing
             hierarchies.
         """
-        if not aspects:
-            to_use = self.aspects()
-        else:
-            to_use = aspects
+        # if not aspects:
+        #     to_use = self.aspects()
+        # else:
+        #     to_use = aspects
 
-        G = nx.subgraph(self._distances, to_use)
+        G = nx.subgraph(self._distances, aspects)
 
         a2i = {a: i for i, a in enumerate(G)}
         M = np.ones((len(G), len(G)))

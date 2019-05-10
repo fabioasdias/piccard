@@ -20,6 +20,13 @@ from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_uplo
 from hierarchies import mapHierarchies, compareHierarchies
 import pandas as pd
 from dataStore import dataStore
+from joblib import Memory
+
+cachedir = './cache/'
+if not exists(cachedir):
+    makedirs(cachedir)
+memory = Memory(cachedir, verbose=0)
+
 
 
 def cors():
@@ -36,6 +43,10 @@ def cors():
 
 
 cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
+
+@memory.cache(ignore=['ds'])
+def _getDistances(ds:dict, aspects:list):
+    return(ds.getDistances(aspects))
 
 
 @cherrypy.expose
@@ -61,7 +72,13 @@ class server(object):
     def getAspectProjection(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        return(countries[input_json['countryID']]['ds'].getDistances(input_json['aspects']))
+        ds= countries[input_json['countryID']]['ds']
+        if ('aspects' not in input_json) or (not input_json['aspects']):
+            to_use=ds.aspects()
+        else:
+            to_use=input_json['aspects']
+        return(_getDistances(ds,sorted(to_use)))
+        # return(ds.getDistances(to_use))
 
 
     @cherrypy.expose
@@ -108,11 +125,14 @@ class server(object):
     def mapHierarchies(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        print(input_json)
-        print('distance', compareHierarchies(countries[input_json['countryID']]['ds'],
-            input_json['aspects'][0][0], input_json['aspects'][1][0]))
-        return(mapHierarchies(countries[input_json['countryID']]['ds'],
-                              input_json['aspects']))
+        ds= countries[input_json['countryID']]['ds']
+        if ('aspects' not in input_json) or (not input_json['aspects']):
+            to_use=ds.aspects()
+        else:
+            to_use=input_json['aspects']
+
+        print(to_use)
+        return(mapHierarchies(ds,sorted(to_use)))
 
     @cherrypy.expose
     def index(self):
@@ -195,6 +215,7 @@ if __name__ == '__main__':
             makedirs(cData['data'])
         cData['ds'] = dataStore(baseFolder)
         countries[cData['kind']] = cData
+
 
     webapp = server()
     conf = {

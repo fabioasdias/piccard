@@ -5,8 +5,14 @@ from itertools import combinations
 
 import matplotlib.pylab as plt
 from numpy import median
+from joblib import Memory
 
+cachedir = './cache/'
+memory = Memory(cachedir, verbose=0)
 
+#the datastore identifies the country, but the aspect IDs are unique, so it
+#doesnt really matter for the cache
+@memory.cache(ignore=['ds'])
 def compareHierarchies(ds: dict, a1: str, a2: str, level: str = 'level') -> float:
     """
         Computes a distance between hierarchies/aspects a1 and a2.
@@ -92,28 +98,31 @@ def _mergeAll(ds: dict, aspects: list) -> nx.Graph:
         lastGeometry = ds.getGeometry(a)
     return(F)
 
-
+@memory.cache(ignore=['ds'])
 def mapHierarchies(ds: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0.2]) -> dict:
     """
     ds: datastore from srv.py (conf['ds'])
-    aspects: list of list of aspects (hierarchies) [ [a1,a2], [a3,a4], ] 
+    aspects:  list of aspects (hierarchies) [a1,a2,...] 
     thresholds: _lists_ of cutting points for the normalized hierarchies.
 
     This function will merge the aspects in the sublists returning the connected
     components for each in their original geometries.
     """
-    if len(aspects) < 2:
-        print('mapHierarchies - need at least 2 geometries/bases')
-        return({})
+    print('=-=', aspects)
 
-    print('starting individual merges')
 
-    geoms = []
+    aspectsByGeometry = {}
+    for aspect in aspects:
+        g = ds.getGeometry(aspect)
+        if g not in aspectsByGeometry:
+            aspectsByGeometry[g]=[]
+        aspectsByGeometry[g].append(aspect)
+
+
+    geoms = sorted(aspectsByGeometry.keys())
     merged = []
-    # merge "projects" everyone into the first geom on the list
-    for sublist in aspects:
-        merged.append(_mergeAll(ds, sublist))
-        geoms.append(ds.getGeometry(sublist[0]))
+    for g in geoms:
+        merged.append(_mergeAll(ds, aspectsByGeometry[g]))
 
     # holds the resulting hierarchy on each original geometry
     # - This could be faster if the partial merges were reused

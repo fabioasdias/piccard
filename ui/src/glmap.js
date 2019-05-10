@@ -65,7 +65,10 @@ let MapboxMap = class MapboxMap extends React.Component {
           'layout': {
             'visibility': layer.visibility
             },
-        }, 'country-label-lg'); 
+          'paint':{
+            'fill-opacity': 0.9,
+          }
+        }, 'bridge-motorway-2'); //'country-label-lg'); 
       }
 
       this.setState({'map':this.map});

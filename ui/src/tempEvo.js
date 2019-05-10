@@ -4,6 +4,7 @@ import './style.css';
 import './tempEvo.css';
 import {XYPlot, MarkSeries, XAxis, YAxis} from 'react-vis';
 import {  sendData, getURL } from './urls';
+import { strict } from 'assert';
 
 
 const mapStateToProps = (state) => ({
@@ -32,15 +33,15 @@ class TempEvo extends Component {
         if (projection!==undefined){
             retJSX.push(<div>
                 <XYPlot
-                    width={400}
+                    width={380}
                     height={800}
-                    // getX={d => 280*d.x+10}
-                    // getY={d => d.y}
-                    // yType='time'
-                    // xType='literal'
                     >
-                    <XAxis/>
-                    <YAxis/>
+                    <XAxis
+                        hideTicks
+                    />
+                    <YAxis
+                        tickFormat={v => String(v)}
+                    />
                     <MarkSeries
                         color="red"
                         data={projection}
