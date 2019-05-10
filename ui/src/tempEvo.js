@@ -32,17 +32,18 @@ class TempEvo extends Component {
         if (projection!==undefined){
             retJSX.push(<div>
                 <XYPlot
-                    width={300}
-                    height={300}
-                    yType='categorical'
-                    xType='literal'
-                >
+                    width={400}
+                    height={800}
+                    // getX={d => 280*d.x+10}
+                    // getY={d => d.y}
+                    // yType='time'
+                    // xType='literal'
+                    >
                     <XAxis/>
                     <YAxis/>
                     <MarkSeries
-                        getX={d => 280*d.x+10}
-                        getY={d => d.y}
-                        data={this.state.data}
+                        color="red"
+                        data={projection}
                     />
                 </XYPlot>
             </div>)
