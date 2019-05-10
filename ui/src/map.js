@@ -21,15 +21,15 @@ class Map extends Component {
     sendData(getURL.mapHierarchies(),
       {
           countryID:'US', 
-          aspects:[ ['198264d5-307d-499d-9732-f1ff8153f268',],
-                    ['198264d5-307d-499d-9732-f1ff8153f268',],
+          aspects:[ ['38502f50-3d9f-409f-aad1-a67b2b58cdfb',],
+                    ['4556dd88-5790-4dc6-9577-b1608ce81995',],
                     // ['1dcb4801-4ef5-4cdc-a15b-4cc4b4c3f0c1',],
                     // ['3a619ce0-bd26-440d-afca-c14a3ff842ed',],
                     // ['2efeaa77-9fef-4c5b-9a79-3575f624abf1',],
                     // ['507c76db-20e5-40d8-8775-e2771393f58e',]
                   ]
       },
-      (d)=>{this.setState({cmap:d["US_CT_1970"]});}
+      (d)=>{this.setState({cmap:d["US_CT_1980"]});}
     );
   }
   render() {

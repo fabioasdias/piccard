@@ -1,29 +1,30 @@
 from upload import gatherInfoJsons_AsDict
 from os.path import join
 import networkx as nx
-from util import crossGeomFileName
 from itertools import combinations
 
 import matplotlib.pylab as plt
 from numpy import median
 
-def compareHierarchies(conf: dict, a1: str, a2: str, level: str = 'level') -> float:
+
+def compareHierarchies(ds: dict, a1: str, a2: str, level: str = 'level') -> float:
     """
         Computes a distance between hierarchies/aspects a1 and a2.
+        ds: the corresponding datastore (conf['ds'])
         Returns 0-1.
     """
-    aspectInfo = gatherInfoJsons_AsDict(conf['data'])
 
-    g1 = aspectInfo[a1]['geometry']
-    g2 = aspectInfo[a2]['geometry']
+    # ds= conf['ds']
+    g1 = ds.getGeometry(a1)
+    g2 = ds.getGeometry(a2)
 
-    G1 = _read_and_normalize(join(conf['data'], a1+'.gp'))
-    G2 = _read_and_normalize(join(conf['data'], a2+'.gp'))
+    G1 = ds.getHierarchy(a1)
+    G2 = ds.getHierarchy(a2)
 
     D = 0
 
     if g1 != g2:
-        X = nx.read_gpickle(join(conf['folder'], crossGeomFileName(g1, g2)))
+        X = ds.getCrossGeometry(g1, g2)
         for e in G1.edges():
             otherside = []
             for ee in e:
@@ -32,12 +33,13 @@ def compareHierarchies(conf: dict, a1: str, a2: str, level: str = 'level') -> fl
             if otherside:
                 g2p = G2.subgraph(otherside)
                 if len(g2p.edges()) > 0:
-                    D += abs(G1[e[0]][e[1]][level]-max([x[2] for x in g2p.edges(data=level)]))
+                    D += abs(G1[e[0]][e[1]][level]-max([x[2]
+                                                        for x in g2p.edges(data=level)]))
     else:
         for e in G1.edges():
             D += abs(G1[e[0]][e[1]][level] - G2[e[0]][e[1]][level])
-    #each edge contributes to a maximum of 1
-    #(although a distance of 1 seems unlikely)
+    # each edge contributes to a maximum of 1
+    # (although a distance of 1 seems unlikely)
     return(D/len(G1.edges()))
 
 
@@ -65,8 +67,6 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph = None, level: str = 'lev
             for ee in e:
                 if ee in X:
                     otherside.extend(X.neighbors(ee))
-                else:
-                    print('not found ', ee)
             if otherside:
                 g2p = G2.subgraph(otherside)
                 H[e[0]][e[1]][level] = max(
@@ -74,41 +74,28 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph = None, level: str = 'lev
     return(H)
 
 
-def _getMaxLevel(G: nx.Graph, level: str = 'level') -> int:
-    return(max([x[2] for x in G.edges(data=level)]))
-
-
-def _read_and_normalize(PickledGraphPath: str, level: str = 'level') -> nx.Graph:
-    G = nx.read_gpickle(PickledGraphPath)
-    m = _getMaxLevel(G, level)
-    for e in G.edges():
-        G[e[0]][e[1]][level] /= m
-    return(G)
-
-
-def _mergeAll(conf: dict, aspects: list, aspectInfo: dict) -> nx.Graph:
+def _mergeAll(ds: dict, aspects: list) -> nx.Graph:
     F = None
     for a in aspects:
-        G = _read_and_normalize(join(conf['data'], a+'.gp'))
+        G = ds.getHierarchy(a)
 
         if F is None:
             F = G
         else:
-            curGeometry = aspectInfo[a]['geometry']
+            curGeometry = ds.getGeometry(a)
             if (curGeometry != lastGeometry):  # pylint: disable=used-before-assignment
-                cX = nx.read_gpickle(
-                    join(conf['folder'], crossGeomFileName(curGeometry, lastGeometry)))
+                cX = ds.getCrossGeometry(curGeometry, lastGeometry)
             else:
                 cX = None
             F = _hierMerge(F, G, cX)
 
-        lastGeometry = aspectInfo[a]['geometry']
+        lastGeometry = ds.getGeometry(a)
     return(F)
 
 
-def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0.2]) -> dict:
+def mapHierarchies(ds: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0.2]) -> dict:
     """
-    conf: base configuration from srv.py
+    ds: datastore from srv.py (conf['ds'])
     aspects: list of list of aspects (hierarchies) [ [a1,a2], [a3,a4], ] 
     thresholds: _lists_ of cutting points for the normalized hierarchies.
 
@@ -119,45 +106,31 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
         print('mapHierarchies - need at least 2 geometries/bases')
         return({})
 
-    aspectInfo = gatherInfoJsons_AsDict(conf['data'])
     print('starting individual merges')
 
     geoms = []
     merged = []
     # merge "projects" everyone into the first geom on the list
     for sublist in aspects:
-        merged.append(_mergeAll(conf, sublist, aspectInfo))
-        geoms.append(aspectInfo[sublist[0]]['geometry'])
-
-    allCrosses = {}
-    for g1, g2 in combinations(set(geoms), 2):
-        fname = crossGeomFileName(g1, g2)
-        if fname not in allCrosses:
-            allCrosses[fname] = nx.read_gpickle(join(conf['folder'], fname))
-    for g1 in set(geoms):
-        allCrosses[crossGeomFileName(g1,g1)]=None
+        merged.append(_mergeAll(ds, sublist))
+        geoms.append(ds.getGeometry(sublist[0]))
 
     # holds the resulting hierarchy on each original geometry
-    print('final merges')
+    # - This could be faster if the partial merges were reused
     final = []
-    for i, g1 in enumerate(geoms):
+    for i in range(len(geoms)):
         backwards = None
         forwards = None
 
-        # print('doing i=',i)
         if i != (len(geoms)-1):
             backwards = merged[-1]
             for j in range(len(geoms)-2, i-1, -1):
-                # print('j',j,geoms[j],geoms[j+1])
-                backwards = _hierMerge(
-                    merged[j], backwards, allCrosses[crossGeomFileName(geoms[j], geoms[j+1])])
+                backwards = _hierMerge(merged[j], backwards, ds.getCrossGeometry(geoms[j], geoms[j+1]))
 
         if i != 0:
             forwards = merged[0]
             for j in range(1, i+1):
-                # print('j',j,geoms[j],geoms[j-1])
-                forwards = _hierMerge(
-                    merged[j], forwards, allCrosses[crossGeomFileName(geoms[j], geoms[j-1])])
+                forwards = _hierMerge(merged[j], forwards, ds.getCrossGeometry(geoms[j], geoms[j-1]))
 
         # same geometry, no cross needed
         final.append(_hierMerge(backwards, forwards))
@@ -178,6 +151,8 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
 
     return(ret)
 
+    # computes all possible paths
+
     for i in range(len(final)):
         for cc, nodes in enumerate(nx.connected_components(final[i])):
             for n in nodes:
@@ -192,7 +167,7 @@ def mapHierarchies(conf: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4,
         if (i == (len(final)-1)):
             paths.extend(todo)
         else:
-            curX = allCrosses[crossGeomFileName(geoms[i], geoms[i+1])]
+            curX = ds.getCrossGeometry(geoms[i], geoms[i+1])
 
             notDone = []
             for cpath in todo:

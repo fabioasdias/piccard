@@ -58,6 +58,17 @@ class server(object):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
+    def getAspectProjection(self):
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        input_json = cherrypy.request.json
+        return(countries[input_json['countryID']]['ds'].getDistances(input_json['aspects']))
+
+
+    @cherrypy.expose
+    @cherrypy.config(**{'tools.cors.on': True})
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.gzip()
     def createAspects(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
@@ -66,24 +77,26 @@ class server(object):
 
         for aspect in aspects:
             country = countries[aspect['country']]
+            ds = country['ds']
 
             G = country['graphs'][aspect['geometry']].copy()
 
-            data = pd.read_csv(join(country['data'], aspect['id']+'.tsv'),
-                               sep='\t', dtype=aspect['dtypes'])
-            data = data.set_index(aspect['index'])
-            ncols = len(data.columns)
+            ncols = len(ds.getColumns(aspect['id']))
 
             for n in G.nodes():
-                if n[1] in data.index:
-                    G.node[n]['data'] = np.array(data.loc[n[1]].values)
+                vals = ds.getData(aspect['id'],n[1])
+                if vals is not None:
+                    G.node[n]['data'] = np.array(vals)
                 else:
                     G.node[n]['data'] = np.empty((ncols,))
                     G.node[n]['data'][:] = np.nan
             print(aspect['name'])
             G = ComputeClustering(G, 'data')
-            print('Done ', aspect)
+            print('Done ')
             nx.write_gpickle(G, join(country['data'], aspect['id']+'.gp'))
+
+        for country in countries:
+            countries[country]['ds']._update_distances()
 
         return(aspects)
 
@@ -96,9 +109,9 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         print(input_json)
-        print('distance', compareHierarchies(countries[input_json['countryID']],
+        print('distance', compareHierarchies(countries[input_json['countryID']]['ds'],
             input_json['aspects'][0][0], input_json['aspects'][1][0]))
-        return(mapHierarchies(countries[input_json['countryID']],
+        return(mapHierarchies(countries[input_json['countryID']]['ds'],
                               input_json['aspects']))
 
     @cherrypy.expose
@@ -175,12 +188,12 @@ if __name__ == '__main__':
         cData['graphs'] = {}
         for geom in v['geometries']:
             cData['graphs'][geom['name']] = nx.read_gpickle(
-                join(v['folder'], geom['name']+'.gp'))
+                join(baseFolder, geom['name']+'.gp'))
 
         cData['data'] = join(baseFolder, 'data')
         if not exists(cData['data']):
             makedirs(cData['data'])
-        cData['ds'] = dataStore(cData['data'])
+        cData['ds'] = dataStore(baseFolder)
         countries[cData['kind']] = cData
 
     webapp = server()

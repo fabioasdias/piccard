@@ -10,8 +10,8 @@ export const sendData=(url,data,callBackFcn)=>{
         cache: 'no-cache', // *default, cache, reload, force-cache, only-if-cached
         credentials: 'same-origin', // include, *omit
         headers: {
-        'user-agent': 'Mozilla/4.0 MDN Example',
-        'content-type': 'application/json'
+            'user-agent': 'Mozilla/4.0 MDN Example',
+            'content-type': 'application/json'
         },
         method: 'POST', // *GET, PUT, DELETE, etc.
         mode: 'cors', // no-cors, *same-origin
@@ -34,8 +34,8 @@ export const requestType ={
     REGION_DETAILS : 'RegionDetails',
     CREATE_ASPECT : 'CreateAspects',
     GET_ASPECTS : 'GetAspects',
-    COMPARE_ASPECTS: 'GetAspectComparison',
-    MAP_HIERARCHIES: 'mapHierarchies'
+    ASPECT_PROJECTION: 'GetAspectProjection',
+    MAP_HIERARCHIES: 'mapHierarchies',
 };
 export const getData = (url,actionThen) => {
     fetch(url)
@@ -53,8 +53,8 @@ export const getURL  = {
     mapHierarchies: () => {
         return(baseURL()+'mapHierarchies')
     },
-    GetAspectComparison: () => {
-        return(baseURL()+'getAspectComparison');
+    GetAspectProjection: () => {
+        return(baseURL()+'getAspectProjection');
     },
     GetAspects: () => {
         return(baseURL()+'getAspects');

@@ -7,4 +7,5 @@ pandas
 geojson
 rtree
 shapely
+scikit-learn
 matplotlib

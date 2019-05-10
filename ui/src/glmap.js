@@ -37,7 +37,7 @@ let MapboxMap = class MapboxMap extends React.Component {
     // for (let i=1; i< ids.length;i++){
     //   colObj[ids[i]]=colours[props.cmap[ids[i]][index]];
     // }
-    console.log('min',cMin,'max',cMax);
+    // console.log('min',cMin,'max',cMax);
     this.setState({colours: colours});
   }
 
@@ -120,35 +120,14 @@ let MapboxMap = class MapboxMap extends React.Component {
 
 
 
-    // if (this.props.cmap!==undefined){
-    //   // console.log(this.props.cmap);
-    //   for (let layer of this.props.geometries){
-    //     this.map.setPaintProperty('l_'+layer.year, 
-    //     'fill-color', [
-    //       'case',
-    //       [
-    //         'has',
-    //         ['to-string', ['get', this.props.paintProp]],
-    //         [
-    //           'literal',
-    //           this.props.cmap
-    //         ]
-    //       ],
-    //         ['get',
-    //           ['to-string', ['get', this.props.paintProp]],
-    //           ['literal', this.state.colours]
-    //         ] //G55002500127
-    //       ],
-    //       'white'
-    //     ]);
-    //   }  
-    // }    
-
 
   render() {
     return (
       <div ref={el => this.mapContainer = el} 
-      className={(this.props.className!==undefined)?this.props.className:"absolute top right left bottom"}/>
+        className={(this.props.className!==undefined)?
+          this.props.className
+          :"absolute top right left bottom"}
+      />
     );
   }
 }

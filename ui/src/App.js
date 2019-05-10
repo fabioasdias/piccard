@@ -1,6 +1,6 @@
 import React, {Component } from 'react';
 import './App.css';
-import TempEvo from './sankey';
+import TempEvo from './tempEvo';
 import { connect } from 'react-redux';
 import { actionCreators} from './reducers';
 import {getURL, getData} from './urls';
@@ -54,12 +54,10 @@ class App extends Component {
             this.setState({showAdvancedConfig:true});
           }}>Show Advanced</button>
           </div>)  
-        // retJSX.push(<CurConf key='cc'/>);
-        retJSX.push(<Map key='map'/>);
-        // retJSX.push(<TempEvo key='tp'/>);
-        // retJSX.push(<Overview key='op'/>);
-        // retJSX.push(<TrajDet key='tj'/>);
-        // retJSX.push(<Detail key='dp'/>);    
+        retJSX.push(<div style={{display:'flex'}}>
+                      <TempEvo key='tp'/>
+                      <Map key='map'/>
+                    </div>);
       }
     }
     return (

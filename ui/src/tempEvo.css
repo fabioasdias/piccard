@@ -1,9 +1,10 @@
-.mapboxgl-map{
-    width:1400px;
+.TempEvo {
+    width:400px;
     height:900px;
+    position: relative;
     border: solid;
-    margin: 1px;
     border-color: darkgray;
     border-width: medium;
+    margin: 1px;
     float:left;
-  }
+}

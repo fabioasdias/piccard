@@ -2,59 +2,184 @@ from os.path import exists, join
 import numpy as np
 import pandas as pd
 import json
+import networkx as nx
+from os.path import join, basename
+from glob import glob
+from hierarchies import compareHierarchies
+from sklearn.manifold import MDS
+
+import matplotlib.pylab as plt
+
+MAX_CACHE = 10
+
+
+def _getMaxLevel(G: nx.Graph, level: str = 'level') -> int:
+    return(max([x[2] for x in G.edges(data=level)]))
+
+
+def crossGeomFileName(name1, name2):
+    minName = min([name1, name2])
+    maxName = max([name1, name2])
+    return('{0}_2_{1}.gp'.format(minName, maxName))
 
 
 class dataStore(object):
-    def __init__(self, folder:str):
-        self._aspects=[]   # aspects included
-        self._info={}
-        self._data={}  # raw data
-        self._folder=folder # data folder
+    def __init__(self, folder: str):
+        self._info = {}        # aspect information
+        self._hiers = {}       # hierarchies
+        self._cross = {}       # cross geometry graphs
+        self._data = {}        # raw data
+        self._basefolder = folder
+        self._folder = join(folder, 'data')  # data folder
+
+        # pairwise distances between the hierarchies
+        self._saved = join(self._basefolder, 'distances.gp')
+        if exists(self._saved):
+            self._distances = nx.read_gpickle(self._saved)
+        else:
+            self._distances = nx.Graph()
+        self._update_distances()
+
+    def _update_distances(self):
+        for aspect in self.hierarchies():
+            if aspect not in self._distances:
+                to_add = list(self._distances.nodes())
+                self._distances.add_node(aspect)
+                for n in to_add:
+                    self._distances.add_edge(aspect, n, distance=-1)
+
+        for e in self._distances.edges():
+            if self._distances[e[0]][e[1]]['distance'] == -1:
+                print('computing', e[0], e[1])
+                self._distances[e[0]][e[1]]['distance'] = compareHierarchies(
+                    self, e[0], e[1])
+        nx.write_gpickle(self._distances, self._saved)
+
+    def getDistances(self, aspects: list = []):
+        """
+            Returns a list of objects with a 1D projection of the existing
+            hierarchies.
+        """
+        if not aspects:
+            to_use = self.aspects()
+        else:
+            to_use = aspects
+
+        G = nx.subgraph(self._distances, to_use)
+
+        a2i = {a: i for i, a in enumerate(G)}
+        M = np.ones((len(G), len(G)))
+        for e in G.edges():
+            i1 = a2i[e[0]]
+            i2 = a2i[e[1]]
+            M[min([i1, i2]), max([i1, i2])] = G[e[0]][e[1]]['distance']
+            M[max([i1, i2]), min([i1, i2])] = G[e[0]][e[1]]['distance']
+
+        # plt.imshow(M)
+        # plt.colorbar()
+        # plt.show()
+
+        Y = MDS(n_components=1, dissimilarity='precomputed').fit_transform(M)
         
-    def _check_and_read(self,aspectID:str) -> None:
+        ret = []
+        for a in G:
+            ret.append({'id': a,
+                        'name': self.getAspectName(a),
+                        'x': Y[a2i[a]][0],
+                        'y': self.getAspectYear(a)})
+        return(ret)
+
+    def _check_and_read(self, aspectID: str) -> None:
         """
         Checks if a given aspect is in memory, reads it from disk otherwise
         """
         if (aspectID not in self._info):
-            infoFile=join(self._folder,'{0}.info.json'.format(aspectID))
-            tableFile=join(self._folder,'{0}.tsv'.format(aspectID))
+            if (len(self._info)) > MAX_CACHE:
+                first = list(self._info.keys())[0]
+                del(self._info[first])
+                del(self._data[first])
+
+            infoFile = join(self._folder, '{0}.info.json'.format(aspectID))
+            tableFile = join(self._folder, '{0}.tsv'.format(aspectID))
             if (not exists(infoFile)) or (not exists(tableFile)):
-                print("Trying to read non-existent aspect ",aspectID)
+                print("Trying to read non-existent aspect ", aspectID)
                 return
 
-            with open(infoFile,'r') as fin:
-                self._info[aspectID]=json.load(fin)
-            self._data[aspectID]=pd.read_csv(tableFile, 
-                                sep='\t', dtype=self._info[aspectID]['dtypes'], 
-                                usecols=self._info[aspectID]['columns']+[self._info[aspectID]['index'],])
-            self._data[aspectID]=self._data[aspectID].set_index([self._info[aspectID]['index'],]).dropna(how='all')
+            with open(infoFile, 'r') as fin:
+                self._info[aspectID] = json.load(fin)
+            self._data[aspectID] = pd.read_csv(tableFile,
+                                               sep='\t', dtype=self._info[aspectID]['dtypes'],
+                                               usecols=self._info[aspectID]['columns']+[self._info[aspectID]['index'], ])
+            self._data[aspectID] = self._data[aspectID].set_index(
+                [self._info[aspectID]['index'], ]).dropna(how='all')
 
+    def aspects(self) -> list:
+        aspects = glob(join(self._folder, '*.info.json'))
+        return([basename(x)[:-10] for x in aspects])
 
-    def aspects(self)->list:
-        return(self._aspects)
+    def hierarchies(self) -> list:
+        hiers = glob(join(self._folder, '*.gp'))
+        return([basename(x)[:-3] for x in hiers])
 
-    def getAspectName(self, aspectID:str) -> str:
+    def getHierarchy(self, aspectID: str, level: str = 'level') -> nx.Graph():
+        """
+            Returns the graph with the hierarchy of aspectID (same ID as the aspect that created it)
+        """
+        if (aspectID not in self._hiers):
+            if len(self._hiers) > MAX_CACHE:
+                first = list(self._hiers.keys())[0]
+                del(self._hiers[first])
+
+            G = nx.read_gpickle(join(self._folder, aspectID+'.gp'))
+            m = _getMaxLevel(G, level)
+            for e in G.edges():
+                G[e[0]][e[1]][level] /= m
+            self._hiers[aspectID] = G
+        else:
+            G = self._hiers[aspectID]
+        return(G)
+
+    def getCrossGeometry(self, g1: str, g2: str) -> nx.Graph():
+        """
+            Returns the graph that connects nodes of the _geometry_ g1 to g2 (and vice versa)
+        """
+        if (g1 == g2):
+            return(None)
+        fname = crossGeomFileName(g1, g2)
+        if fname in self._cross:
+            return(self._cross[fname])
+        else:
+            X = nx.read_gpickle(join(self._basefolder, fname))
+            self._cross[fname] = X
+            return(X)
+
+    def getAspectName(self, aspectID: str) -> str:
         self._check_and_read(aspectID)
         return(self._info[aspectID]['name'])
 
-    def getGeometry(self, aspectID:str) -> str:
+    def getAspectYear(self, aspectID: str) -> int:
+        self._check_and_read(aspectID)
+        return(self._info[aspectID]['year'])
+
+    def getGeometry(self, aspectID: str) -> str:
         self._check_and_read(aspectID)
         return(self._info[aspectID]['geometry'])
 
-    def getColumns(self,aspectID:str) -> list:
+    def getColumns(self, aspectID: str) -> list:
         self._check_and_read(aspectID)
-        return(self._info[aspectID]['columns'])    
+        return(self._info[aspectID]['columns'])
 
-    def getDescriptions_AsDict(self,aspectID:str) -> dict:
+    def getDescriptions_AsDict(self, aspectID: str) -> dict:
         self._check_and_read(aspectID)
-        return(self._info[aspectID]['descriptions'])    
+        return(self._info[aspectID]['descriptions'])
 
-    def getDescriptions_AsList(self,aspectID:str) -> list:
+    def getDescriptions_AsList(self, aspectID: str) -> list:
         self._check_and_read(aspectID)
-        return([self._info[aspectID]['descriptions'][x] for x in self._info[aspectID]['columns']])    
+        return([self._info[aspectID]['descriptions'][x] for x in self._info[aspectID]['columns']])
 
-
-    def getData(self, aspectID:str, id:any) -> list:
+    def getData(self, aspectID: str, id: str) -> list:
         self._check_and_read(aspectID)
-        return(list(self._data[aspectID].loc[id]))
-
+        if id in self._data[aspectID].index:
+            return(list(self._data[aspectID].loc[id]))
+        else:
+            return(None)

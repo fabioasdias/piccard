@@ -82,9 +82,11 @@ def ComputeClustering(G,layer):
     
     firstNode=list(G.nodes())[0]
     NDIMS=len(G.node[firstNode][layer])
+    print('Histogram dimensions', NDIMS)
+    # print(G.node[firstNode][layer])
     if NDIMS==1:
-        minVal=G.node[firstNode][layer]
-        maxVal=G.node[firstNode][layer]
+        minVal=G.node[firstNode][layer][0]
+        maxVal=G.node[firstNode][layer][0]
     allVals=[]
     nToVisit=[]
 
@@ -101,14 +103,13 @@ def ComputeClustering(G,layer):
             allVals.append(G.node[n][layer])
             nToVisit.append(n)
             if NDIMS==1:            
-                minVal=min((minVal,G.node[n][layer]))
-                maxVal=max((maxVal,G.node[n][layer]))
+                minVal=min((minVal,G.node[n][layer][0]))
+                maxVal=max((maxVal,G.node[n][layer][0]))
     if NDIMS==1:
         print('Value range: {0}-{1}'.format(minVal,maxVal))
         for n in nToVisit:
             G.node[n]['histogram']=_createHist(G.node[n][layer],minVal,maxVal,)
     else:
-        print('Histogram dimensions', NDIMS)
         for n in nToVisit:
             G.node[n]['histogram']=G.node[n][layer][:]
         
