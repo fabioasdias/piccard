@@ -1,12 +1,8 @@
-[
-    {
-        "kind":"US",
-        "folder":"./US",
-        "name":"USA",
-        "geometries":[{"name":"US_CT_1970", "url":"diasf.63vtys7l", "source":"US_tract_1970-4gotj2", "year": 1970, "visibility":"none"},
-                      {"name":"US_CT_1980", "url":"diasf.4adg0dum", "source":"US_tract_1980-06t3l1", "year": 1980, "visibility":"visible"},
-                      {"name":"US_CT_1990", "url":"diasf.b8kvarbi", "source":"US_tract_1990-160cwq", "year": 1990, "visibility":"none"},
-                      {"name":"US_CT_2000", "url":"diasf.7rx79mfr", "source":"US_tract_2000-3e6cci", "year": 2000, "visibility":"none"},
-                      {"name":"US_CT_2010", "url":"diasf.3g3daq23", "source":"US_tract_2010-088v77", "year": 2010, "visibility":"none"}]
-    }
+[ 
+    {"name":"US_CT_1970", "url":"diasf.63vtys7l", "source":"US_tract_1970-4gotj2", "year": 1970},
+    {"name":"US_CT_1980", "url":"diasf.4adg0dum", "source":"US_tract_1980-06t3l1", "year": 1980},
+    {"name":"US_CT_1990", "url":"diasf.b8kvarbi", "source":"US_tract_1990-160cwq", "year": 1990},
+    {"name":"US_CT_2000", "url":"diasf.7rx79mfr", "source":"US_tract_2000-3e6cci", "year": 2000},
+    {"name":"US_CT_2010", "url":"diasf.3g3daq23", "source":"US_tract_2010-088v77", "year": 2010}
 ]
+

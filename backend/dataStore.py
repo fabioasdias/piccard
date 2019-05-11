@@ -7,6 +7,7 @@ from os.path import join, basename
 from glob import glob
 from hierarchies import compareHierarchies
 from sklearn.manifold import MDS
+from uuid import uuid4
 
 import matplotlib.pylab as plt
 
@@ -24,16 +25,18 @@ def crossGeomFileName(name1, name2):
 
 
 class dataStore(object):
-    def __init__(self, folder: str):
+    def __init__(self, geometry_folder: str, data_folder: str):
         self._info = {}        # aspect information
         self._hiers = {}       # hierarchies
         self._cross = {}       # cross geometry graphs
         self._data = {}        # raw data
-        self._basefolder = folder
-        self._folder = join(folder, 'data')  # data folder
+        self._geometry_folder = geometry_folder
+        self._data_folder = data_folder
 
         # pairwise distances between the hierarchies
-        self._saved = join(self._basefolder, 'distances.gp')
+
+        # it should be gp (but then glob *gp fails - hiers)
+        self._saved = join(self._data_folder, 'distances.xgp')
         if exists(self._saved):
             self._distances = nx.read_gpickle(self._saved)
         else:
@@ -41,6 +44,7 @@ class dataStore(object):
         self._update_distances()
 
     def _update_distances(self):
+        d = 'distance'
         for aspect in self.hierarchies():
             if aspect not in self._distances:
                 to_add = list(self._distances.nodes())
@@ -49,13 +53,13 @@ class dataStore(object):
                     self._distances.add_edge(aspect, n, distance=-1)
 
         for e in self._distances.edges():
-            if self._distances[e[0]][e[1]]['distance'] == -1:
+            if self._distances[e[0]][e[1]][d] == -1:
                 print('computing', e[0], e[1])
-                self._distances[e[0]][e[1]]['distance'] = compareHierarchies(
+                self._distances[e[0]][e[1]][d] = compareHierarchies(
                     self, e[0], e[1])
         nx.write_gpickle(self._distances, self._saved)
 
-    def getDistances(self, aspects:list):
+    def getDistances(self, aspects: list):
         """
             Returns a list of objects with a 1D projection of the existing
             hierarchies.
@@ -80,7 +84,7 @@ class dataStore(object):
         # plt.show()
 
         Y = MDS(n_components=1, dissimilarity='precomputed').fit_transform(M)
-        
+
         ret = []
         for a in G:
             ret.append({'id': a,
@@ -99,8 +103,9 @@ class dataStore(object):
                 del(self._info[first])
                 del(self._data[first])
 
-            infoFile = join(self._folder, '{0}.info.json'.format(aspectID))
-            tableFile = join(self._folder, '{0}.tsv'.format(aspectID))
+            infoFile = join(self._data_folder,
+                            '{0}.info.json'.format(aspectID))
+            tableFile = join(self._data_folder, '{0}.tsv'.format(aspectID))
             if (not exists(infoFile)) or (not exists(tableFile)):
                 print("Trying to read non-existent aspect ", aspectID)
                 return
@@ -114,11 +119,11 @@ class dataStore(object):
                 [self._info[aspectID]['index'], ]).dropna(how='all')
 
     def aspects(self) -> list:
-        aspects = glob(join(self._folder, '*.info.json'))
+        aspects = glob(join(self._data_folder, '*.info.json'))
         return([basename(x)[:-10] for x in aspects])
 
     def hierarchies(self) -> list:
-        hiers = glob(join(self._folder, '*.gp'))
+        hiers = glob(join(self._data_folder, '*.gp'))
         return([basename(x)[:-3] for x in hiers])
 
     def getHierarchy(self, aspectID: str, level: str = 'level') -> nx.Graph():
@@ -130,7 +135,7 @@ class dataStore(object):
                 first = list(self._hiers.keys())[0]
                 del(self._hiers[first])
 
-            G = nx.read_gpickle(join(self._folder, aspectID+'.gp'))
+            G = nx.read_gpickle(join(self._data_folder, aspectID+'.gp'))
             m = _getMaxLevel(G, level)
             for e in G.edges():
                 G[e[0]][e[1]][level] /= m
@@ -149,9 +154,58 @@ class dataStore(object):
         if fname in self._cross:
             return(self._cross[fname])
         else:
-            X = nx.read_gpickle(join(self._basefolder, fname))
+            X = nx.read_gpickle(join(self._geometry_folder, fname))
             self._cross[fname] = X
             return(X)
+
+    def createAspect(self, config: list, temporary_dir: str):
+        ret = []
+        for aspect in [a for a in config if a['enabled']]:
+            try:
+                with open(join(temporary_dir, aspect['fileID']+'.info.json')) as fin:
+                    info = json.load(fin)
+                data = pd.read_csv(join(temporary_dir, aspect['fileID']+'.tsv'),
+                                   sep='\t', dtype=info['dtypes'],
+                                   usecols=aspect['columns']+[aspect['index'], ])
+                data = data.set_index(
+                    [aspect['index'], ]).dropna(how='all')
+
+                # dict_keys(['enabled', 'country', 'year', 'geometry',
+                # 'name', 'normalized', 'fileID', 'columns'])
+                VarInfo = {**aspect}
+                dtypes = dict(data.dtypes)
+                dtypes = {k: str(dtypes[k]) for k in dtypes.keys()}
+
+                VarInfo.update({'id': str(uuid4()),
+                                'descriptions': {c: info['columns'][c] for c in aspect['columns']},
+                                'dtypes': dtypes,
+                                })
+                del(VarInfo['enabled'])
+                with open(join(self._data_folder, VarInfo['id']+'.tsv'), 'w') as fout:
+                    data.to_csv(fout, sep='\t')
+                with open(join(self._data_folder, VarInfo['id']+'.info.json'), 'w') as fout:
+                    json.dump(VarInfo, fout)
+                ret.append(VarInfo)
+            except:
+                print('problem with ', aspect)
+                pass
+        return(ret)
+    
+    def createHierarchy(self, aspect:str):
+        G = nx.read_gpickle(join(self._geometry_folder, self.getGeometry(aspect)+'.gp'))
+        ncols = len(self.getColumns(aspect))
+        for n in G.nodes():
+            vals = self.getData(aspect,n[1])
+            if vals is not None:
+                G.node[n]['data'] = np.array(vals)
+            else:
+                G.node[n]['data'] = np.empty((ncols,))
+                G.node[n]['data'][:] = np.nan
+
+        G = ComputeClustering(G, 'data')
+        nx.write_gpickle(G, join(self._data_folder, aspect['id']+'.gp'))
+        self._update_distances()
+
 
     def getAspectName(self, aspectID: str) -> str:
         self._check_and_read(aspectID)

@@ -23,7 +23,7 @@ function getParams(location) {
   };
 }
 
-
+import {sendData,getURL} from './urls';
 
 class App extends Component {
   constructor(props){
@@ -56,7 +56,12 @@ class App extends Component {
           </div>)  
         retJSX.push(<div style={{display:'flex'}}>
                       <TempEvo key='tp'/>
-                      <Map key='map'/>
+                      <Map 
+                        key='map'
+                        geometries={CountryOptions.geometries}
+                        geometry={'US_CT_2000'}
+                        cmap={this.state.clustering}
+                      />
                     </div>);
       }
     }
@@ -68,79 +73,22 @@ class App extends Component {
   }
 
 
-  componentDidMount = () => {    
-    let {dispatch}=this.props;
-    let fromCIDtoTID=(C)=>{
-      let {traj}=this.props;
-        let tids=[];
-            for (let i=0;i<traj.length;i++){
-                for (let j=0;j<traj[i].chain.length;j++){
-                    if (traj[i].chain[j]===C){
-                        tids.push(traj[i].tid);
-                        break
-                    }
-                }
-            }
-        dispatch(actionCreators.SetTID(tids));
-    };
-
-    let doCountry=(country_id, nc, cluster_IDs)=>{
-      this.setState({showLoading:true});
-      // dispatch(actionCreators.ShowLoading(true));
-      console.log("doing country ",country_id," nc ",nc, 'cid',cluster_IDs);
-      dispatch(actionCreators.SetCountry(country_id));
-      // getData(getURL.GeoJSON(country_id),(gj)=>{
-      //   dispatch(actionCreators.SetGeoJson(gj));
-      // });
-
-
-      // getData(getURL.Segmentation(country_id),function(data) {    
-      //   // console.log(data);
-      //     dispatch(actionCreators.UpdateMap(data));                                
-      //     if (data.levelCorr.length>=nc){
-      //       dispatch(actionCreators.SetLevel(data.levelCorr.length-nc));      
-      //     }
-      //     else{
-      //       dispatch(actionCreators.SetLevel(data.levelCorr.length-2));          
-      //     }
-      //   dispatch(actionCreators.SetSelectionMode(selModes.ADD));
-      //   for (let i=0;i<cluster_IDs.length;i++){
-      //     fromCIDtoTID(cluster_IDs[i]);
-      //   }
-      //   dispatch(actionCreators.SetSelectionMode(selModes.SET));
-        // dispatch(actionCreators.ShowLoading(false));
-      this.setState({showLoading:false})
-      // });
-    }
-
-    getData(getURL.CountryOptions(), function(data) {
-      console.log('country options received', data);
-      dispatch(actionCreators.SetCountryOptions(data))
-      let params=getParams(window.location);
-      let country=0; //default country and number of clusters
-      let nc=5;
-      let cids='';
-      if (params.country!==''){
-        for(let i=0;i<data.length;i++){
-          if (data[i].name===params.country){
-            country=data[i].id;
-          }
-        }
+  componentDidMount() {    
+      getData(getURL.AvailableGeometries(), function(data) {
+        console.log('geometries received', data);
+        dispatch(actionCreators.SetAvailableGeometries(data))
+      });
+      sendData(getURL.mapHierarchies(),
+      {
+          countryID:'US', 
+      },
+      (d)=>{
+        console.log(d);
+        this.setState({clustering:d});
       }
-      if (params.nc!==''){
-        nc=parseInt(params.nc,10);
-      }
-      if (params.cid!==''){
-        if (params.cid.indexOf(',')>-1){
-          cids=params.cid.split(',').map((d)=>parseInt(d,10));
-        }
-        else{
-          cids=[parseInt(params.cid,10),];
-        }
-      }
-      doCountry(country,nc,cids);
-    });
-  }  
+    );
+    this.setState({showLoading:false})
+  }   
 }
 
 export default  connect(mapStateToProps)(App);

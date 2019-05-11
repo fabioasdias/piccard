@@ -189,7 +189,7 @@ def gatherInfoJsons_AsDict(jsondir):
         ret[data['id']]=data
     return(ret)
     
-def gatherInfoJsons(jsondir):
+def gatherInfoJsons(jsondir:str):
     ret=[]
     for f in glob(join(jsondir,'*.info.json')):
         with open(f,'r') as fin:
@@ -202,39 +202,4 @@ def gatherInfoJsons(jsondir):
             del(data['UTC'])
         ret.append(data)
     return(ret)
-
-def create_aspect_from_upload(aspects, uploadDir, countries):
-    ret=[]
-    for aspect in aspects:
-        if aspect['enabled']:
-            try:
-                with open(join(uploadDir,aspect['fileID']+'.info.json')) as fin:
-                    info=json.load(fin)
-                data=pd.read_csv(join(uploadDir, aspect['fileID']+'.tsv'), 
-                                sep='\t', dtype=info['dtypes'], 
-                                usecols=aspect['columns']+[aspect['index'],])
-                data=data.set_index([aspect['index'],]).dropna(how='all')
-
-                #dict_keys(['enabled', 'country', 'year', 'geometry', 
-                # 'name', 'normalized', 'fileID', 'columns'])
-                VarInfo={**aspect}
-                dtypes=dict(data.dtypes)
-                dtypes={k:str(dtypes[k]) for k in dtypes.keys()}
-
-                VarInfo.update({'id':str(uuid4()), 
-                    'descriptions':{c:info['columns'][c] for c in aspect['columns']},
-                    'dtypes':dtypes,
-                    })
-                del(VarInfo['enabled'])
-                with open(join(countries[aspect['country']]['data'],VarInfo['id']+'.tsv'),'w') as fout:
-                    data.to_csv(fout, sep='\t')
-                with open(join(countries[aspect['country']]['data'],VarInfo['id']+'.info.json'),'w') as fout:
-                    json.dump(VarInfo, fout)
-                ret.append(VarInfo)
-            except:
-                print('problem with ',aspect)
-                pass
-    return(ret)
-
-
 

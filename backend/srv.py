@@ -16,7 +16,7 @@ import tempfile
 
 from clustering import ComputeClustering
 from networkx.readwrite import json_graph
-from upload import processUploadFolder, gatherInfoJsons, create_aspect_from_upload
+from upload import processUploadFolder, gatherInfoJsons, create_aspect
 from hierarchies import mapHierarchies, compareHierarchies
 import pandas as pd
 from dataStore import dataStore
@@ -42,7 +42,6 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
 
 @memory.cache(ignore=['ds'])
 def _getDistances(ds:dict, aspects:list):
@@ -53,14 +52,14 @@ def _getDistances(ds:dict, aspects:list):
 class server(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
-    def availableCountries(self):
+    def availableGeometries(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
-        for kind in countries:
-            c = countries[kind]
-            ret.append({'name':  c['name'],
-                        'kind':  c['kind'],
-                        'geometries': c['geometries']
+        for g in available_geometries:
+            ret.append({'name':  g['name'],
+                        'url': g['url'],
+                        'source': g['source'],
+                        'year':g['year']
                         })
         return(ret)
 
@@ -72,13 +71,11 @@ class server(object):
     def getAspectProjection(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        ds= countries[input_json['countryID']]['ds']
         if ('aspects' not in input_json) or (not input_json['aspects']):
             to_use=ds.aspects()
         else:
             to_use=input_json['aspects']
         return(_getDistances(ds,sorted(to_use)))
-        # return(ds.getDistances(to_use))
 
 
     @cherrypy.expose
@@ -89,33 +86,7 @@ class server(object):
     def createAspects(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        aspects = create_aspect_from_upload(
-            input_json, baseconf['upload'], countries)
-
-        for aspect in aspects:
-            country = countries[aspect['country']]
-            ds = country['ds']
-
-            G = country['graphs'][aspect['geometry']].copy()
-
-            ncols = len(ds.getColumns(aspect['id']))
-
-            for n in G.nodes():
-                vals = ds.getData(aspect['id'],n[1])
-                if vals is not None:
-                    G.node[n]['data'] = np.array(vals)
-                else:
-                    G.node[n]['data'] = np.empty((ncols,))
-                    G.node[n]['data'][:] = np.nan
-            print(aspect['name'])
-            G = ComputeClustering(G, 'data')
-            print('Done ')
-            nx.write_gpickle(G, join(country['data'], aspect['id']+'.gp'))
-
-        for country in countries:
-            countries[country]['ds']._update_distances()
-
-        return(aspects)
+        return(ds.createAspect(input_json, dirconf['upload']))
 
     @cherrypy.expose
     @cherrypy.config(**{'tools.cors.on': True})
@@ -144,7 +115,7 @@ class server(object):
     @cherrypy.tools.json_out()
     def getUploadedData(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        return(gatherInfoJsons(baseconf['upload']))
+        return(gatherInfoJsons(dirconf['upload']))
 
     @cherrypy.expose
     @cherrypy.config(**{'tools.cors.on': True})
@@ -175,7 +146,7 @@ class server(object):
                     outFile.write(data)
             try:
                 res.update(processUploadFolder(
-                    tempDir, baseconf['upload'], cherrypy.request.remote.ip))
+                    tempDir, dirconf['upload'], cherrypy.request.remote.ip))
             except:
                 # raise
                 res['ok'] = False
@@ -186,36 +157,22 @@ if __name__ == '__main__':
     if (len(sys.argv)) != 2:
         print(".py conf.json")
         exit(-1)
+    
+    dirconf = {'upload': './upload', #unconfigured data
+               'db': './db',         #geometries/graphs
+               'data': './db/data'}  #configured aspects/hierarchies
 
-    countries = {}
-    # freshly uploaded (and unconfigured) data goes here
-    baseconf = {'upload': './upload'}
-    if (not exists(baseconf['upload'])):
-        makedirs(baseconf['upload'])
+    for k in dirconf:
+        if (not exists(dirconf[k])):
+            makedirs(dirconf[k])
+
+    ds = dataStore(dirconf['db'], dirconf['data'])
 
     with open(sys.argv[1], 'r') as fin:
-        countriesConfig = json.load(fin)
+        available_geometries = json.load(fin)
 
-    for i, v in enumerate(countriesConfig):
-        cData = dict()
-        cData.update(v)
-
-        baseFolder = v['folder']
-
-        cName = v['name']
-        print('\n\n'+cName)
-
-        cData['graphs'] = {}
-        for geom in v['geometries']:
-            cData['graphs'][geom['name']] = nx.read_gpickle(
-                join(baseFolder, geom['name']+'.gp'))
-
-        cData['data'] = join(baseFolder, 'data')
-        if not exists(cData['data']):
-            makedirs(cData['data'])
-        cData['ds'] = dataStore(baseFolder)
-        countries[cData['kind']] = cData
-
+    for g in enumerate(available_geometries):
+        g['graph']= nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))
 
     webapp = server()
     conf = {
@@ -230,7 +187,9 @@ if __name__ == '__main__':
         #     'tools.staticdir.dir': './public'
         # }
     }
+    cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
     cherrypy.server.max_request_body_size = 0  # for upload
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.server.socket_port = 8080
     cherrypy.quickstart(webapp, '/', conf)
+    

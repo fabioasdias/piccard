@@ -33,11 +33,35 @@ let MapboxMap = class MapboxMap extends React.Component {
       colours.push(randomColor());
     }
 
-    // let colObj = {};
-    // for (let i=1; i< ids.length;i++){
-    //   colObj[ids[i]]=colours[props.cmap[ids[i]][index]];
-    // }
-    // console.log('min',cMin,'max',cMax);
+    for (let layer of this.props.geometries){
+      if (props.selected===layer.name){
+        console.log('add',layer.year);
+        this.map.addSource('s_'+layer.year, {
+          type: 'vector',
+          url: 'mapbox://'+layer.url,
+          });
+  
+        this.map.addLayer({
+          id: 'l_'+layer.year,
+          type: 'fill',
+          source: 's_'+layer.year,
+          "source-layer" : layer.source,
+          'paint':{
+            'fill-opacity': 0.9,
+          }
+        }, 'bridge-motorway-2'); //'country-label-lg'); 
+      }
+      else{
+        console.log('else',layer.year);
+        if (this.map.getLayer('l_'+layer.year)!==undefined){
+          this.map.removeLayer('l_'+layer.year);
+        }
+        if (this.map.getSource('s_'+layer.year)!==undefined){
+          this.map.removeSource('s_'+layer.year);
+        }
+      }
+    }
+    this.setFill();
     this.setState({colours: colours});
   }
 
@@ -48,35 +72,14 @@ let MapboxMap = class MapboxMap extends React.Component {
       style: 'mapbox://styles/mapbox/light-v9'
     });
 
-
-    this.map.on('load', () => {
-      for (let layer of this.props.geometries){
-        // console.log(layer,'adding source',layer.year);
-        this.map.addSource('s_'+layer.year, {
-          type: 'vector',
-          url: 'mapbox://'+layer.url,
-          });
-
-        this.map.addLayer({
-          id: 'l_'+layer.year,
-          type: 'fill',
-          source: 's_'+layer.year,
-          "source-layer" : layer.source,
-          'layout': {
-            'visibility': layer.visibility
-            },
-          'paint':{
-            'fill-opacity': 0.9,
-          }
-        }, 'bridge-motorway-2'); //'country-label-lg'); 
-      }
-
-      this.setState({'map':this.map});
-      this.setFill();
-    });
+    // this.map.on('load', () => {
+    //   this.setFill();
+    // });
+    this.setState({'map':this.map});    
   }
 
   setFill(){
+    console.log('set fill')
     let exp=['case',
               [
                 'has',
@@ -100,7 +103,7 @@ let MapboxMap = class MapboxMap extends React.Component {
 
     if ((this.state!==null)&&(this.state.colours!==undefined)){
       for (let layer of this.props.geometries){
-        if (this.map.getLayoutProperty('l_'+layer.year,"visibility")==='visible'){
+        if (this.map.getLayer('l_'+layer.year)!==undefined){
           this.map.setPaintProperty('l_'+layer.year, 
           'fill-color', 
               ['let', 'detail', 0, exp]
@@ -117,11 +120,9 @@ let MapboxMap = class MapboxMap extends React.Component {
           //   ]
           // );
         }
-    }  
+      }
     }    
   }
-
-
 
 
   render() {
