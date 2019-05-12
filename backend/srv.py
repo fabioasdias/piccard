@@ -14,9 +14,8 @@ import cherrypy
 import networkx as nx
 import tempfile
 
-from clustering import ComputeClustering
 from networkx.readwrite import json_graph
-from upload import processUploadFolder, gatherInfoJsons, create_aspect
+from upload import processUploadFolder, gatherInfoJsons
 from hierarchies import mapHierarchies, compareHierarchies
 import pandas as pd
 from dataStore import dataStore
@@ -71,7 +70,7 @@ class server(object):
     def getAspectProjection(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        if ('aspects' not in input_json) or (not input_json['aspects']):
+        if ('aspects' not in input_json) or (len(input_json['aspects'])<=1):
             to_use=ds.aspects()
         else:
             to_use=input_json['aspects']
@@ -96,12 +95,13 @@ class server(object):
     def mapHierarchies(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
-        ds= countries[input_json['countryID']]['ds']
         if ('aspects' not in input_json) or (not input_json['aspects']):
             to_use=ds.aspects()
         else:
             to_use=input_json['aspects']
 
+        print('\n\n - map - \n\n')
+        print(input_json)
         print(to_use)
         return(mapHierarchies(ds,sorted(to_use)))
 
@@ -116,17 +116,6 @@ class server(object):
     def getUploadedData(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         return(gatherInfoJsons(dirconf['upload']))
-
-    @cherrypy.expose
-    @cherrypy.config(**{'tools.cors.on': True})
-    @cherrypy.tools.json_out()
-    @cherrypy.tools.json_in()
-    @cherrypy.tools.gzip()
-    def getAspects(self):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        input_json = cherrypy.request.json
-        countryID = input_json['countryID']
-        return(gatherInfoJsons(countries[countryID]['data']))
 
     @cherrypy.expose
     @cherrypy.config(**{'tools.cors.on': True})
@@ -171,7 +160,7 @@ if __name__ == '__main__':
     with open(sys.argv[1], 'r') as fin:
         available_geometries = json.load(fin)
 
-    for g in enumerate(available_geometries):
+    for g in available_geometries:
         g['graph']= nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))
 
     webapp = server()

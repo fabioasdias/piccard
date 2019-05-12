@@ -8,8 +8,7 @@ from glob import glob
 from hierarchies import compareHierarchies
 from sklearn.manifold import MDS
 from uuid import uuid4
-
-import matplotlib.pylab as plt
+from clustering import ComputeClustering
 
 MAX_CACHE = 10
 
@@ -88,6 +87,7 @@ class dataStore(object):
         ret = []
         for a in G:
             ret.append({'id': a,
+                        'geometry': self.getGeometry(a),
                         'name': self.getAspectName(a),
                         'x': Y[a2i[a]][0],
                         'y': self.getAspectYear(a)})
@@ -186,9 +186,11 @@ class dataStore(object):
                 with open(join(self._data_folder, VarInfo['id']+'.info.json'), 'w') as fout:
                     json.dump(VarInfo, fout)
                 ret.append(VarInfo)
+                
+                self.createHierarchy(VarInfo['id'])
             except:
                 print('problem with ', aspect)
-                pass
+                raise
         return(ret)
     
     def createHierarchy(self, aspect:str):
@@ -203,7 +205,7 @@ class dataStore(object):
                 G.node[n]['data'][:] = np.nan
 
         G = ComputeClustering(G, 'data')
-        nx.write_gpickle(G, join(self._data_folder, aspect['id']+'.gp'))
+        nx.write_gpickle(G, join(self._data_folder, aspect+'.gp'))
         self._update_distances()
 
 

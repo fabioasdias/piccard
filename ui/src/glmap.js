@@ -12,57 +12,63 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pzbmNqd2c3MGIxZDQ0bjVpa2RsZ
 
 let MapboxMap = class MapboxMap extends React.Component {
   map;
-
-  componentDidUpdate() {
-    this.setFill();
+  constructor(props){
+    super(props);
+    this.state={loaded:false}
   }
-  componentWillReceiveProps(props){
-    let ids=Object.keys(props.cmap);
   
-    let cMin = props.cmap[ids[0]][0];
-    let cMax = props.cmap[ids[0]][0];
+  componentDidUpdate() {
+    let {cmap,geometries,selected}=this.props;
+    let ids=Object.keys(cmap);
+  
+    let cMin = cmap[ids[0]][0];
+    let cMax = cmap[ids[0]][0];
     for (let i=0; i<ids.length;i++){
-      for (let j=0; j<props.cmap[ids[i]].length; j++)
+      for (let j=0; j<cmap[ids[i]].length; j++)
       {
-        cMin=Math.min(cMin,props.cmap[ids[i]][j]);
-        cMax=Math.max(cMax,props.cmap[ids[i]][j]);  
+        cMin=Math.min(cMin,cmap[ids[i]][j]);
+        cMax=Math.max(cMax,cmap[ids[i]][j]);  
       }
     }
     let colours=[];
     for (let i = 0; i<=cMax;i++){
       colours.push(randomColor());
     }
-
-    for (let layer of this.props.geometries){
-      if (props.selected===layer.name){
-        console.log('add',layer.year);
-        this.map.addSource('s_'+layer.year, {
-          type: 'vector',
-          url: 'mapbox://'+layer.url,
-          });
-  
-        this.map.addLayer({
-          id: 'l_'+layer.year,
-          type: 'fill',
-          source: 's_'+layer.year,
-          "source-layer" : layer.source,
-          'paint':{
-            'fill-opacity': 0.9,
+    if (this.state.loaded){
+      for (let layer of geometries){
+        if (selected===layer.name){
+          if (this.map.getSource('s_'+layer.year)===undefined){
+            console.log('add source',layer.year);
+            this.map.addSource('s_'+layer.year, {
+              type: 'vector',
+              url: 'mapbox://'+layer.url,
+              });  
           }
-        }, 'bridge-motorway-2'); //'country-label-lg'); 
-      }
-      else{
-        console.log('else',layer.year);
-        if (this.map.getLayer('l_'+layer.year)!==undefined){
-          this.map.removeLayer('l_'+layer.year);
+          if (this.map.getLayer('l_'+layer.year)===undefined){
+            console.log('add layer',layer.year);
+            this.map.addLayer({
+              id: 'l_'+layer.year,
+              type: 'fill',
+              source: 's_'+layer.year,
+              "source-layer" : layer.source,
+              'paint':{
+                'fill-opacity': 0.9,
+              }
+            }, 'bridge-motorway-2'); //'country-label-lg');   
+          }
         }
-        if (this.map.getSource('s_'+layer.year)!==undefined){
-          this.map.removeSource('s_'+layer.year);
+        else{
+          console.log('removing',layer.year);
+          if (this.map.getLayer('l_'+layer.year)!==undefined){
+            this.map.removeLayer('l_'+layer.year);
+          }
+          if (this.map.getSource('s_'+layer.year)!==undefined){
+            this.map.removeSource('s_'+layer.year);
+          }
         }
       }
+      this.setFill(colours);  
     }
-    this.setFill();
-    this.setState({colours: colours});
   }
 
   componentDidMount() {
@@ -72,13 +78,12 @@ let MapboxMap = class MapboxMap extends React.Component {
       style: 'mapbox://styles/mapbox/light-v9'
     });
 
-    // this.map.on('load', () => {
-    //   this.setFill();
-    // });
-    this.setState({'map':this.map});    
+    this.map.on('load', () => {
+      this.setState({loaded:true})
+    });
   }
 
-  setFill(){
+  setFill(colours){
     console.log('set fill')
     let exp=['case',
               [
@@ -95,18 +100,19 @@ let MapboxMap = class MapboxMap extends React.Component {
                       ['literal', this.props.cmap]
                     ],
                   ],  
-                  ['literal', this.state.colours]
+                  ['literal', colours]
                 ]
               ],
               "rgba(255, 255, 255, 0)"
             ];
 
-    if ((this.state!==null)&&(this.state.colours!==undefined)){
+    if (colours!==undefined){
       for (let layer of this.props.geometries){
         if (this.map.getLayer('l_'+layer.year)!==undefined){
+          console.log('detail level',this.props.detail);
           this.map.setPaintProperty('l_'+layer.year, 
           'fill-color', 
-              ['let', 'detail', 0, exp]
+              ['let', 'detail', this.props.detail, exp]
           );
           // This may work or not, but runs out of memory...
           // this.map.setPaintProperty('l_'+layer.year, 

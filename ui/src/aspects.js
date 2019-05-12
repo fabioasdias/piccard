@@ -5,17 +5,17 @@ import {sendData,getData,getURL} from './urls';
 class Aspects extends Component {
     constructor(props){
         super(props);
-        this.state={files:[],aspects:[],availableCountries:this.props.availableCountries};
+        this.state={files:[],aspects:[]};
     }
     render(){
         let retJSX=[];
         
-        if (this.props.availableCountries!==undefined){                
+        if (this.props.availableGeometries!==undefined){                
             retJSX.push(
                 <div style={{display:'flex'}}>
                     <button 
                     onClick={()=>{
-                        getData(getURL.getUploadedData(),(data)=>{
+                        getData(getURL.GetUploadedData(),(data)=>{
                             console.log('answer',data);
                             let asp=[];
                             for (let i=0;i<data.length;i++){
@@ -23,7 +23,6 @@ class Aspects extends Component {
                                 for (let j=0;j<data[i].aspects.length;j++){
                                     asp.push({
                                             enabled:false,
-                                            country:data[i].country,
                                             year:data[i].year,
                                             geometry:data[i].geometry.name,
                                             name:data[i].aspects[j][0].slice(0,3),
@@ -44,31 +43,6 @@ class Aspects extends Component {
                         })
                     }}>
                         Save aspects                    
-                    </button>
-
-                    <button onClick={()=>{
-                        sendData(getURL.GetAspects(),{countryID:'US'},(d)=>{
-                            console.log('GetAspects', d)
-                        })
-                    }}>
-                        Get aspects                    
-                    </button>
-
-                    <button onClick={()=>{
-                        sendData(getURL.mapHierarchies(),
-                            {
-                                countryID:'US', 
-                                aspects:[ ['198264d5-307d-499d-9732-f1ff8153f268',],
-                                        ['1dcb4801-4ef5-4cdc-a15b-4cc4b4c3f0c1',],
-                                        ['3a619ce0-bd26-440d-afca-c14a3ff842ed',],
-                                        ['2efeaa77-9fef-4c5b-9a79-3575f624abf1',],
-                                        ['507c76db-20e5-40d8-8775-e2771393f58e',]
-                                        ]
-                            },
-                            (d)=>{console.log('Comparison', d)
-                        })
-                    }}>
-                        Do test!
                     </button>
 
                 </div>);
@@ -131,22 +105,6 @@ class Aspects extends Component {
                             data-which={'name'}
                             defaultValue={this.state.aspects[i].name}/>                        
                     </div>
-
-                    <div> Country: 
-                        <select 
-                            onChange={onChange}
-                            data-k={i}
-                            defaultValue={aspects[i].country}
-                            data-which={'country'}>
-
-                        {this.props.availableCountries.map((d)=>{
-                            return(<option
-                                    value={d.kind}
-                                >
-                                {d.name}
-                            </option>)})}
-                        </select>
-                    </div>
                         
                     <div> Year: 
                         <input
@@ -163,9 +121,7 @@ class Aspects extends Component {
                             data-k={i}
                             data-which={'geometry'}
                             defaultValue={aspects[i].geometry}>
-                        {this.props.availableCountries.filter((e)=>{
-                            return(e.kind===aspects[i].country);
-                          })[0].geometries.map((d)=>{
+                        {this.props.availableGeometries.map((d)=>{
                             return(<option
                                     value={d.name}
                                 >

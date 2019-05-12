@@ -8,3 +8,12 @@
     margin: 1px;
     float:left;
 }
+
+.tooltip {
+    position: absolute;
+    width: fit-content;
+    height: fit-content;
+    background-color: white;
+    border: solid;
+    border-width: thin;
+}

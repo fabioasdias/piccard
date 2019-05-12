@@ -127,22 +127,25 @@ def mapHierarchies(ds: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0
     # holds the resulting hierarchy on each original geometry
     # - This could be faster if the partial merges were reused
     final = []
-    for i in range(len(geoms)):
-        backwards = None
-        forwards = None
+    if len(geoms)>1:
+        for i in range(len(geoms)):
+            backwards = None
+            forwards = None
 
-        if i != (len(geoms)-1):
-            backwards = merged[-1]
-            for j in range(len(geoms)-2, i-1, -1):
-                backwards = _hierMerge(merged[j], backwards, ds.getCrossGeometry(geoms[j], geoms[j+1]))
+            if i != (len(geoms)-1):
+                backwards = merged[-1]
+                for j in range(len(geoms)-2, i-1, -1):
+                    backwards = _hierMerge(merged[j], backwards, ds.getCrossGeometry(geoms[j], geoms[j+1]))
 
-        if i != 0:
-            forwards = merged[0]
-            for j in range(1, i+1):
-                forwards = _hierMerge(merged[j], forwards, ds.getCrossGeometry(geoms[j], geoms[j-1]))
+            if i != 0:
+                forwards = merged[0]
+                for j in range(1, i+1):
+                    forwards = _hierMerge(merged[j], forwards, ds.getCrossGeometry(geoms[j], geoms[j-1]))
 
-        # same geometry, no cross needed
-        final.append(_hierMerge(backwards, forwards))
+            # same geometry, no cross needed
+            final.append(_hierMerge(backwards, forwards))
+    else:
+        final.append(merged[0])
 
     ret = {}
     for i, g in enumerate(geoms):

@@ -28,14 +28,13 @@ export const sendData=(url,data,callBackFcn)=>{
     );
 }
 export const requestType ={
-    SEGMENTATION : 'Segmentation',
-    COUNTRY_OPTIONS : 'CountryOptions',
-    PATH         : 'Path',
-    REGION_DETAILS : 'RegionDetails',
-    CREATE_ASPECT : 'CreateAspects',
+    AVAILABLE_GEOMETRIES : 'AvailableGeometries',
+    CREATE_ASPECTS : 'CreateAspects',
     GET_ASPECTS : 'GetAspects',
+    GET_DATA : 'GetUploadedData',
     ASPECT_PROJECTION: 'GetAspectProjection',
-    MAP_HIERARCHIES: 'mapHierarchies',
+    MAP_HIERARCHIES: 'MapHierarchies',
+    UPLOAD :'Upload'
 };
 export const getData = (url,actionThen) => {
     fetch(url)
@@ -47,10 +46,10 @@ export const getData = (url,actionThen) => {
 }
 
 export const getURL  = {
-    CountryOptions: () => {
-        return(baseURL()+'availableCountries');
+    AvailableGeometries: () => {
+        return(baseURL()+'availableGeometries');
     },
-    mapHierarchies: () => {
+    MapHierarchies: () => {
         return(baseURL()+'mapHierarchies')
     },
     GetAspectProjection: () => {
@@ -59,36 +58,14 @@ export const getURL  = {
     GetAspects: () => {
         return(baseURL()+'getAspects');
     },
-    RegionDetails: (countryID,displayID) => {
-        return(baseURL()+'getRegionDetails?countryID='+countryID+'&displayID='+displayID);
-    },
     Upload: () => {
         return(baseURL()+'upload');
     },
-    Path: () => {
-        return(baseURL()+'getPath');
-    },
-    getUploadedData: () => {
+    GetUploadedData: () => {
         return(baseURL()+'getUploadedData');
     },
     createAspects: () => {
         return(baseURL()+'createAspects');
-    },
-    Segmentation: (country,vars,filters,weights) => {
-        let args=[];
-        if (country!==undefined){
-            args.push('countryID='+country);
-        }
-        if (vars!==undefined){
-            args.push('variables='+vars);
-        }
-        if (weights!==undefined){
-            args.push('weights='+weights);
-        }
-        if (filters!==undefined){
-            args.push('filters='+filters);
-        }
-        return(baseURL()+'getSegmentation?'+ args.join('&'));
     }
 };
 
