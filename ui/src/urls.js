@@ -1,3 +1,5 @@
+
+
 const baseURL=()=>{
     return('http://localhost:8080/');
     // return('http://142.1.190.14/ct/');// clr
@@ -29,10 +31,10 @@ export const sendData=(url,data,callBackFcn)=>{
 }
 export const requestType ={
     AVAILABLE_GEOMETRIES : 'AvailableGeometries',
+    AVAILABLE_ASPECTS : 'AvailableAspects',
     CREATE_ASPECTS : 'CreateAspects',
     GET_ASPECTS : 'GetAspects',
     GET_DATA : 'GetUploadedData',
-    ASPECT_PROJECTION: 'GetAspectProjection',
     MAP_HIERARCHIES: 'MapHierarchies',
     UPLOAD :'Upload'
 };
@@ -49,11 +51,11 @@ export const getURL  = {
     AvailableGeometries: () => {
         return(baseURL()+'availableGeometries');
     },
+    AvailableAspects: () => {
+        return(baseURL()+'availableAspects');
+    },
     MapHierarchies: () => {
         return(baseURL()+'mapHierarchies')
-    },
-    GetAspectProjection: () => {
-        return(baseURL()+'getAspectProjection');
     },
     GetAspects: () => {
         return(baseURL()+'getAspects');

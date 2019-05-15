@@ -3,9 +3,8 @@ import { connect } from 'react-redux';
 import './style.css';
 import './tempEvo.css';
 import {XYPlot, MarkSeries, XAxis, YAxis, Hint} from 'react-vis';
-import { sendData, getURL } from './urls';
-import { actionCreators } from './reducers'
-import {arrayEQ} from './util';
+import { actionCreators, requestClustering } from './reducers';
+
 
 
 const mapStateToProps = (state) => ({
@@ -16,38 +15,22 @@ const mapStateToProps = (state) => ({
 class TempEvo extends Component {
     constructor(props){
         super(props);
-        this.state={projection:undefined, tooltip:undefined};
-    }
-
-    updateData(aspects){
-        sendData(getURL.GetAspectProjection(), 
-        {aspects:aspects},
-        (data)=>{
-            this.setState({projection:data});
-        });
-    }
-
-    componentWillReceiveProps(props){
-        if (!arrayEQ(this.props.aspects, props.aspects)){
-            this.updateData(props.aspects);
-        }
-    }
-    componentDidMount(){
-        this.updateData(this.props.aspects);
+        this.state={tooltip:undefined};
     }
 
     render() {
         let retJSX=[];
-        let {projection}=this.state;
+        let {similarity}=this.props;
         let {dispatch}=this.props;
-        if (projection!==undefined){
+        if (similarity!==undefined){
             retJSX.push(<div>
                 <XYPlot
                     width={380}
-                    height={800}
+                    height={500}
+                    xDomain={[0,1]}
                     >
                     <XAxis
-                        hideTicks
+                        // hideTicks
                     />
                     <YAxis
                         tickFormat={v => String(v)}
@@ -55,17 +38,19 @@ class TempEvo extends Component {
                     <MarkSeries
                         // color="darkgray"
                         stroke="lightgray"
-                        data={projection}
+                        data={similarity}
                         onValueMouseOver={(datapoint, event)=>{
                             this.setState({tooltip:datapoint});
                           }}
                         onValueMouseOut={(event)=>{
                             this.setState({tooltip:undefined})
                         }}
-                        onValueClick={(datapoint, event)=>{
-                            console.log('updating click', datapoint)
+                        onValueClick={(datapoint, e)=>{
+                            console.log('updating click', datapoint);
+                            if (e.event.shiftKey){
+                                dispatch(requestClustering([datapoint.id,]))
+                            }
                             dispatch(actionCreators.SelectGeometry(datapoint.geometry));
-                            dispatch(actionCreators.SelectAspects([datapoint.id,]));
                         }}
                     />
                     {(this.state.tooltip!==undefined)?

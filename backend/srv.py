@@ -21,11 +21,13 @@ import pandas as pd
 from dataStore import dataStore
 from joblib import Memory
 
+from sklearn.manifold import MDS, TSNE
+
+
 cachedir = './cache/'
 if not exists(cachedir):
     makedirs(cachedir)
 memory = Memory(cachedir, verbose=0)
-
 
 
 def cors():
@@ -41,16 +43,48 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-
 @memory.cache(ignore=['ds'])
-def _getDistances(ds:dict, aspects:list):
-    return(ds.getDistances(aspects))
+def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
+    Gs = mapHierarchies(ds, aspects)
+
+    print('got merged')
+
+    sim = []
+    for a in ds.aspects():
+        print('comparing ', a)
+        g = ds.getGeometry(a)
+        if g not in Gs:
+            g = list(Gs.keys())[-1]
+        d = compareHierarchies(ds, Gs[g], a, g1=g)
+        sim.append({'id': a,
+                    'geometry': g,
+                    'name': ds.getAspectName(a)+' {0}'.format(d),
+                    'selected': a in aspects,
+                    'x': d,
+                    'y': ds.getAspectYear(a)})
+
+    cl = {}
+    for g in Gs:
+        cl[g] = {}
+        for n in Gs[g]:
+            cl[g][n[1]] = []
+
+    for threshold in thresholds:
+        for g in Gs:
+            Gs[g].remove_edges_from(
+                [e[:2] for e in Gs[g].edges(data='level') if (e[2] > threshold)])
+            for cc, nodes in enumerate(nx.connected_components(Gs[g])):
+                for n in nodes:
+                    cl[g][n[1]].append(cc)
+
+    return({'clustering': cl, 'similarity': sim})
 
 
 @cherrypy.expose
 class server(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
+    @cherrypy.tools.gzip()
     def availableGeometries(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
@@ -58,24 +92,30 @@ class server(object):
             ret.append({'name':  g['name'],
                         'url': g['url'],
                         'source': g['source'],
-                        'year':g['year']
+                        'year': g['year']
                         })
         return(ret)
 
     @cherrypy.expose
-    @cherrypy.config(**{'tools.cors.on': True})
     @cherrypy.tools.json_out()
-    @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
-    def getAspectProjection(self):
+    def availableAspects(self):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        input_json = cherrypy.request.json
-        if ('aspects' not in input_json) or (len(input_json['aspects'])<=1):
-            to_use=ds.aspects()
-        else:
-            to_use=input_json['aspects']
-        return(_getDistances(ds,sorted(to_use)))
+        return(ds.aspects())
 
+    # @cherrypy.expose
+    # @cherrypy.config(**{'tools.cors.on': True})
+    # @cherrypy.tools.json_out()
+    # @cherrypy.tools.json_in()
+    # @cherrypy.tools.gzip()
+    # def getAspectProjection(self):
+    #     cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+    #     input_json = cherrypy.request.json
+    #     if ('aspects' not in input_json) or (len(input_json['aspects']) <= 1):
+    #         to_use = ds.aspects()
+    #     else:
+    #         to_use = input_json['aspects']
+    #     return(_getDistances(ds, sorted(to_use)))
 
     @cherrypy.expose
     @cherrypy.config(**{'tools.cors.on': True})
@@ -96,14 +136,17 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         if ('aspects' not in input_json) or (not input_json['aspects']):
-            to_use=ds.aspects()
+            to_use = ds.aspects()
         else:
-            to_use=input_json['aspects']
+            to_use = input_json['aspects']
 
-        print('\n\n - map - \n\n')
-        print(input_json)
-        print(to_use)
-        return(mapHierarchies(ds,sorted(to_use)))
+        thresholds: list = [0.9, 0.75, 0.5]
+        # thresholds: _lists_ of cutting points for the normalized hierarchies.
+        return(_mapHiers(ds, sorted(to_use), thresholds))
+
+        # print('\n\n - map - \n\n')
+        # print(input_json)
+        # print(to_use)
 
     @cherrypy.expose
     def index(self):
@@ -146,10 +189,10 @@ if __name__ == '__main__':
     if (len(sys.argv)) != 2:
         print(".py conf.json")
         exit(-1)
-    
-    dirconf = {'upload': './upload', #unconfigured data
-               'db': './db',         #geometries/graphs
-               'data': './db/data'}  #configured aspects/hierarchies
+
+    dirconf = {'upload': './upload',  # unconfigured data
+               'db': './db',  # geometries/graphs
+               'data': './db/data'}  # configured aspects/hierarchies
 
     for k in dirconf:
         if (not exists(dirconf[k])):
@@ -161,7 +204,7 @@ if __name__ == '__main__':
         available_geometries = json.load(fin)
 
     for g in available_geometries:
-        g['graph']= nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))
+        g['graph'] = nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))
 
     webapp = server()
     conf = {
@@ -181,4 +224,3 @@ if __name__ == '__main__':
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.server.socket_port = 8080
     cherrypy.quickstart(webapp, '/', conf)
-    

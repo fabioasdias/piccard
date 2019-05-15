@@ -2,16 +2,18 @@ import React, {Component } from 'react';
 import './App.css';
 import TempEvo from './tempEvo';
 import { connect } from 'react-redux';
-// import { actionCreators} from './reducers';
-import {getURL, getData} from './urls';//sendData
+import {getURL, getData, sendData} from './urls';
 import Map from './map';
 import Upload from './upload';
 import Aspects from './aspects';
-import { actionCreators } from './reducers';
+import { actionCreators, requestClustering } from './reducers';
+// import {arrayEQ} from './util';
 
 const mapStateToProps = (state) => ({  
   aspects: state.aspects,  
   geometry: state.geometry,
+  clustering: state.clustering,
+  similarity: state.similarity
 });
 
 // //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -28,13 +30,15 @@ const mapStateToProps = (state) => ({
 class App extends Component {
   constructor(props){
     super(props);
-    this.state={showLoading:true, showUploadPanel:false}
+    this.state={showLoading:true, 
+                showUploadPanel:false,
+                availableAspects:[],
+                availableGeometries:[]}
   }
 
   render() {
     let retJSX=[];
     let {showLoading,showUploadPanel,availableGeometries}=this.state;
-    let {aspects, geometry}=this.props;
     
     if (showLoading===true){
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
@@ -59,13 +63,15 @@ class App extends Component {
           </div>);  
         retJSX.push(<div style={{display:'flex'}}>
                       <TempEvo 
+                        similarity={this.props.similarity}
                         key='tp'
                       />
                       <Map 
                         key='map'
                         geometries={availableGeometries}
-                        geometry={geometry}
-                        aspects={aspects}
+                        geometry={this.props.geometry}
+                        aspects={this.props.aspects}
+                        clustering={this.props.clustering}
                       />
                     </div>);
       }
@@ -82,8 +88,15 @@ class App extends Component {
       getData(getURL.AvailableGeometries(), (data)=> {
         console.log('geometries received', data, data[0]['name']);
         dispatch(actionCreators.SelectGeometry(data[0]['name']));
-        this.setState({availableGeometries:data});        
+        this.setState({availableGeometries:data});                
       });
+      getData(getURL.AvailableAspects(), (data)=> {
+        console.log('aspects received', data);
+        this.setState({availableAspects:data});                
+        dispatch(requestClustering(data));
+      });
+
+
     this.setState({showLoading:false})
   }   
 }

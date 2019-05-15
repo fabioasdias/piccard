@@ -17,57 +17,61 @@ let MapboxMap = class MapboxMap extends React.Component {
     this.state={loaded:false}
   }
   
-  componentDidUpdate() {
-    let {cmap,geometries,selected}=this.props;
-    let ids=Object.keys(cmap);
-  
-    let cMin = cmap[ids[0]][0];
-    let cMax = cmap[ids[0]][0];
-    for (let i=0; i<ids.length;i++){
-      for (let j=0; j<cmap[ids[i]].length; j++)
-      {
-        cMin=Math.min(cMin,cmap[ids[i]][j]);
-        cMax=Math.max(cMax,cmap[ids[i]][j]);  
-      }
-    }
-    let colours=[];
-    for (let i = 0; i<=cMax;i++){
-      colours.push(randomColor());
-    }
-    if (this.state.loaded){
-      for (let layer of geometries){
-        if (selected===layer.name){
-          if (this.map.getSource('s_'+layer.year)===undefined){
-            console.log('add source',layer.year);
-            this.map.addSource('s_'+layer.year, {
-              type: 'vector',
-              url: 'mapbox://'+layer.url,
-              });  
-          }
-          if (this.map.getLayer('l_'+layer.year)===undefined){
-            console.log('add layer',layer.year);
-            this.map.addLayer({
-              id: 'l_'+layer.year,
-              type: 'fill',
-              source: 's_'+layer.year,
-              "source-layer" : layer.source,
-              'paint':{
-                'fill-opacity': 0.9,
-              }
-            }, 'bridge-motorway-2'); //'country-label-lg');   
-          }
-        }
-        else{
-          console.log('removing',layer.year);
-          if (this.map.getLayer('l_'+layer.year)!==undefined){
-            this.map.removeLayer('l_'+layer.year);
-          }
-          if (this.map.getSource('s_'+layer.year)!==undefined){
-            this.map.removeSource('s_'+layer.year);
-          }
+  componentDidUpdate(props) {
+    let {geometries,selected}=this.props;
+    let cmaps = this.props.cmap;
+    if ((cmaps!==undefined)&&(cmaps.hasOwnProperty(selected))){
+      let cmap=cmaps[selected];
+      let ids=Object.keys(cmap);
+    
+      let cMin = cmap[ids[0]][0];
+      let cMax = cmap[ids[0]][0];
+      for (let i=0; i<ids.length;i++){
+        for (let j=0; j<cmap[ids[i]].length; j++)
+        {
+          cMin=Math.min(cMin,cmap[ids[i]][j]);
+          cMax=Math.max(cMax,cmap[ids[i]][j]);  
         }
       }
-      this.setFill(colours);  
+      let colours=[];
+      for (let i = 0; i<=cMax;i++){
+        colours.push(randomColor());
+      }
+      if (this.state.loaded){
+        for (let layer of geometries){
+          if (selected===layer.name){
+            if (this.map.getSource('s_'+layer.year)===undefined){
+              console.log('add source',layer.year);
+              this.map.addSource('s_'+layer.year, {
+                type: 'vector',
+                url: 'mapbox://'+layer.url,
+                });  
+            }
+            if (this.map.getLayer('l_'+layer.year)===undefined){
+              console.log('add layer',layer.year);
+              this.map.addLayer({
+                id: 'l_'+layer.year,
+                type: 'fill',
+                source: 's_'+layer.year,
+                "source-layer" : layer.source,
+                'paint':{
+                  'fill-opacity': 0.9,
+                }
+              }, 'bridge-motorway-2'); //'country-label-lg');   
+            }
+          }
+          else{
+            if (this.map.getLayer('l_'+layer.year)!==undefined){
+              console.log('removing',layer.year);
+              this.map.removeLayer('l_'+layer.year);
+            }
+            if (this.map.getSource('s_'+layer.year)!==undefined){
+              this.map.removeSource('s_'+layer.year);
+            }
+          }
+        }
+        this.setFill(colours);  
+      }
     }
   }
 
@@ -89,7 +93,7 @@ let MapboxMap = class MapboxMap extends React.Component {
               [
                 'has',
                 ['to-string', ['get', this.props.paintProp]],
-                ['literal', this.props.cmap]
+                ['literal', this.props.cmap[this.props.selected]]
               ],
               ['to-color', 
                 ["at", 
@@ -97,7 +101,7 @@ let MapboxMap = class MapboxMap extends React.Component {
                     ['var','detail'],
                     ['get',
                       ['to-string', ['get', this.props.paintProp]],
-                      ['literal', this.props.cmap]
+                      ['literal', this.props.cmap[this.props.selected]]
                     ],
                   ],  
                   ['literal', colours]

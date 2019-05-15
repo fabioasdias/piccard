@@ -4,44 +4,38 @@ import {arrayEQ} from './util';
 import {sendData, getURL} from './urls';
 
 class Map extends Component {
-  constructor(props){
-    super(props)
-    this.state={cmap:undefined}
-  }
 
-  updateClustering(aspects){
-    console.log('calling update clustering', aspects)
-    sendData(getURL.MapHierarchies(),
-      {aspects:aspects},
-      (d)=>{
-        console.log('clustering',d);
-        this.setState({cmap:d});
-      });
-  }
+  // updateClustering(aspects){
+  //   console.log('getting',this.state.cmap)
+  //   sendData(getURL.MapHierarchies(),
+  //     {aspects:aspects},
+  //     (d)=>{
+  //       this.setState({cmap:d,key:this.state.key+1});
+  //     });
+  // }
 
-  componentDidUpdate(props){
-    console.log('did update',this.props.aspects, props.aspects)
-    if (!arrayEQ(this.props.aspects, props.aspects)){
-      console.log('really update')
-      this.updateClustering(this.props.aspects)
-    }
-  }
-  componentDidMount(){
-    console.log('mount')
-    this.updateClustering(this.props.aspects);
-  }
+  // componentDidUpdate(props){
+  //   console.log('did')
+  //   if (!arrayEQ(this.props.aspects, props.aspects)){
+  //     console.log('did if')
+  //     this.setState({cmap:undefined})
+  //     this.updateClustering(this.props.aspects)
+  //   }
+  // }
+  // componentDidMount(){
+  //   this.updateClustering(this.props.aspects);
+  // }
   render() {
-    let {geometries, geometry}=this.props;
-    let {cmap}=this.state;
-    console.log('state',this.state)
-    if ((geometries!==undefined)&&(geometry!==undefined)&&(cmap!==undefined)&&(cmap.hasOwnProperty(geometry))){
-      console.log(geometries,geometry,cmap)
+    let {geometries, geometry, clustering}=this.props;
+    // let {cmap}=this.state;
+    if ((geometries!==undefined)&&(geometry!==undefined)){
+      console.log(geometry,clustering)
       return (
         <MapboxMap 
           geometries={geometries}
           paintProp={'GISJOIN'}
           selected={geometry}
-          cmap={cmap[geometry]}
+          cmap={clustering}
           detail={(this.props.aspects.length===1)?1:0}
         />
       );

@@ -12,20 +12,34 @@ memory = Memory(cachedir, verbose=0)
 
 #the datastore identifies the country, but the aspect IDs are unique, so it
 #doesnt really matter for the cache
-@memory.cache(ignore=['ds'])
-def compareHierarchies(ds: dict, a1: str, a2: str, level: str = 'level') -> float:
+# @memory.cache(ignore=['ds'])
+def compareHierarchies(ds: dict, a1, a2, g1:str=None, g2:str=None, level: str = 'level') -> float:
     """
         Computes a distance between hierarchies/aspects a1 and a2.
-        ds: the corresponding datastore (conf['ds'])
+        
+        if a1/a2 are strings, the hierarchy is read from the datastore.
+
+        if they are graphs, they are used directly. Then g1/g2 are necessary.
+        
+        ds: the current datastore.
+
         Returns 0-1.
     """
 
     # ds= conf['ds']
-    g1 = ds.getGeometry(a1)
-    g2 = ds.getGeometry(a2)
+    if not isinstance(a1,nx.Graph):
+        g1 = ds.getGeometry(a1)
+        G1 = ds.getHierarchy(a1)
+    else:
+        G1=a1
+        assert(g1 is not None)
 
-    G1 = ds.getHierarchy(a1)
-    G2 = ds.getHierarchy(a2)
+    if not isinstance(a2,nx.Graph):
+        g2 = ds.getGeometry(a2)
+        G2 = ds.getHierarchy(a2)
+    else:
+        G2=a2
+        assert(g2 is not None)
 
     D = 0
 
@@ -80,7 +94,7 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph = None, level: str = 'lev
     return(H)
 
 
-def _mergeAll(ds: dict, aspects: list) -> nx.Graph:
+def _mergeAll(ds: dict, aspects: list, level:str='level') -> nx.Graph:
     F = None
     for a in aspects:
         G = ds.getHierarchy(a)
@@ -93,20 +107,20 @@ def _mergeAll(ds: dict, aspects: list) -> nx.Graph:
                 cX = ds.getCrossGeometry(curGeometry, lastGeometry)
             else:
                 cX = None
-            F = _hierMerge(F, G, cX)
+            F = _hierMerge(F, G, cX, level=level)
 
         lastGeometry = ds.getGeometry(a)
     return(F)
 
 @memory.cache(ignore=['ds'])
-def mapHierarchies(ds: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0.2]) -> dict:
+def mapHierarchies(ds: dict, aspects: list, level:str='level') -> dict:
     """
-    ds: datastore from srv.py (conf['ds'])
-    aspects:  list of aspects (hierarchies) [a1,a2,...] 
-    thresholds: _lists_ of cutting points for the normalized hierarchies.
+    ds: datastore from srv.py (conf['ds']) 
+    aspects:  list of aspects
+    (hierarchies) [a1,a2,...] 
 
-    This function will merge the aspects in the sublists returning the connected
-    components for each in their original geometries.
+    This function will merge the aspects in the sublists, returning one graph
+    per geometry
     """
     print('=-=', aspects)
 
@@ -122,11 +136,11 @@ def mapHierarchies(ds: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0
     geoms = sorted(aspectsByGeometry.keys())
     merged = []
     for g in geoms:
-        merged.append(_mergeAll(ds, aspectsByGeometry[g]))
+        merged.append(_mergeAll(ds, aspectsByGeometry[g], level=level))
 
     # holds the resulting hierarchy on each original geometry
     # - This could be faster if the partial merges were reused
-    final = []
+    final = {}
     if len(geoms)>1:
         for i in range(len(geoms)):
             backwards = None
@@ -135,33 +149,20 @@ def mapHierarchies(ds: dict, aspects: list, thresholds: list = [0.8, 0.6, 0.4, 0
             if i != (len(geoms)-1):
                 backwards = merged[-1]
                 for j in range(len(geoms)-2, i-1, -1):
-                    backwards = _hierMerge(merged[j], backwards, ds.getCrossGeometry(geoms[j], geoms[j+1]))
+                    backwards = _hierMerge(merged[j], backwards, ds.getCrossGeometry(geoms[j], geoms[j+1]), level=level)
 
             if i != 0:
                 forwards = merged[0]
                 for j in range(1, i+1):
-                    forwards = _hierMerge(merged[j], forwards, ds.getCrossGeometry(geoms[j], geoms[j-1]))
+                    forwards = _hierMerge(merged[j], forwards, ds.getCrossGeometry(geoms[j], geoms[j-1]), level=level)
 
             # same geometry, no cross needed
-            final.append(_hierMerge(backwards, forwards))
+            final[geoms[i]]=_hierMerge(backwards, forwards, level=level)
     else:
-        final.append(merged[0])
+        final[geoms[0]]=merged[0]
 
-    ret = {}
-    for i, g in enumerate(geoms):
-        ret[g] = {}
-        for n in final[i]:
-            ret[g][n[1]] = []
 
-    for threshold in thresholds:
-        for i, g in enumerate(geoms):
-            final[i].remove_edges_from(
-                [e[:2] for e in final[i].edges(data='level') if (e[2] > threshold)])
-            for cc, nodes in enumerate(nx.connected_components(final[i])):
-                for n in nodes:
-                    ret[g][n[1]].append(cc)
-
-    return(ret)
+    return(final)
 
     # computes all possible paths
 

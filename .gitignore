@@ -1,7 +1,7 @@
 ui/node_modules*
 ui/build*
-backend/US
-backend/data
+backend/db
+backend/shapefiles
 backend/upload
 *.tex.bak
 *.pyc
@@ -12,3 +12,4 @@ backend/upload
 *.out
 sup/sup.pdf
 env
+backend/cache

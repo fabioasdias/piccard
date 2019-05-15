@@ -6,9 +6,9 @@ import networkx as nx
 from os.path import join, basename
 from glob import glob
 from hierarchies import compareHierarchies
-from sklearn.manifold import MDS
 from uuid import uuid4
 from clustering import ComputeClustering
+from random import choice
 
 MAX_CACHE = 10
 
@@ -35,88 +35,63 @@ class dataStore(object):
         # pairwise distances between the hierarchies
 
         # it should be gp (but then glob *gp fails - hiers)
-        self._saved = join(self._data_folder, 'distances.xgp')
-        if exists(self._saved):
-            self._distances = nx.read_gpickle(self._saved)
-        else:
-            self._distances = nx.Graph()
-        self._update_distances()
-
-    def _update_distances(self):
-        d = 'distance'
-        for aspect in self.hierarchies():
-            if aspect not in self._distances:
-                to_add = list(self._distances.nodes())
-                self._distances.add_node(aspect)
-                for n in to_add:
-                    self._distances.add_edge(aspect, n, distance=-1)
-
-        for e in self._distances.edges():
-            if self._distances[e[0]][e[1]][d] == -1:
-                print('computing', e[0], e[1])
-                self._distances[e[0]][e[1]][d] = compareHierarchies(
-                    self, e[0], e[1])
-        nx.write_gpickle(self._distances, self._saved)
-
-    def getDistances(self, aspects: list):
-        """
-            Returns a list of objects with a 1D projection of the existing
-            hierarchies.
-        """
-        # if not aspects:
-        #     to_use = self.aspects()
+        # self._saved = join(self._data_folder, 'distances.xgp')
+        # if exists(self._saved):
+        #     self._distances = nx.read_gpickle(self._saved)
         # else:
-        #     to_use = aspects
+        #     self._distances = nx.Graph()
+        # self._update_distances()
 
-        G = nx.subgraph(self._distances, aspects)
+    # def _update_distances(self):
+    #     d = 'distance'
+    #     for aspect in self.hierarchies():
+    #         if aspect not in self._distances:
+    #             to_add = list(self._distances.nodes())
+    #             self._distances.add_node(aspect)
+    #             for n in to_add:
+    #                 self._distances.add_edge(aspect, n, distance=-1)
 
-        a2i = {a: i for i, a in enumerate(G)}
-        M = np.ones((len(G), len(G)))
-        for e in G.edges():
-            i1 = a2i[e[0]]
-            i2 = a2i[e[1]]
-            M[min([i1, i2]), max([i1, i2])] = G[e[0]][e[1]]['distance']
-            M[max([i1, i2]), min([i1, i2])] = G[e[0]][e[1]]['distance']
+    #     for e in self._distances.edges():
+    #         if self._distances[e[0]][e[1]][d] == -1:
+    #             print('computing', e[0], e[1])
+    #             self._distances[e[0]][e[1]][d] = compareHierarchies(
+    #                 self, e[0], e[1])
+    #     nx.write_gpickle(self._distances, self._saved)
 
-        # plt.imshow(M)
-        # plt.colorbar()
-        # plt.show()
+    # def getDistanceGraph(self, aspects: list):
+    #     """
+    #         Returns a graph representation of the aspects including their distances.
+    #     """
+    #     # if not aspects:
+    #     #     to_use = self.aspects()
+    #     # else:
+    #     #     to_use = aspects
 
-        Y = MDS(n_components=1, dissimilarity='precomputed').fit_transform(M)
+    #     return(nx.subgraph(self._distances, aspects))
 
-        ret = []
-        for a in G:
-            ret.append({'id': a,
-                        'geometry': self.getGeometry(a),
-                        'name': self.getAspectName(a),
-                        'x': Y[a2i[a]][0],
-                        'y': self.getAspectYear(a)})
-        return(ret)
-
-    def _check_and_read(self, aspectID: str) -> None:
+    def _check_and_read(self, aspectID: str, data:bool=False) -> None:
         """
         Checks if a given aspect is in memory, reads it from disk otherwise
         """
         if (aspectID not in self._info):
-            if (len(self._info)) > MAX_CACHE:
-                first = list(self._info.keys())[0]
-                del(self._info[first])
-                del(self._data[first])
-
             infoFile = join(self._data_folder,
                             '{0}.info.json'.format(aspectID))
-            tableFile = join(self._data_folder, '{0}.tsv'.format(aspectID))
-            if (not exists(infoFile)) or (not exists(tableFile)):
-                print("Trying to read non-existent aspect ", aspectID)
-                return
-
             with open(infoFile, 'r') as fin:
                 self._info[aspectID] = json.load(fin)
+
+        if data and (aspectID not in self._data):
+            if (len(self._data)) > MAX_CACHE:
+                pick = choice(list(self._data.keys()))
+                del(self._data[pick])
+            
+            tableFile = join(self._data_folder, '{0}.tsv'.format(aspectID))
             self._data[aspectID] = pd.read_csv(tableFile,
                                                sep='\t', dtype=self._info[aspectID]['dtypes'],
                                                usecols=self._info[aspectID]['columns']+[self._info[aspectID]['index'], ])
             self._data[aspectID] = self._data[aspectID].set_index(
                 [self._info[aspectID]['index'], ]).dropna(how='all')
+
+
 
     def aspects(self) -> list:
         aspects = glob(join(self._data_folder, '*.info.json'))
@@ -206,7 +181,7 @@ class dataStore(object):
 
         G = ComputeClustering(G, 'data')
         nx.write_gpickle(G, join(self._data_folder, aspect+'.gp'))
-        self._update_distances()
+        # self._update_distances()
 
 
     def getAspectName(self, aspectID: str) -> str:
@@ -234,7 +209,7 @@ class dataStore(object):
         return([self._info[aspectID]['descriptions'][x] for x in self._info[aspectID]['columns']])
 
     def getData(self, aspectID: str, id: str) -> list:
-        self._check_and_read(aspectID)
+        self._check_and_read(aspectID, data=True)
         if id in self._data[aspectID].index:
             return(list(self._data[aspectID].loc[id]))
         else:
