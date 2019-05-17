@@ -1,14 +1,15 @@
 import sys
 import networkx as nx
 import fiona
-from util import indexedPols, crossGeomFileName
+from util import indexedPols
+from dataStore import crossGeomFileName
 from os.path import join
 from shapely.geometry import shape   
 import geojson
 import json
 from datetime import datetime
 
-import matplotlib.pylab as plt
+# import matplotlib.pylab as plt
 
 if __name__ == '__main__':
     nargs=len(sys.argv)
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     for i,bGeom in enumerate(baseGeometries):
         print(bGeom)
         geo[bGeom]=indexedPols()
-        #if it can't find gcs.csv, $> declare -x GDAL_DATA="/usr/share/gdal"
+        #if it can't find gcs.csv, $ declare -x GDAL_DATA="/usr/share/gdal"
         with fiona.open(shps[i], 'r') as source:
             for feat in source:
                 geo[bGeom].insertJSON(G=feat['geometry'],props={'Geom_ID':feat['properties'][fields[i]],})
@@ -49,13 +50,13 @@ if __name__ == '__main__':
             #adds all possible nodes (also on the next for)
             for tid,tgeom in geo[nextbGeom].iterIDGeom('Geom_ID'):
                 B.add_node((nextbGeom,tid))
-                point=tgeom.representative_point()
-                pos[(nextbGeom,tid)]=[point.x+0.001,point.y+0.001]
+                # point=tgeom.representative_point()
+                # pos[(nextbGeom,tid)]=[point.x+0.001,point.y+0.001]
 
             for tid,tgeom in geo[thisbGeom].iterIDGeom('Geom_ID'):
                 B.add_node((thisbGeom,tid))
-                point=tgeom.representative_point()
-                pos[(thisbGeom,tid)]=[point.x,point.y]
+                # point=tgeom.representative_point()
+                # pos[(thisbGeom,tid)]=[point.x,point.y]
 
                 for polID in geo[nextbGeom].search(shape(tgeom).buffer(-1e-6)):   
                     matched=geo[nextbGeom].getPolygon(polID) 
@@ -67,9 +68,9 @@ if __name__ == '__main__':
 
             print('edges',len(B.edges()))
 
-            nx.draw(B,pos=pos,nodelist=[x for x in B.nodes() if x[0]==thisbGeom],node_size=5,node_color='red')
-            nx.draw(B,pos=pos,nodelist=[x for x in B.nodes() if x[0]==nextbGeom],node_size=5,node_color='blue')
-            plt.show()
+            # nx.draw(B,pos=pos,nodelist=[x for x in B.nodes() if x[0]==thisbGeom],node_size=5,node_color='red')
+            # nx.draw(B,pos=pos,nodelist=[x for x in B.nodes() if x[0]==nextbGeom],node_size=5,node_color='blue')
+            # plt.show()
 
             print('saving')
             nx.write_gpickle(B,join(outName, crossGeomFileName(thisbGeom,nextbGeom)))

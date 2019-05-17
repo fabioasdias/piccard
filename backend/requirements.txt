@@ -10,3 +10,4 @@ shapely
 scikit-learn
 matplotlib
 joblib
+fiona
