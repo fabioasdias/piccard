@@ -64,7 +64,7 @@ if __name__ == '__main__':
                     # print(tgeom.intersection(matched).area/tgeom.area,(thisbGeom, tid),(nextbGeom, nID))
                     interArea=tgeom.intersection(matched).area
                     if ((interArea/tgeom.area)>0.05) or ((interArea/matched.area)>0.05):
-                        B.add_edge((thisbGeom, tid),(nextbGeom, nID))
+                        B.add_edge((thisbGeom, tid),(nextbGeom, nID), intersection=interArea)
 
             print('edges',len(B.edges()))
 

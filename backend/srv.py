@@ -24,6 +24,10 @@ from joblib import Memory
 from sklearn.manifold import MDS, TSNE
 
 
+import matplotlib.pylab as plt
+
+from tqdm import tqdm
+
 cachedir = './cache/'
 if not exists(cachedir):
     makedirs(cachedir)
@@ -43,41 +47,92 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-@memory.cache(ignore=['ds'])
+# @memory.cache(ignore=['ds'])
 def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
     Gs = mapHierarchies(ds, aspects)
 
     print('got merged')
 
-    sim = []
-    for a in ds.aspects():
-        print('comparing ', a)
-        g = ds.getGeometry(a)
-        if g not in Gs:
-            g = list(Gs.keys())[-1]
-        d = compareHierarchies(ds, Gs[g], a, g1=g)
-        sim.append({'id': a,
-                    'geometry': g,
-                    'name': ds.getAspectName(a)+' {0}'.format(d),
-                    'selected': a in aspects,
-                    'x': d,
-                    'y': ds.getAspectYear(a)})
+    # sim = []
+    # for a in ds.aspects():
+    #     print('comparing ', a)
+    #     g = ds.getGeometry(a)
+    #     if g not in Gs:
+    #         g = list(Gs.keys())[-1]
+    #     d = compareHierarchies(ds, Gs[g], a, g1=g)
+    #     sim.append({'id': a,
+    #                 'geometry': g,
+    #                 'name': ds.getAspectName(a)+' {0}'.format(d),
+    #                 'selected': a in aspects,
+    #                 'x': d,
+    #                 'y': ds.getAspectYear(a)})
 
     cl = {}
+    cluster_evolution = []
+
     for g in Gs:
         cl[g] = {}
         for n in Gs[g]:
             cl[g][n[1]] = []
 
     for threshold in thresholds:
-        for g in Gs:
-            Gs[g].remove_edges_from(
-                [e[:2] for e in Gs[g].edges(data='level') if (e[2] > threshold)])
+        geoms = sorted(list(Gs.keys()))
+        for g in geoms:
+            divider = [e[:2]
+                       for e in Gs[g].edges(data='level')
+                       if (e[2] > threshold)]
+            Gs[g].remove_edges_from(divider)
             for cc, nodes in enumerate(nx.connected_components(Gs[g])):
                 for n in nodes:
                     cl[g][n[1]].append(cc)
 
-    return({'clustering': cl, 'similarity': sim})
+        M = nx.DiGraph()
+        for g1 in geoms:
+            for g2 in geoms:
+                if (g1 != g2):
+                    X = ds.getCrossGeometry(g1, g2)
+                    for n in cl[g1]:
+                        source = (g1, cl[g1][n][-1])
+                        # area = sum([e[2] for e in X.edges(source,data='intersection')])
+                        if (source not in M):
+                            M.add_node(source)
+                        if 'area' not in M.node[source]:
+                            M.node[source]['area'] = {}
+                        if g2 not in M.node[source]['area']:
+                            M.node[source]['area'][g2]=0
+
+                        for nn in X.neighbors((g1, n)):
+                            intersection = X[(g1, n)][nn]['intersection']
+                            M.node[source]['area'][g2] += intersection
+                            target = (g2, cl[g2][nn[1]][-1])
+                            if not target in M:
+                                M.add_node(target)
+                            if not M.has_edge(source, target):
+                                M.add_edge(source, target, area=0)
+                            M[source][target]['area'] += intersection
+
+        vals=[]
+        for e in M.edges():
+            if e[1][0] in M.node[e[0]]['area']:
+                M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
+            vals.append(M[e[0]][e[1]]['area'])
+        plt.hist(vals,100)
+        plt.show()
+        
+
+        # for n in M:
+        #     MM = nx.subgraph(M,[n,]+list(M.neighbors(n)))
+        #     pos = nx.spring_layout(MM)
+        #     print('pos done')
+        #     nx.draw_networkx_nodes(MM, pos=pos)
+        #     E = list(MM.edges())
+        #     W = [10*M[e[0]][e[1]]['area'] for e in E]
+        #     nx.draw_networkx_edges(MM, pos=pos, edgelist=E, width=W)
+        #     nx.draw_networkx_labels(MM, pos=pos)
+        #     nx.draw_networkx_edge_labels(MM,pos=pos,edge_labels={e:'{0}'.format(round(MM[e[0]][e[1]]['area'],2)) for e in MM.edges()})
+        #     plt.show()
+
+    return({'clustering': cl, 'evolution': cluster_evolution})
 
 
 @cherrypy.expose

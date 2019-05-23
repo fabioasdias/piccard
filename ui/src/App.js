@@ -13,7 +13,6 @@ const mapStateToProps = (state) => ({
   aspects: state.aspects,  
   geometry: state.geometry,
   clustering: state.clustering,
-  similarity: state.similarity
 });
 
 // //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -62,10 +61,10 @@ class App extends Component {
           }}>Upload data</button>
           </div>);  
         retJSX.push(<div style={{display:'flex'}}>
-                      <TempEvo 
+                      {/* <TempEvo 
                         similarity={this.props.similarity}
                         key='tp'
-                      />
+                      /> */}
                       <Map 
                         key='map'
                         geometries={availableGeometries}
@@ -91,7 +90,7 @@ class App extends Component {
         this.setState({availableGeometries:data});                
       });
       getData(getURL.AvailableAspects(), (data)=> {
-        console.log('aspects received', data);
+        // console.log('aspects received', data);
         this.setState({availableAspects:data});                
         dispatch(requestClustering(data));
       });

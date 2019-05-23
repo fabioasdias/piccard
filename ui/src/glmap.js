@@ -7,7 +7,37 @@ import './glmap.css';
 import randomColor from 'randomcolor';
 
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pzbmNqd2c3MGIxZDQ0bjVpa2RsZXU1YSJ9.udvxholRALOFEV4ciCh-Lg';
+mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
+
+class GeomControl {
+  constructor(callback){
+    this.callbackfcn=callback;
+  }
+  onAdd(map){
+    this.map = map;
+    this.container = document.createElement('div');
+    this.container.className = 'geom-control';
+
+    var x = document.createElement("SELECT");
+    x.setAttribute("id", "mySelect");
+    document.body.appendChild(x);
+
+    var z = document.createElement("option");
+    z.setAttribute("value", "volvocar");
+    var t = document.createTextNode("Volvo");
+    z.appendChild(t);
+    document.getElementById("mySelect").appendChild(z);
+  
+    // this.container.textContent = 'My custom control';
+    this.container.onclick = this.callbackfcn;
+    return(this.container);
+  }
+  onRemove(){
+    this.container.parentNode.removeChild(this.container);
+    this.map = undefined;
+  }
+}
+
 
 
 let MapboxMap = class MapboxMap extends React.Component {
@@ -84,6 +114,11 @@ let MapboxMap = class MapboxMap extends React.Component {
 
     this.map.on('load', () => {
       this.setState({loaded:true})
+      const geomControl = new GeomControl((d)=>{
+        console.log('callback geomcontrol',d);
+      });
+      this.map.addControl(geomControl);
+
     });
   }
 
