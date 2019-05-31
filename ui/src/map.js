@@ -26,15 +26,14 @@ class Map extends Component {
   //   this.updateClustering(this.props.aspects);
   // }
   render() {
-    let {geometries, geometry, clustering}=this.props;
+    let {geometries, clustering}=this.props;
     // let {cmap}=this.state;
-    if ((geometries!==undefined)&&(geometry!==undefined)){
-      console.log(geometry,clustering)
+    if (geometries!==undefined){
+      console.log(clustering)
       return (
         <MapboxMap 
           geometries={geometries}
           paintProp={'GISJOIN'}
-          selected={geometry}
           cmap={clustering}
           detail={(this.props.aspects.length===1)?1:0}
         />

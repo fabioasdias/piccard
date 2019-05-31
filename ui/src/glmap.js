@@ -10,23 +10,32 @@ import randomColor from 'randomcolor';
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
 
 class GeomControl {
-  constructor(callback){
+  constructor(geoms,callback){
     this.callbackfcn=callback;
+    this.geoms=geoms;
   }
   onAdd(map){
     this.map = map;
+    console.log(this.geoms);
     this.container = document.createElement('div');
-    this.container.className = 'geom-control';
+    // this.container.className = 'geom-control';
+    this.container.className = 'mapboxgl-ctrl';
+    console.log('cont',this.container)
 
-    var x = document.createElement("SELECT");
-    x.setAttribute("id", "mySelect");
-    document.body.appendChild(x);
+    var sel = document.createElement("SELECT");
+    sel.setAttribute("id", "mySelect");
+    sel.onchange=this.callbackfcn;
+    // document.body.appendChild(x);
 
-    var z = document.createElement("option");
-    z.setAttribute("value", "volvocar");
-    var t = document.createTextNode("Volvo");
-    z.appendChild(t);
-    document.getElementById("mySelect").appendChild(z);
+    for (let i=0;i<this.geoms.length;i++){
+      var op = document.createElement("option");
+      op.setAttribute("value", this.geoms[i].name);
+      var text = document.createTextNode(this.geoms[i].name);
+      op.appendChild(text);
+      sel.appendChild(op)  
+    }
+    this.container.appendChild(sel)
+    // document.getElementById("mySelect").appendChild(z);
   
     // this.container.textContent = 'My custom control';
     this.container.onclick = this.callbackfcn;
@@ -44,12 +53,18 @@ let MapboxMap = class MapboxMap extends React.Component {
   map;
   constructor(props){
     super(props);
-    this.state={loaded:false}
+    this.state={loaded:false, selected:undefined}
   }
   
   componentDidUpdate(props) {
-    let {geometries,selected}=this.props;
+    let {geometries}=this.props;
     let cmaps = this.props.cmap;
+    let {selected} = this.state;
+    if ((selected===undefined)&&(geometries!==undefined)&&(geometries.length>0)){
+      selected=geometries[0].name;
+      this.setState({selected:selected})
+    }
+    console.log('selected',selected);
     if ((cmaps!==undefined)&&(cmaps.hasOwnProperty(selected))){
       let cmap=cmaps[selected];
       let ids=Object.keys(cmap);
@@ -114,11 +129,13 @@ let MapboxMap = class MapboxMap extends React.Component {
 
     this.map.on('load', () => {
       this.setState({loaded:true})
-      const geomControl = new GeomControl((d)=>{
-        console.log('callback geomcontrol',d);
-      });
+      let geomControl = new GeomControl(this.props.geometries,
+        (d)=>{
+          console.log('callback geomcontrol',d.target.value);
+          this.setState({selected:d.target.value})
+        }
+        );
       this.map.addControl(geomControl);
-
     });
   }
 
@@ -128,7 +145,7 @@ let MapboxMap = class MapboxMap extends React.Component {
               [
                 'has',
                 ['to-string', ['get', this.props.paintProp]],
-                ['literal', this.props.cmap[this.props.selected]]
+                ['literal', this.props.cmap[this.state.selected]]
               ],
               ['to-color', 
                 ["at", 
@@ -136,7 +153,7 @@ let MapboxMap = class MapboxMap extends React.Component {
                     ['var','detail'],
                     ['get',
                       ['to-string', ['get', this.props.paintProp]],
-                      ['literal', this.props.cmap[this.props.selected]]
+                      ['literal', this.props.cmap[this.state.selected]]
                     ],
                   ],  
                   ['literal', colours]
