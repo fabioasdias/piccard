@@ -3,7 +3,7 @@ import './App.css';
 import TempEvo from './tempEvo';
 import { connect } from 'react-redux';
 import {getURL, getData, sendData} from './urls';
-import Map from './map';
+import MapboxMap from './glmap';
 import Upload from './upload';
 import Aspects from './aspects';
 import { actionCreators, requestClustering } from './reducers';
@@ -65,12 +65,11 @@ class App extends Component {
                         similarity={this.props.similarity}
                         key='tp'
                       /> */}
-                      <Map 
-                        key='map'
+                      <MapboxMap 
                         geometries={availableGeometries}
-                        geometry={this.props.geometry}
-                        aspects={this.props.aspects}
-                        clustering={this.props.clustering}
+                        paintProp={'GISJOIN'}
+                        cmap={this.props.clustering}
+                        detail={(this.props.aspects.length===1)?1:0}
                       />
                     </div>);
       }
