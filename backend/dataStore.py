@@ -3,12 +3,14 @@ import numpy as np
 import pandas as pd
 import json
 import networkx as nx
-from os.path import join, basename
+from os.path import join, basename, exists
 from glob import glob
 from hierarchies import compareHierarchies
 from uuid import uuid4
 from clustering import ComputeClustering
 from random import choice
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import minmax_scale, robust_scale, power_transform
 
 MAX_CACHE = 10
 
@@ -29,6 +31,7 @@ class dataStore(object):
         self._hiers = {}       # hierarchies
         self._cross = {}       # cross geometry graphs
         self._data = {}        # raw data
+        self._pca = {}         # PCA projection data
         self._geometry_folder = geometry_folder
         self._data_folder = data_folder
 
@@ -58,20 +61,38 @@ class dataStore(object):
     #                 self, e[0], e[1])
     #     nx.write_gpickle(self._distances, self._saved)
 
-    # def getDistanceGraph(self, aspects: list):
-    #     """
-    #         Returns a graph representation of the aspects including their distances.
-    #     """
-    #     # if not aspects:
-    #     #     to_use = self.aspects()
-    #     # else:
-    #     #     to_use = aspects
-
-    #     return(nx.subgraph(self._distances, aspects))
-
-    def _check_and_read(self, aspectID: str, data:bool=False) -> None:
+    def _do_pca(self, aspectID: str):
         """
-        Checks if a given aspect is in memory, reads it from disk otherwise
+            Computes and saves a PCA projection of the data for aspectID
+        """
+        self._check_and_read(aspectID,data=True)
+        X = self._data[aspectID].to_numpy()
+        for i in range(X.shape[0]):
+            if np.any(np.isnan(X[i,:])):
+                print(self._data[aspectID].iloc[i])
+                print(X[i,:])
+                input('.')
+        P= PCA(n_components=1, whiten=True)
+        Y = P.fit_transform(X)
+        # print('exp',P.explained_variance_ratio_)
+        
+        nSteps=10000
+
+        Y = minmax_scale(Y, feature_range=(0,nSteps-1)).astype(np.int32)
+        h,_=np.histogram(Y,nSteps)
+        cS = np.cumsum(h)
+        cS = nSteps*(cS / max(cS))
+        Y = cS[Y]
+        Y = minmax_scale(Y)
+
+        df = pd.DataFrame(data=Y,index=self._data[aspectID].index,columns=['1D'])
+        df.to_csv(join(self._data_folder, '{0}.pca'.format(aspectID)),sep='\t')
+        
+
+    def _check_and_read(self, aspectID: str, data:bool=False, pca:bool=False) -> None:
+        """
+        Checks if the basic info for given aspect is in memory, reads it from disk otherwise.
+        Set data/pca to do additionally for data/pca reading.
         """
         if (aspectID not in self._info):
             infoFile = join(self._data_folder,
@@ -89,8 +110,21 @@ class dataStore(object):
                                                sep='\t', dtype=self._info[aspectID]['dtypes'],
                                                usecols=self._info[aspectID]['columns']+[self._info[aspectID]['index'], ])
             self._data[aspectID] = self._data[aspectID].set_index(
-                [self._info[aspectID]['index'], ]).dropna(how='all')
+                [self._info[aspectID]['index'], ]).dropna(how='any')
+        
+        if pca and (aspectID not in self._pca):
+            if not exists(join(self._data_folder, '{0}.pca'.format(aspectID))):
+                # print('pca',aspectID, self.getAspectName(aspectID))
+                self._do_pca(aspectID)
 
+            if (len(self._pca)) > MAX_CACHE:
+                pick = choice(list(self._pca.keys()))
+                del(self._pca[pick])
+            
+            tableFile = join(self._data_folder, '{0}.pca'.format(aspectID))
+            self._pca[aspectID] = pd.read_csv(tableFile,sep='\t')
+            self._pca[aspectID] = self._pca[aspectID].set_index(
+                [self._info[aspectID]['index'], ])
 
 
     def aspects(self) -> list:
@@ -212,5 +246,16 @@ class dataStore(object):
         self._check_and_read(aspectID, data=True)
         if id in self._data[aspectID].index:
             return(list(self._data[aspectID].loc[id]))
+        else:
+            return(None)
+
+
+    def getProjection(self, aspectID: str, id: str)-> float:
+        """
+            Returns the pre-computed PCA projection of the 'id' point from aspectID.
+        """
+        self._check_and_read(aspectID, pca=True)
+        if id in self._pca[aspectID].index:
+            return(list(self._pca[aspectID].loc[id]))
         else:
             return(None)

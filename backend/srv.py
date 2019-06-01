@@ -86,48 +86,76 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                 for n in nodes:
                     cl[g][n[1]].append(cc)
 
-        # M = nx.DiGraph()
-        # for g1 in geoms:
-        #     for g2 in geoms:
-        #         if (g1 != g2):
-        #             X = ds.getCrossGeometry(g1, g2)
-        #             for n in cl[g1]:
-        #                 source = (g1, cl[g1][n][-1])
-        #                 # area = sum([e[2] for e in X.edges(source,data='intersection')])
-        #                 if (source not in M):
-        #                     M.add_node(source)
-        #                 if 'area' not in M.node[source]:
-        #                     M.node[source]['area'] = {}
-        #                 if g2 not in M.node[source]['area']:
-        #                     M.node[source]['area'][g2]=0
+        M = nx.DiGraph()
+        for g1 in geoms:
+            for g2 in geoms:
+                if (g1 != g2):
+                    X = ds.getCrossGeometry(g1, g2)
+                    for n in cl[g1]:
+                        source = (g1, cl[g1][n][-1])
+                        # area = sum([e[2] for e in X.edges(source,data='intersection')])
+                        if (source not in M):
+                            M.add_node(source)
+                        if 'area' not in M.node[source]:
+                            M.node[source]['area'] = {}
+                        if g2 not in M.node[source]['area']:
+                            M.node[source]['area'][g2] = 0
 
-        #                 for nn in X.neighbors((g1, n)):
-        #                     intersection = X[(g1, n)][nn]['intersection']
-        #                     M.node[source]['area'][g2] += intersection
-        #                     target = (g2, cl[g2][nn[1]][-1])
-        #                     if not target in M:
-        #                         M.add_node(target)
-        #                     if not M.has_edge(source, target):
-        #                         M.add_edge(source, target, area=0)
-        #                     M[source][target]['area'] += intersection
+                        for nn in X.neighbors((g1, n)):
+                            intersection = X[(g1, n)][nn]['intersection']
+                            M.node[source]['area'][g2] += intersection
+                            target = (g2, cl[g2][nn[1]][-1])
+                            if not target in M:
+                                M.add_node(target)
+                            if not M.has_edge(source, target):
+                                M.add_edge(source, target, area=0)
+                            M[source][target]['area'] += intersection
 
-        # vals=[]
-        # for e in M.edges():
-        #     if e[1][0] in M.node[e[0]]['area']:
-        #         M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
-        #     vals.append(M[e[0]][e[1]]['area'])
-        # plt.hist(vals,100)
-        # plt.show()
-        
+        for e in M.edges():
+            if e[1][0] in M.node[e[0]]['area']:
+                M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
+
+        full_info_aspects = [{'name':ds.getAspectName(a),
+                              'year':ds.getAspectYear(a),
+                              'cols':ds.getColumns(a),
+                              'id'   :a,
+                              'descr':ds.getDescriptions_AsDict(a)}
+                            for a in aspects]
+
+        full_info_aspects = sorted(full_info_aspects,key=lambda x: x['year'])
+        for info in full_info_aspects:
+            ds._check_and_read(info['id'],pca=True)
+
+
+
+        # #keeps only the highest sucessor for each geometry
+        # for n in M:
+        #     to_remove=[]
+        #     picks = {}
+        #     for nn in M.successors(n):
+        #         cval = M[n][nn]['area']
+        #         g = nn[0]
+        #         if g not in picks:
+        #             picks[g]=(nn, cval)
+        #         else:
+        #             if cval > picks[g][1]:
+        #                 to_remove.append((n,picks[g][0]))
+        #                 picks[g]=(nn, cval)
+        #             else:
+        #                 to_remove.append((n,nn))
+        #     M.remove_edges_from(to_remove)
 
         # for n in M:
         #     MM = nx.subgraph(M,[n,]+list(M.neighbors(n)))
+        #     E = list(MM.edges())
+        #     W = [2*M[e[0]][e[1]]['area'] for e in E]
+        #     if all([x>0.75 for x in W]):
+        #         continue
+
         #     pos = nx.spring_layout(MM)
         #     print('pos done')
         #     nx.draw_networkx_nodes(MM, pos=pos)
-        #     E = list(MM.edges())
-        #     W = [10*M[e[0]][e[1]]['area'] for e in E]
-        #     nx.draw_networkx_edges(MM, pos=pos, edgelist=E, width=W)
+        #     nx.draw_networkx_edges(MM, pos=pos, edgelist=E, width=W, edge_color='grey')
         #     nx.draw_networkx_labels(MM, pos=pos)
         #     nx.draw_networkx_edge_labels(MM,pos=pos,edge_labels={e:'{0}'.format(round(MM[e[0]][e[1]]['area'],2)) for e in MM.edges()})
         #     plt.show()
