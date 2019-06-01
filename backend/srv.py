@@ -75,6 +75,18 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
         for n in Gs[g]:
             cl[g][n[1]] = []
 
+    full_info_aspects = [{'name': ds.getAspectName(a),
+                          'year': ds.getAspectYear(a),
+                          'geom': ds.getGeometry(a),
+                          'cols': ds.getColumns(a),
+                          'id': a,
+                          'descr': ds.getDescriptions_AsDict(a)}
+                           for a in aspects]
+
+    full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
+
+
+
     for threshold in thresholds:
         geoms = sorted(list(Gs.keys()))
         for g in geoms:
@@ -115,17 +127,10 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
             if e[1][0] in M.node[e[0]]['area']:
                 M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
 
-        full_info_aspects = [{'name':ds.getAspectName(a),
-                              'year':ds.getAspectYear(a),
-                              'cols':ds.getColumns(a),
-                              'id'   :a,
-                              'descr':ds.getDescriptions_AsDict(a)}
-                            for a in aspects]
-
-        full_info_aspects = sorted(full_info_aspects,key=lambda x: x['year'])
         for info in full_info_aspects:
-            ds._check_and_read(info['id'],pca=True)
-
+            a = info['id']
+            g = info['geom']
+            
 
 
         # #keeps only the highest sucessor for each geometry

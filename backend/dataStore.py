@@ -65,31 +65,32 @@ class dataStore(object):
         """
             Computes and saves a PCA projection of the data for aspectID
         """
-        self._check_and_read(aspectID,data=True)
+        self._check_and_read(aspectID, data=True)
         X = self._data[aspectID].to_numpy()
         for i in range(X.shape[0]):
-            if np.any(np.isnan(X[i,:])):
+            if np.any(np.isnan(X[i, :])):
                 print(self._data[aspectID].iloc[i])
-                print(X[i,:])
+                print(X[i, :])
                 input('.')
-        P= PCA(n_components=1, whiten=True)
+        P = PCA(n_components=1, whiten=True)
         Y = P.fit_transform(X)
         # print('exp',P.explained_variance_ratio_)
-        
-        nSteps=10000
 
-        Y = minmax_scale(Y, feature_range=(0,nSteps-1)).astype(np.int32)
-        h,_=np.histogram(Y,nSteps)
+        nSteps = 10000
+
+        Y = minmax_scale(Y, feature_range=(0, nSteps-1)).astype(np.int32)
+        h, _ = np.histogram(Y, nSteps)
         cS = np.cumsum(h)
         cS = nSteps*(cS / max(cS))
         Y = cS[Y]
         Y = minmax_scale(Y)
 
-        df = pd.DataFrame(data=Y,index=self._data[aspectID].index,columns=['1D'])
-        df.to_csv(join(self._data_folder, '{0}.pca'.format(aspectID)),sep='\t')
-        
+        df = pd.DataFrame(
+            data=Y, index=self._data[aspectID].index, columns=['1D'])
+        df.to_csv(join(self._data_folder,
+                       '{0}.pca'.format(aspectID)), sep='\t')
 
-    def _check_and_read(self, aspectID: str, data:bool=False, pca:bool=False) -> None:
+    def _check_and_read(self, aspectID: str, data: bool = False, pca: bool = False) -> None:
         """
         Checks if the basic info for given aspect is in memory, reads it from disk otherwise.
         Set data/pca to do additionally for data/pca reading.
@@ -104,14 +105,14 @@ class dataStore(object):
             if (len(self._data)) > MAX_CACHE:
                 pick = choice(list(self._data.keys()))
                 del(self._data[pick])
-            
+
             tableFile = join(self._data_folder, '{0}.tsv'.format(aspectID))
             self._data[aspectID] = pd.read_csv(tableFile,
                                                sep='\t', dtype=self._info[aspectID]['dtypes'],
                                                usecols=self._info[aspectID]['columns']+[self._info[aspectID]['index'], ])
             self._data[aspectID] = self._data[aspectID].set_index(
                 [self._info[aspectID]['index'], ]).dropna(how='any')
-        
+
         if pca and (aspectID not in self._pca):
             if not exists(join(self._data_folder, '{0}.pca'.format(aspectID))):
                 # print('pca',aspectID, self.getAspectName(aspectID))
@@ -120,12 +121,11 @@ class dataStore(object):
             if (len(self._pca)) > MAX_CACHE:
                 pick = choice(list(self._pca.keys()))
                 del(self._pca[pick])
-            
+
             tableFile = join(self._data_folder, '{0}.pca'.format(aspectID))
-            self._pca[aspectID] = pd.read_csv(tableFile,sep='\t')
+            self._pca[aspectID] = pd.read_csv(tableFile, sep='\t')
             self._pca[aspectID] = self._pca[aspectID].set_index(
                 [self._info[aspectID]['index'], ])
-
 
     def aspects(self) -> list:
         aspects = glob(join(self._data_folder, '*.info.json'))
@@ -195,18 +195,19 @@ class dataStore(object):
                 with open(join(self._data_folder, VarInfo['id']+'.info.json'), 'w') as fout:
                     json.dump(VarInfo, fout)
                 ret.append(VarInfo)
-                
+
                 self.createHierarchy(VarInfo['id'])
             except:
                 print('problem with ', aspect)
                 raise
         return(ret)
-    
-    def createHierarchy(self, aspect:str):
-        G = nx.read_gpickle(join(self._geometry_folder, self.getGeometry(aspect)+'.gp'))
+
+    def createHierarchy(self, aspect: str):
+        G = nx.read_gpickle(
+            join(self._geometry_folder, self.getGeometry(aspect)+'.gp'))
         ncols = len(self.getColumns(aspect))
         for n in G.nodes():
-            vals = self.getData(aspect,n[1])
+            vals = self.getData(aspect, n[1])
             if vals is not None:
                 G.node[n]['data'] = np.array(vals)
             else:
@@ -216,7 +217,6 @@ class dataStore(object):
         G = ComputeClustering(G, 'data')
         nx.write_gpickle(G, join(self._data_folder, aspect+'.gp'))
         # self._update_distances()
-
 
     def getAspectName(self, aspectID: str) -> str:
         self._check_and_read(aspectID)
@@ -249,8 +249,7 @@ class dataStore(object):
         else:
             return(None)
 
-
-    def getProjection(self, aspectID: str, id: str)-> float:
+    def getProjection(self, aspectID: str, id: str) -> float:
         """
             Returns the pre-computed PCA projection of the 'id' point from aspectID.
         """
