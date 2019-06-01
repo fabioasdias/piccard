@@ -22,7 +22,7 @@ from dataStore import dataStore
 from joblib import Memory
 
 from sklearn.manifold import MDS, TSNE
-
+from random import sample
 
 import matplotlib.pylab as plt
 
@@ -81,20 +81,22 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                           'cols': ds.getColumns(a),
                           'id': a,
                           'descr': ds.getDescriptions_AsDict(a)}
-                           for a in aspects]
+                         for a in aspects]
 
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
 
-
+    geoms = sorted(list(Gs.keys()))
 
     for threshold in thresholds:
-        geoms = sorted(list(Gs.keys()))
+        cc2n = {}
         for g in geoms:
             divider = [e[:2]
                        for e in Gs[g].edges(data='level')
                        if (e[2] > threshold)]
             Gs[g].remove_edges_from(divider)
+            cc2n[g] = {}
             for cc, nodes in enumerate(nx.connected_components(Gs[g])):
+                cc2n[g][cc] = [n[1] for n in nodes]
                 for n in nodes:
                     cl[g][n[1]].append(cc)
 
@@ -127,28 +129,76 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
             if e[1][0] in M.node[e[0]]['area']:
                 M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
 
+        #keeps only the highest sucessor for each geometry
+        for n in M:
+            to_remove=[]
+            picks = {}
+            for nn in M.successors(n):
+                cval = M[n][nn]['area']
+                g = nn[0]
+                if g not in picks:
+                    picks[g]=(nn, cval)
+                else:
+                    if cval > picks[g][1]:
+                        to_remove.append((n,picks[g][0]))
+                        picks[g]=(nn, cval)
+                    else:
+                        to_remove.append((n,nn))
+            M.remove_edges_from(to_remove)
+
+
+        points = {}
         for info in full_info_aspects:
             a = info['id']
             g = info['geom']
-            
+            points[a] = {}
+            for cc in cc2n[g]:
+                points[a][cc] = np.median(
+                    [x for x in [ds.getProjection(a, id) for id in cc2n[g][cc]] if (x is not None)])
 
+        
+        paths = [[n, ] for n in M if n[0] == full_info_aspects[0]['geom']]
+        print('pre',len(paths))
+        lines = [[points[full_info_aspects[0]['id']][n[0][1]],] for n in paths]
+        done =[]
+        dlines=[]
+        assert(len(paths)==len(lines))
+        for info in full_info_aspects[1:]:
+            g = info['geom']
+            a = info['id']
+            to_add = []
+            new_lines=[]
+            while paths:
+                current = paths.pop(0)
+                cline = lines.pop(0)
+                if current[-1][0]==g: #same geometry:
+                    to_add.append(current+[current[-1],])
+                    new_lines.append(cline+[points[a][current[-1][1]],])
+                else:
+                    options = [n for n in M.successors(current[-1]) if n[0] == g]
+                    if not options:
+                        done.append(current)
+                        dlines.append(cline)
+                    for op in options:
+                        to_add.append(current+[op, ])
+                        new_lines.append(cline+[points[a][op[1]]])
+            paths = to_add[:]
+            lines = new_lines[:]
 
-        # #keeps only the highest sucessor for each geometry
-        # for n in M:
-        #     to_remove=[]
-        #     picks = {}
-        #     for nn in M.successors(n):
-        #         cval = M[n][nn]['area']
-        #         g = nn[0]
-        #         if g not in picks:
-        #             picks[g]=(nn, cval)
-        #         else:
-        #             if cval > picks[g][1]:
-        #                 to_remove.append((n,picks[g][0]))
-        #                 picks[g]=(nn, cval)
-        #             else:
-        #                 to_remove.append((n,nn))
-        #     M.remove_edges_from(to_remove)
+        print(len(lines))
+        # plt.figure()
+        # for l in tqdm(lines):
+        #     plt.plot(l)
+
+        plt.figure()
+        for l in sample(lines,500):
+            plt.plot(l)
+        plt.show()
+
+        plt.show()
+
+        exit()
+
 
         # for n in M:
         #     MM = nx.subgraph(M,[n,]+list(M.neighbors(n)))
@@ -228,7 +278,7 @@ class server(object):
         else:
             to_use = input_json['aspects']
 
-        thresholds: list = [0.9, 0.75, 0.5]
+        thresholds: list = [0.99, 0.75, 0.5]
         # thresholds: _lists_ of cutting points for the normalized hierarchies.
         return(_mapHiers(ds, sorted(to_use), thresholds))
 
@@ -274,9 +324,18 @@ class server(object):
 
 
 if __name__ == '__main__':
-    if (len(sys.argv)) != 2:
-        print(".py conf.json")
+    if (len(sys.argv)) > 2:
+        print(".py [conf.json]")
         exit(-1)
+    if len(sys.argv)==1:
+        confFile='conf.json'        
+    else:
+        confFile=sys.argv[1]
+
+    if not exists(confFile):
+        print('configuration file not found')
+        exit(-1)
+    
 
     dirconf = {'upload': './upload',  # unconfigured data
                'db': './db',  # geometries/graphs
@@ -288,7 +347,7 @@ if __name__ == '__main__':
 
     ds = dataStore(dirconf['db'], dirconf['data'])
 
-    with open(sys.argv[1], 'r') as fin:
+    with open(confFile, 'r') as fin:
         available_geometries = json.load(fin)
 
     for g in available_geometries:
