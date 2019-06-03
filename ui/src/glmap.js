@@ -132,7 +132,7 @@ let MapboxMap = class MapboxMap extends React.Component {
       let geomControl = new GeomControl(this.props.geometries,
         (d)=>{
           console.log('callback geomcontrol',d.target.value);
-          this.setState({selected:d.target.value})
+          this.setState({selected:d.target.value});
         }
         );
       this.map.addControl(geomControl);

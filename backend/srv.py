@@ -168,12 +168,14 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
             a = info['id']
             to_add = []
             new_lines=[]
+            unused=set([n[1] for n in M if n[0]==g])
             while paths:
                 current = paths.pop(0)
                 cline = lines.pop(0)
                 if current[-1][0]==g: #same geometry:
                     to_add.append(current+[current[-1],])
                     new_lines.append(cline+[points[a][current[-1][1]],])
+                    unused.discard(current[-1][1])
                 else:
                     options = [n for n in M.successors(current[-1]) if n[0] == g]
                     if not options:
@@ -182,16 +184,13 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                     for op in options:
                         to_add.append(current+[op, ])
                         new_lines.append(cline+[points[a][op[1]]])
-            paths = to_add[:]
-            lines = new_lines[:]
-
-        print(len(lines))
-        # plt.figure()
-        # for l in tqdm(lines):
-        #     plt.plot(l)
+                        unused.discard(op[1])
+            #puts in the paths that didn't start at the first aspect
+            paths = to_add+[[(g,x),] for x in unused]
+            lines = new_lines+[[points[a][x],] for x in unused]
 
         plt.figure()
-        for l in sample(lines,500):
+        for l in lines:
             plt.plot(l)
         plt.show()
 
@@ -278,7 +277,7 @@ class server(object):
         else:
             to_use = input_json['aspects']
 
-        thresholds: list = [0.99, 0.75, 0.5]
+        thresholds: list = [0.999, 0.75, 0.5]
         # thresholds: _lists_ of cutting points for the normalized hierarchies.
         return(_mapHiers(ds, sorted(to_use), thresholds))
 

@@ -10,10 +10,11 @@ from uuid import uuid4
 from clustering import ComputeClustering
 from random import choice
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.preprocessing import minmax_scale, robust_scale, power_transform
 
 MAX_CACHE = 10
-
+import matplotlib.pylab as plt
 
 def _getMaxLevel(G: nx.Graph, level: str = 'level') -> int:
     return(max([x[2] for x in G.edges(data=level)]))
@@ -72,9 +73,12 @@ class dataStore(object):
                 print(self._data[aspectID].iloc[i])
                 print(X[i, :])
                 input('.')
-        P = PCA(n_components=1, whiten=True)
-        Y = P.fit_transform(X)
+        # P = PCA(n_components=1, whiten=True)
+        # Y = P.fit_transform(X)
         # print('exp',P.explained_variance_ratio_)
+        Y = TSNE(n_components=1).fit_transform(X)
+        # plt.figure()
+        # plt.hist(Y,100)
 
         nSteps = 10000
 
@@ -84,6 +88,10 @@ class dataStore(object):
         cS = nSteps*(cS / max(cS))
         Y = cS[Y]
         Y = minmax_scale(Y)
+
+        # plt.figure()
+        # plt.hist(Y,100)
+        # plt.show()
 
         df = pd.DataFrame(
             data=Y, index=self._data[aspectID].index, columns=['1D'])
