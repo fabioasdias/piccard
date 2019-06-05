@@ -68,8 +68,6 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
     #                 'y': ds.getAspectYear(a)})
 
     cl = {}
-    cluster_evolution = []
-
     for g in Gs:
         cl[g] = {}
         for n in Gs[g]:
@@ -84,7 +82,6 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                          for a in aspects]
 
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
-
     geoms = sorted(list(Gs.keys()))
 
     for threshold in thresholds:
@@ -129,23 +126,22 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
             if e[1][0] in M.node[e[0]]['area']:
                 M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
 
-        #keeps only the highest sucessor for each geometry
+        # keeps only the highest sucessor for each geometry
         for n in M:
-            to_remove=[]
+            to_remove = []
             picks = {}
             for nn in M.successors(n):
                 cval = M[n][nn]['area']
                 g = nn[0]
                 if g not in picks:
-                    picks[g]=(nn, cval)
+                    picks[g] = (nn, cval)
                 else:
                     if cval > picks[g][1]:
-                        to_remove.append((n,picks[g][0]))
-                        picks[g]=(nn, cval)
+                        to_remove.append((n, picks[g][0]))
+                        picks[g] = (nn, cval)
                     else:
-                        to_remove.append((n,nn))
+                        to_remove.append((n, nn))
             M.remove_edges_from(to_remove)
-
 
         points = {}
         for info in full_info_aspects:
@@ -156,48 +152,48 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                 points[a][cc] = np.median(
                     [x for x in [ds.getProjection(a, id) for id in cc2n[g][cc]] if (x is not None)])
 
-        
-        paths = [[n, ] for n in M if n[0] == full_info_aspects[0]['geom']]
-        print('pre',len(paths))
-        lines = [[points[full_info_aspects[0]['id']][n[0][1]],] for n in paths]
-        done =[]
-        dlines=[]
-        assert(len(paths)==len(lines))
-        for info in full_info_aspects[1:]:
+        a = full_info_aspects[0]['id']
+        g = full_info_aspects[0]['geom']
+        paths = [[{'geom': n[0],
+                   'id':n[1],
+                   'x':0,
+                   'y':points[a][n[1]]}, ]
+                 for n in M if n[0] == g]
+
+        for i, info in enumerate(full_info_aspects[1:]):
             g = info['geom']
             a = info['id']
             to_add = []
-            new_lines=[]
-            unused=set([n[1] for n in M if n[0]==g])
+            unused = set([n[1] for n in M if n[0] == g])
             while paths:
                 current = paths.pop(0)
-                cline = lines.pop(0)
-                if current[-1][0]==g: #same geometry:
-                    to_add.append(current+[current[-1],])
-                    new_lines.append(cline+[points[a][current[-1][1]],])
-                    unused.discard(current[-1][1])
+                last = {**current[-1]}
+                if last['geom'] == g:  # same geometry:
+                    to_add.append(current+[last, ])
+                    to_add[-1][-1]['x'] = i+1
+                    to_add[-1][-1]['y'] = points[a][last['id']]
+                    unused.discard(last['id'])
                 else:
-                    options = [n for n in M.successors(current[-1]) if n[0] == g]
+                    options = [n for n in M.successors((last['geom'],last['id'])) if n[0] == g]
                     if not options:
-                        done.append(current)
-                        dlines.append(cline)
+                        to_add.append(current)
                     for op in options:
-                        to_add.append(current+[op, ])
-                        new_lines.append(cline+[points[a][op[1]]])
                         unused.discard(op[1])
-            #puts in the paths that didn't start at the first aspect
-            paths = to_add+[[(g,x),] for x in unused]
-            lines = new_lines+[[points[a][x],] for x in unused]
+                        to_add.append(current+[{'geom': g,
+                                                'id': op[1],
+                                                'x':i+1,
+                                                'y':points[a][op[1]]}, ])
+            # puts in the paths that didn't start at the first aspect
+            paths = to_add+[[{'geom': g,
+                              'id': x,
+                              'x': i+1,
+                              'y': points[a][x]}, ] for x in unused]
 
-        plt.figure()
-        for l in lines:
-            plt.plot(l)
-        plt.show()
-
-        plt.show()
-
-        exit()
-
+        # plt.figure()
+        # for l in paths:
+        #     plt.plot([ll['x'] for ll in l], [ll['y'] for ll in l])
+        # plt.show()
+        # exit()
 
         # for n in M:
         #     MM = nx.subgraph(M,[n,]+list(M.neighbors(n)))
@@ -214,7 +210,7 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
         #     nx.draw_networkx_edge_labels(MM,pos=pos,edge_labels={e:'{0}'.format(round(MM[e[0]][e[1]]['area'],2)) for e in MM.edges()})
         #     plt.show()
 
-    return({'clustering': cl, 'evolution': cluster_evolution})
+    return({'clustering': cl, 'evolution': paths})
 
 
 @cherrypy.expose
@@ -326,15 +322,14 @@ if __name__ == '__main__':
     if (len(sys.argv)) > 2:
         print(".py [conf.json]")
         exit(-1)
-    if len(sys.argv)==1:
-        confFile='conf.json'        
+    if len(sys.argv) == 1:
+        confFile = 'conf.json'
     else:
-        confFile=sys.argv[1]
+        confFile = sys.argv[1]
 
     if not exists(confFile):
         print('configuration file not found')
         exit(-1)
-    
 
     dirconf = {'upload': './upload',  # unconfigured data
                'db': './db',  # geometries/graphs
