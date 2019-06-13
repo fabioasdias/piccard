@@ -1,17 +1,18 @@
+import json
+from glob import glob
+from os.path import basename, exists, join
+from random import choice
+from uuid import uuid4
+
 import matplotlib.pylab as plt
-from os.path import exists, join
+import networkx as nx
 import numpy as np
 import pandas as pd
-import json
-import networkx as nx
-from os.path import join, basename, exists
-from glob import glob
-from hierarchies import compareHierarchies
-from uuid import uuid4
-from clustering import ComputeClustering
-from random import choice
-from sklearn.preprocessing import minmax_scale
 from scipy.stats import skew
+from sklearn.preprocessing import minmax_scale
+
+from clustering import ComputeClustering
+from hierarchies import compareHierarchies
 
 MAX_CACHE = 10
 

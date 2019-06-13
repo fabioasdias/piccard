@@ -160,7 +160,7 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                    'y':points[a][n[1]]}, ]
                  for n in M if n[0] == g]
 
-        for i, info in enumerate(full_info_aspects[1:]):
+        for info in full_info_aspects[1:]:
             g = info['geom']
             a = info['id']
             to_add = []
@@ -170,7 +170,7 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                 last = {**current[-1]}
                 if last['geom'] == g:  # same geometry:
                     to_add.append(current+[last, ])
-                    to_add[-1][-1]['x'] = i+1
+                    to_add[-1][-1]['x'] = a
                     to_add[-1][-1]['y'] = points[a][last['id']]
                     unused.discard(last['id'])
                 else:
@@ -181,12 +181,12 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                         unused.discard(op[1])
                         to_add.append(current+[{'geom': g,
                                                 'id': op[1],
-                                                'x':i+1,
+                                                'x':a,
                                                 'y':points[a][op[1]]}, ])
             # puts in the paths that didn't start at the first aspect
             paths = to_add+[[{'geom': g,
                               'id': x,
-                              'x': i+1,
+                              'x': a,
                               'y': points[a][x]}, ] for x in unused]
 
         # plt.figure()
@@ -210,7 +210,7 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
         #     nx.draw_networkx_edge_labels(MM,pos=pos,edge_labels={e:'{0}'.format(round(MM[e[0]][e[1]]['area'],2)) for e in MM.edges()})
         #     plt.show()
 
-    return({'clustering': cl, 'evolution': paths})
+    return({'clustering': cl, 'evolution': paths, 'aspects': full_info_aspects})
 
 
 @cherrypy.expose
