@@ -92,12 +92,9 @@ and documentation separately.}
 \section{Intuition}
 \label{sec:intuition}
 While utterly simple, the network model breaks from the deeply rooted
-traditional tabular paradigm in a significant way. Instead of requiring the data
-as a collection of fixed entities which properties evolve over time, literally
-rows in a table with temporal values as columns, it represents each measurement
-as a separate entity and encodes the evolution of these entities over time.
+traditional tabular paradigm in a significant way. The traditional method requires the data to be treated as a collection of fixed entities with properties that evolve over time -- rows in a table with temporal values as columns. By contrast, our method represents each measurement as a separate entity and encodes the evolution of these entities over time.
 
-To ease this cognitive transition, we start with an intuitive example of how it
+To ease the cognitive transition to a new paradigm, we start with an intuitive example of how the method
 works, using a small portion of a fictitious urban region illustrated on the
 left part of Figure~\ref{fig:intuition}. This example includes three different
 times ($t_0,t_1,t_2$), with different aggregation areas identified as letters
@@ -105,13 +102,12 @@ from A to H. For $t_0$, the initial time, we have areas A and B, with small
 houses and a park, respectively. The park remains stable (B, E, and H), but the
 houses are partially replaced by larger buildings (C and F). 
 
-This example also illustrates some of the challenges of harmonisation. None of
+This example illustrates some of the challenges of harmonisation. None of
 these aggregation areas is clearly suitable as an interpolation target. In fact,
 adopting any of these areas as a target would require merging heterogeneous
 regions and/or dividing homogeneous regions. For instance, by choosing the
 regions of $t_1$, A would be split to match regions C and D, which appears to be
-a rather reasonable approximation in this homogeneous artificial example, albeit
-the fallacy of division. Region F would be similarly split to match C, but F
+a rather reasonable approximation in this homogeneous artificial example (even if it commits the fallacy of division). Region F would be similarly split to match C, but F
 would be split and merged with G to match D, potentially leading to statistical
 measurements that do not properly represent either region. 
 
@@ -168,7 +164,9 @@ example, and is therefore a generalisation of the traditional paradigm.
 
 %I'm adding this because Jeff Allen (Farber's guy) struggled with this.
 Note that the edges of this network merely encode that two regions are related.
-This is a binary information, there is no apportionment, no areal measurements,
+This is binary information, there is no apportionment, no areal measurements,
 no population percentages associated with the edge. Indeed, our method also
 connects regions of the same time that share borders, representing exactly that
 they are neighbouring areas.
+
+In the following, we argue that this network representation allows us to study neighbourhood change in a way that does not require an prior interpolation. 

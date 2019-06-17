@@ -33,20 +33,20 @@
 
 
 %TODO macros
-\usepackage{xargs}
-\usepackage[pdftex,dvipsnames]{xcolor} 
-\usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
+%\usepackage{xargs}
+%\usepackage[pdftex,dvipsnames]{xcolor} 
+%\usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
 % \newcommandx{\unsure}[2][1=]{\todo[linecolor=red,backgroundcolor=red!25,bordercolor=red,#1]{#2}}
 % \newcommandx{\change}[2][1=]{\todo[linecolor=blue,backgroundcolor=blue!25,bordercolor=blue,#1]{#2}}
 % \newcommandx{\info}[2][1=]{\todo[linecolor=OliveGreen,backgroundcolor=OliveGreen!25,bordercolor=OliveGreen,#1]{#2}}
 % \newcommandx{\improvement}[2][1=]{\todo[linecolor=Plum,backgroundcolor=Plum!25,bordercolor=Plum,#1]{#2}}
 % \newcommandx{\thiswillnotshow}[2][1=]{\todo[disable,#1]{#2}}
 
-\newcommandx{\unsure}[2][1=]{}
-\newcommandx{\change}[2][1=]{}
-\newcommandx{\info}[2][1=]{}
-\newcommandx{\improvement}[2][1=]{}
-\newcommandx{\thiswillnotshow}[2][1=]{}
+%\newcommandx{\unsure}[2][1=]{}
+%\newcommandx{\change}[2][1=]{}
+%\newcommandx{\info}[2][1=]{}
+%\newcommandx{\improvement}[2][1=]{}
+%\newcommandx{\thiswillnotshow}[2][1=]{}
 
 
 
@@ -75,7 +75,9 @@
 
 \doublespacing
 \title{Unharmonised longitudinal data processing using networks}
+%\author{Fabio Dias, Daniel Silver\\University of Toronto}
 \author{}
+
 \maketitle
 
 % ====== CFP
@@ -128,21 +130,14 @@
 
 
 \begin{abstract}
-  The main contribution of this work is the use of a simple network representation
-  to allow the processing of spatio-temporal demographic data for the
-  identification of data-driven neighbourhoods and their dynamics, \emph{without
-  the need for geographical harmonisation}, a laborious and error-prone process
-  that is currently used in virtually all longitudinal analysis of region-based
-  data.
+	This paper proposes a novel method for processing spatio-temporal information for data-driven identification of neighbourhoods and their dynamics.  Using a simple network representation, the method enables longitudinal analysis of regions \emph{without the need for geographical harmonisation}. The proposed method therefore sidesteps a laborious and error-prone process that is nevertheless currently used in virtually all longitudinal analysis of region-based data.
     
-  To allow for a transparent corroboration of our method, we leverage it as
-  basis for an interactive and intuitive interface that allows a progressive
-  exploration of the results, from the characterisation of broad patterns to the
-  identification of individual details and direct access to the original data,
-  including to non-experts. 
+  To allow for a transparent corroboration of our method, we use it as a
+  basis for an interactive and intuitive interface for the progressive
+  exploration of the results. The interface gives direct access to the original data to both experts and non-experts, allowing users to characterize broad patterns of stability and change and identify detailed local processes.
 
   
-  We validate our method with illustrative scenarios for Chicago, Toronto, and
+  We validate our method with illustrative scenarios from Chicago, Toronto, and
   Los Angeles, with results that match recent literature. The system is publicly
   available, with data from the decennial censuses for over forty regions in the
   USA and Canada between 1970 and 2010, but the methodology is suitable for any
@@ -184,10 +179,8 @@ stakeholder transparency in urban sciences.
 
 
 More importantly, we introduced a new idea that, apparently, was never
-considered in the literature. While significant resources were used trying to
-improve geographical harmonisation, nobody questioned if it was really
-necessary. We proved that it is not necessary, at least for the vast majority of
-demographic studies, especially for  neighbourhood effects and neighbourhood
+considered in the literature. While significant resources have been invested to
+improve geographical harmonisation, rarely if at all has anybody doubted that it was really necessary in the first place. We proved that it is not necessary, at least for the vast majority of demographic studies, especially for  neighbourhood effects and neighbourhood
 dynamics.
 
 \censure{
