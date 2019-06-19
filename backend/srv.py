@@ -41,10 +41,10 @@ def _bbox_create_buffer(bbox:dict)->list:
 
     p1=np.array([minX,minY])
     p2=np.array([maxX,maxY])
-    # p1n=(p1-p2)*1.05+p2 #~10% a^2+b^2=c^2, so that number gets ^2
-    # p2n=(p2-p1)*1.05+p1
-    p1n=p1
-    p2n=p2
+    p1n=(p1-p2)*1.05+p2 #~10% a^2+b^2=c^2, so that number gets ^2
+    p2n=(p2-p1)*1.05+p1
+    # p1n=p1
+    # p2n=p2
     return([np.floor(p1n[0]),
             np.floor(p1n[1]),
             np.ceil(p2n[0]),
