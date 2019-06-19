@@ -2,9 +2,11 @@ import sys
 import networkx as nx
 import fiona
 from util import indexedPols
-from shapely.geometry import shape   
+from rtree.index import Rtree
+from shapely.geometry import shape, Point
 import geojson
 import json
+import pickle
 
 if __name__ == '__main__':
 
@@ -24,10 +26,10 @@ if __name__ == '__main__':
         for feat in source:
             geo.insertJSON(G=feat['geometry'],props={'Geom_ID':feat['properties'][field],})
 
-
-    print('starting spatial edges')
     B = nx.Graph()
+    I = Rtree(outName.replace('.gp','.rt'))
     
+    count=0
     for fid, geom in geo.iterIDGeom('Geom_ID'):
         n=(baseGeometry,fid)
 
@@ -35,6 +37,9 @@ if __name__ == '__main__':
         if ('pos' not in B.node[n]):
             representative=geom.representative_point()
             B.node[n]['pos']=[representative.x, representative.y,baseGeometry]
+            I.insert(count,representative.bounds,obj=n[1])
+            count+=1
+
         #spatial edges                
         for polID in geo.search(geom.buffer(1e-3)):
             nid=geo.getProperty(polID,'Geom_ID')

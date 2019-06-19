@@ -33,6 +33,23 @@ if not exists(cachedir):
     makedirs(cachedir)
 memory = Memory(cachedir, verbose=0)
 
+def _bbox_create_buffer(bbox:dict)->list:
+    minX=bbox['_sw']['lng']
+    minY=bbox['_sw']['lat']
+    maxX=bbox['_ne']['lng']
+    maxY=bbox['_ne']['lat']
+
+    p1=np.array([minX,minY])
+    p2=np.array([maxX,maxY])
+    # p1n=(p1-p2)*1.05+p2 #~10% a^2+b^2=c^2, so that number gets ^2
+    # p2n=(p2-p1)*1.05+p1
+    p1n=p1
+    p2n=p2
+    return([np.floor(p1n[0]),
+            np.floor(p1n[1]),
+            np.ceil(p2n[0]),
+            np.ceil(p2n[1])])
+
 
 def cors():
     if cherrypy.request.method == 'OPTIONS':
@@ -49,7 +66,7 @@ def cors():
 
 @memory.cache(ignore=['ds'])
 def _mapHiers(ds: dataStore, aspects: list, thresholds: list, bbox:list=None):
-    Gs = mapHierarchies(ds, aspects, bbox)
+    Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
     print('got merged')
 
@@ -118,14 +135,16 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list, bbox:list=None):
                             M.node[source]['area'][g2] = 0
 
                         for nn in X.neighbors((g1, n)):
-                            intersection = X[(g1, n)][nn]['intersection']
-                            M.node[source]['area'][g2] += intersection
-                            target = (g2, cl[g2][nn[1]][-1])
-                            if not target in M:
-                                M.add_node(target)
-                            if not M.has_edge(source, target):
-                                M.add_edge(source, target, area=0)
-                            M[source][target]['area'] += intersection
+                            #only goes in if the target is inside the bbox
+                            if nn[1] in cl[g2]: 
+                                intersection = X[(g1, n)][nn]['intersection']
+                                M.node[source]['area'][g2] += intersection
+                                target = (g2, cl[g2][nn[1]][-1])
+                                if not target in M:
+                                    M.add_node(target)
+                                if not M.has_edge(source, target):
+                                    M.add_edge(source, target, area=0)
+                                M[source][target]['area'] += intersection
 
         for e in M.edges():
             if e[1][0] in M.node[e[0]]['area']:
@@ -259,13 +278,14 @@ class server(object):
         if ('bbox' not in input_json):
             bbox=None
         else:
-            bbox=input_json['bbox']
+            #{'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
+            bbox=_bbox_create_buffer(input_json['bbox'])
 
         print(bbox)
 
-        thresholds: list = [0.999, 0.75, 0.5]
+        thresholds: list = [0.999, 0.75]
         # thresholds: _lists_ of cutting points for the normalized hierarchies.
-        return(_mapHiers(ds, sorted(to_use), thresholds, bbox))
+        return(_mapHiers(ds, sorted(to_use), thresholds, bbox=bbox))
 
         # print('\n\n - map - \n\n')
         # print(input_json)
@@ -351,10 +371,10 @@ if __name__ == '__main__':
         # }
     }
 
-    thresholds: list = [0.999, 0.75, 0.5]
-    to_use = ['14b48d89-0bea-491e-8f3a-cf363845c5a7', '15e7ff9d-1c4f-4acc-9c91-1e046b151af5', '1877f60e-241c-4050-9c79-5b6b44454973', '1d738eff-ad39-49e4-a837-f2596715b8fe', '1e52d9c3-5dde-4765-9b7c-e864e1a93d25', '204f536f-2cac-445c-bd15-040c866fe479', '22f6ce38-2905-4031-86bc-30d9961ac37e', '242b7fda-9589-4dca-8884-f3c878f1af8f', '2b58be95-055d-4552-895b-08b3e7bad170', '2d5a840f-df04-4dcd-9a4c-be1f642a9b0b', '38502f50-3d9f-409f-aad1-a67b2b58cdfb', '4556dd88-5790-4dc6-9577-b1608ce81995', '45e24c40-fccd-4569-8325-b6d310bcbb63', '49968c14-3b78-4018-ad4b-93ca92be7787', '4a37b2fe-529e-4d29-ad9b-9f673f1ac540', '52787af7-a197-42a3-b5bb-b66a9d75170d', '528fd86d-663c-46e8-9cca-b884db6e7ea6', '566cee34-a675-4dab-883c-56dcf43d2692', '57bbb4da-2fa3-4283-acb4-aa19b1220f0c', '5cdca1a8-a666-4b80-8be6-f41b66130f30',
-              '6096ec62-a36e-42da-b4ad-1f17f02d0401', '723dea41-7e9f-4749-ad7b-a1e017b12893', '73022894-6f58-46d3-bf49-b714d7bb7c31', '973082d5-4f3e-4d79-be6d-f783135b1eba', '9e43d7a8-8af1-4a02-a961-474080aa78b8', 'a61a5b30-4083-43fd-88c0-22d60c8d4295', 'b3114d6c-8480-4181-9fa0-f13981f781f3', 'b614e09d-5d70-4b96-8977-4737c0db6f13', 'b9f254c2-3035-4fae-bf80-de96241f3885', 'ba0b0a20-f757-4521-a5aa-8478311e96e0', 'c5d7e898-2832-472e-8bb5-822c46b8389e', 'cc818a72-420b-486f-a060-283302b5e49b', 'd1701771-1e66-4b0a-825e-71142f9acaa7', 'd1bd3caa-9820-41ee-b68c-2fbe86ec0543', 'd426366b-08c5-4e36-a9fe-a08ee154de90', 'd9633dd9-8079-47b0-af9d-7732157228ae', 'de0e9a71-2ddf-43f7-a149-af2602ddf614', 'e059fe12-15a9-459f-8d65-6d4af41ee7cf', 'f3b9dc44-86d1-493c-a826-220c7919d90c', 'fbba5ff9-9bca-4141-85f8-7de470208e60', 'fd9d6283-cc5f-4b61-a0d4-0e3c61a99bd2']
-    _mapHiers(ds, sorted(to_use), thresholds)
+    # thresholds: list = [0.999, 0.75, 0.5]
+    # to_use = ['14b48d89-0bea-491e-8f3a-cf363845c5a7', '15e7ff9d-1c4f-4acc-9c91-1e046b151af5', '1877f60e-241c-4050-9c79-5b6b44454973', '1d738eff-ad39-49e4-a837-f2596715b8fe', '1e52d9c3-5dde-4765-9b7c-e864e1a93d25', '204f536f-2cac-445c-bd15-040c866fe479', '22f6ce38-2905-4031-86bc-30d9961ac37e', '242b7fda-9589-4dca-8884-f3c878f1af8f', '2b58be95-055d-4552-895b-08b3e7bad170', '2d5a840f-df04-4dcd-9a4c-be1f642a9b0b', '38502f50-3d9f-409f-aad1-a67b2b58cdfb', '4556dd88-5790-4dc6-9577-b1608ce81995', '45e24c40-fccd-4569-8325-b6d310bcbb63', '49968c14-3b78-4018-ad4b-93ca92be7787', '4a37b2fe-529e-4d29-ad9b-9f673f1ac540', '52787af7-a197-42a3-b5bb-b66a9d75170d', '528fd86d-663c-46e8-9cca-b884db6e7ea6', '566cee34-a675-4dab-883c-56dcf43d2692', '57bbb4da-2fa3-4283-acb4-aa19b1220f0c', '5cdca1a8-a666-4b80-8be6-f41b66130f30',
+    #           '6096ec62-a36e-42da-b4ad-1f17f02d0401', '723dea41-7e9f-4749-ad7b-a1e017b12893', '73022894-6f58-46d3-bf49-b714d7bb7c31', '973082d5-4f3e-4d79-be6d-f783135b1eba', '9e43d7a8-8af1-4a02-a961-474080aa78b8', 'a61a5b30-4083-43fd-88c0-22d60c8d4295', 'b3114d6c-8480-4181-9fa0-f13981f781f3', 'b614e09d-5d70-4b96-8977-4737c0db6f13', 'b9f254c2-3035-4fae-bf80-de96241f3885', 'ba0b0a20-f757-4521-a5aa-8478311e96e0', 'c5d7e898-2832-472e-8bb5-822c46b8389e', 'cc818a72-420b-486f-a060-283302b5e49b', 'd1701771-1e66-4b0a-825e-71142f9acaa7', 'd1bd3caa-9820-41ee-b68c-2fbe86ec0543', 'd426366b-08c5-4e36-a9fe-a08ee154de90', 'd9633dd9-8079-47b0-af9d-7732157228ae', 'de0e9a71-2ddf-43f7-a149-af2602ddf614', 'e059fe12-15a9-459f-8d65-6d4af41ee7cf', 'f3b9dc44-86d1-493c-a826-220c7919d90c', 'fbba5ff9-9bca-4141-85f8-7de470208e60', 'fd9d6283-cc5f-4b61-a0d4-0e3c61a99bd2']
+    # _mapHiers(ds, sorted(to_use), thresholds)
     # exit()
 
     cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)

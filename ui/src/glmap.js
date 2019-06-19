@@ -1,6 +1,4 @@
 import React from 'react';
-// import PropTypes from 'prop-types'
-
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
@@ -137,6 +135,11 @@ let MapboxMap = class MapboxMap extends React.Component {
         );
       this.map.addControl(geomControl);
     });
+    this.map.on('moveend',()=>{
+      if (this.props.bboxCallback!==undefined){
+        this.props.bboxCallback(this.map.getBounds());
+      }
+    });    
   }
 
   setFill(colours){
@@ -165,10 +168,9 @@ let MapboxMap = class MapboxMap extends React.Component {
     if (colours!==undefined){
       for (let layer of this.props.geometries){
         if (this.map.getLayer('l_'+layer.year)!==undefined){
-          console.log('detail level',this.props.detail);
           this.map.setPaintProperty('l_'+layer.year, 
           'fill-color', 
-              ['let', 'detail', this.props.detail, exp]
+              ['let', 'detail', 0, exp]
           );
           // This may work or not, but runs out of memory...
           // this.map.setPaintProperty('l_'+layer.year, 

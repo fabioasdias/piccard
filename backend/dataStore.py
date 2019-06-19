@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew
 from sklearn.preprocessing import minmax_scale
-
+from rtree.index import Rtree
 from clustering import ComputeClustering
 from hierarchies import compareHierarchies
 
@@ -126,7 +126,7 @@ class dataStore(object):
         hiers = glob(join(self._data_folder, '*.gp'))
         return([basename(x)[:-3] for x in hiers])
 
-    def getHierarchy(self, aspectID: str, level: str = 'level') -> nx.Graph():
+    def getHierarchy(self, aspectID: str, level: str = 'level', bbox:list=None) -> nx.Graph():
         """
             Returns the graph with the hierarchy of aspectID (same ID as the aspect that created it)
         """
@@ -142,7 +142,16 @@ class dataStore(object):
             self._hiers[aspectID] = G
         else:
             G = self._hiers[aspectID]
-        return(G)
+        geom = self.getGeometry(aspectID)
+        if bbox is None:
+            return(G)
+        else:
+            I = Rtree(join(self._geometry_folder,geom+'.rt'))
+            hits=list(I.intersection(bbox, objects=True))
+            newG=nx.subgraph(G,[(geom,item.object) for item in hits])
+            print('newG',len(G),len(newG),len(newG.edges()))
+            return(newG)            
+
 
     def getCrossGeometry(self, g1: str, g2: str) -> nx.Graph():
         """

@@ -4,6 +4,7 @@ export const types={
     SELECT_GEOMETRY: 'SelectGeometry',
     SELECT_ASPECTS: 'SelectAspects',
     UPDATE_CLUSTERING: 'UpdateClustering',
+    UPDATE_BBOX: 'UpdateBBOX',
 };
 // Helper functions to dispatch actions, optionally with payloads
 export const actionCreators = {
@@ -15,6 +16,9 @@ export const actionCreators = {
     },
     UpdateClustering: (clsim) => {
         return({type: types.UPDATE_CLUSTERING, payload:clsim})
+    },
+    UpdateBBOX: (box) => {
+        return({type: types.UPDATE_BBOX, payload:box});
     }
   };
 
@@ -28,6 +32,8 @@ export const reducer = (state={aspects:[]}, action)=>{
             return({...state, geometry:payload});
         case types.UPDATE_CLUSTERING:
             return({...state, temporal:{aspects:payload.aspects,evolution:payload.evolution}, clustering:payload.clustering})
+        case types.UPDATE_BBOX:
+            return({...state, bbox:payload})
         default:
             return(state);
     }
@@ -38,7 +44,7 @@ export function requestClustering(aspects,bbox) {
     if (bbox!==undefined){
         args.bbox=bbox;
     }
-
+    console.log('request', args)
     return function (dispatch) {
         return fetch(getURL.MapHierarchies(),  {
             // must match 'Content-Type' header

@@ -94,10 +94,10 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph = None, level: str = 'lev
     return(H)
 
 
-def _mergeAll(ds: dict, aspects: list, level:str='level') -> nx.Graph:
+def _mergeAll(ds: dict, aspects: list, level:str='level', bbox:list=None) -> nx.Graph:
     F = None
     for a in aspects:
-        G = ds.getHierarchy(a)
+        G = ds.getHierarchy(a,bbox=bbox)
 
         if F is None:
             F = G
@@ -136,7 +136,7 @@ def mapHierarchies(ds: dict, aspects: list, level:str='level', bbox:list=None) -
     geoms = sorted(aspectsByGeometry.keys())
     merged = []
     for g in geoms:
-        merged.append(_mergeAll(ds, aspectsByGeometry[g], level=level))
+        merged.append(_mergeAll(ds, aspectsByGeometry[g], level=level, bbox=bbox))
 
     # holds the resulting hierarchy on each original geometry
     # - This could be faster if the partial merges were reused

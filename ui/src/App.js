@@ -13,7 +13,8 @@ const mapStateToProps = (state) => ({
   aspects: state.aspects,  
   geometry: state.geometry,
   clustering: state.clustering,
-  temporal: state.temporal
+  temporal: state.temporal,
+  bbox: state.bbox
 });
 
 // //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -39,7 +40,7 @@ class App extends Component {
   render() {
     let retJSX=[];
     let {showLoading,showUploadPanel,availableGeometries}=this.state;
-    
+    let {dispatch}=this.props;
     if (showLoading===true){
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }else{
@@ -60,18 +61,24 @@ class App extends Component {
           <button onClick={(e)=>{
             this.setState({showUploadPanel:true});
           }}>Upload data</button>
+          <button onClick={(e)=>{
+            dispatch(requestClustering(this.props.aspects,this.props.bbox));
+          }}>Update</button>
           </div>);  
-        retJSX.push(<div style={{display:'flex'}}>
+        retJSX.push(<div >
+                      <MapboxMap 
+                        geometries={availableGeometries}
+                        paintProp={'GISJOIN'}
+                        cmap={this.props.clustering}
+                        bboxCallback={(box)=>{
+                          console.log(box);
+                          dispatch(actionCreators.UpdateBBOX(box));
+                        }}
+                      />
                       <TempEvo 
                         data={this.props.temporal}
                         key='tp'
                       />
-                      {/* <MapboxMap 
-                        geometries={availableGeometries}
-                        paintProp={'GISJOIN'}
-                        cmap={this.props.clustering}
-                        detail={(this.props.aspects.length===1)?1:0}
-                      /> */}
                     </div>);
       }
     }
@@ -85,7 +92,6 @@ class App extends Component {
   componentDidMount() {    
     let {dispatch}=this.props;
       getData(getURL.AvailableGeometries(), (data)=> {
-        console.log('geometries received', data, data[0]['name']);
         dispatch(actionCreators.SelectGeometry(data[0]['name']));
         this.setState({availableGeometries:data});                
       });
