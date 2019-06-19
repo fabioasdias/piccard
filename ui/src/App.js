@@ -13,6 +13,7 @@ const mapStateToProps = (state) => ({
   aspects: state.aspects,  
   geometry: state.geometry,
   clustering: state.clustering,
+  temporal: state.temporal
 });
 
 // //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -61,16 +62,16 @@ class App extends Component {
           }}>Upload data</button>
           </div>);  
         retJSX.push(<div style={{display:'flex'}}>
-                      {/* <TempEvo 
-                        similarity={this.props.similarity}
+                      <TempEvo 
+                        data={this.props.temporal}
                         key='tp'
-                      /> */}
-                      <MapboxMap 
+                      />
+                      {/* <MapboxMap 
                         geometries={availableGeometries}
                         paintProp={'GISJOIN'}
                         cmap={this.props.clustering}
                         detail={(this.props.aspects.length===1)?1:0}
-                      />
+                      /> */}
                     </div>);
       }
     }
@@ -93,8 +94,6 @@ class App extends Component {
         this.setState({availableAspects:data});                
         dispatch(requestClustering(data));
       });
-
-
     this.setState({showLoading:false})
   }   
 }

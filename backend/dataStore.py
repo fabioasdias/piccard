@@ -115,7 +115,8 @@ class dataStore(object):
             tableFile = join(self._data_folder, '{0}.proj'.format(aspectID))
             self._projection[aspectID] = pd.read_csv(tableFile, sep='\t')
             self._projection[aspectID] = self._projection[aspectID].set_index(
-                [self._info[aspectID]['index'], ])
+                [self._info[aspectID]['index'], ]).to_dict()['1D']
+
 
     def aspects(self) -> list:
         aspects = glob(join(self._data_folder, '*.info.json'))
@@ -244,7 +245,7 @@ class dataStore(object):
             Returns the pre-computed proj projection of the 'id' point from aspectID.
         """
         self._check_and_read(aspectID, proj=True)
-        if id in self._projection[aspectID].index:
-            return(list(self._projection[aspectID].loc[id])[0])
+        if id in self._projection[aspectID]:
+            return(self._projection[aspectID][id])
         else:
             return(None)

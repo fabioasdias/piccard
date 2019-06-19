@@ -47,9 +47,9 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-# @memory.cache(ignore=['ds'])
-def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
-    Gs = mapHierarchies(ds, aspects)
+@memory.cache(ignore=['ds'])
+def _mapHiers(ds: dataStore, aspects: list, thresholds: list, bbox:list=None):
+    Gs = mapHierarchies(ds, aspects, bbox)
 
     print('got merged')
 
@@ -82,6 +82,11 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                          for a in aspects]
 
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
+    #preparations for the domains in ParallelCoordinates (react-vis)
+    for i in range(len(full_info_aspects)):
+        full_info_aspects[i]['order'] = i
+        full_info_aspects[i]['visible'] = True
+
     geoms = sorted(list(Gs.keys()))
 
     for threshold in thresholds:
@@ -149,16 +154,19 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
             g = info['geom']
             points[a] = {}
             for cc in cc2n[g]:
-                points[a][cc] = np.median(
-                    [x for x in [ds.getProjection(a, id) for id in cc2n[g][cc]] if (x is not None)])
+                vals = [ds.getProjection(a, id) for id in cc2n[g][cc]]
+                vals = [x for x in vals if (x is not None)]
+                if vals:
+                    points[a][cc] = np.nanmedian(vals)
 
         a = full_info_aspects[0]['id']
         g = full_info_aspects[0]['geom']
         paths = [[{'geom': n[0],
                    'id':n[1],
-                   'x':0,
+                   'x':a,
                    'y':points[a][n[1]]}, ]
-                 for n in M if n[0] == g]
+                 for n in M if n[0] == g
+                 if n[1] in points[a]]
 
         for info in full_info_aspects[1:]:
             g = info['geom']
@@ -169,48 +177,38 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list):
                 current = paths.pop(0)
                 last = {**current[-1]}
                 if last['geom'] == g:  # same geometry:
-                    to_add.append(current+[last, ])
-                    to_add[-1][-1]['x'] = a
-                    to_add[-1][-1]['y'] = points[a][last['id']]
+                    if last['id'] in points[a]:
+                        to_add.append(current+[last, ])
+                        to_add[-1][-1]['x'] = a
+                        to_add[-1][-1]['y'] = points[a][last['id']]
                     unused.discard(last['id'])
                 else:
-                    options = [n for n in M.successors((last['geom'],last['id'])) if n[0] == g]
+                    options = [n for n in M.successors(
+                        (last['geom'], last['id'])) if n[0] == g]
                     if not options:
                         to_add.append(current)
                     for op in options:
                         unused.discard(op[1])
-                        to_add.append(current+[{'geom': g,
-                                                'id': op[1],
-                                                'x':a,
-                                                'y':points[a][op[1]]}, ])
+                        if op[1] in points[a]:
+                            to_add.append(current+[{'geom': g,
+                                                    'id': op[1],
+                                                    'x':a,
+                                                    'y':points[a][op[1]]}, ])
             # puts in the paths that didn't start at the first aspect
             paths = to_add+[[{'geom': g,
                               'id': x,
                               'x': a,
-                              'y': points[a][x]}, ] for x in unused]
+                              'y': points[a][x]}, ] for x in unused if x in points[a]]
 
-        # plt.figure()
-        # for l in paths:
-        #     plt.plot([ll['x'] for ll in l], [ll['y'] for ll in l])
-        # plt.show()
-        # exit()
+    #converts to parallelplots format                              
+    retPaths=[]
+    for p in paths:
+        newPath={}
+        for step in p:
+            newPath[step['x']]=step['y']
+        retPaths.append(newPath)
 
-        # for n in M:
-        #     MM = nx.subgraph(M,[n,]+list(M.neighbors(n)))
-        #     E = list(MM.edges())
-        #     W = [2*M[e[0]][e[1]]['area'] for e in E]
-        #     if all([x>0.75 for x in W]):
-        #         continue
-
-        #     pos = nx.spring_layout(MM)
-        #     print('pos done')
-        #     nx.draw_networkx_nodes(MM, pos=pos)
-        #     nx.draw_networkx_edges(MM, pos=pos, edgelist=E, width=W, edge_color='grey')
-        #     nx.draw_networkx_labels(MM, pos=pos)
-        #     nx.draw_networkx_edge_labels(MM,pos=pos,edge_labels={e:'{0}'.format(round(MM[e[0]][e[1]]['area'],2)) for e in MM.edges()})
-        #     plt.show()
-
-    return({'clustering': cl, 'evolution': paths, 'aspects': full_info_aspects})
+    return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects})
 
 
 @cherrypy.expose
@@ -236,20 +234,6 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         return(ds.aspects())
 
-    # @cherrypy.expose
-    # @cherrypy.config(**{'tools.cors.on': True})
-    # @cherrypy.tools.json_out()
-    # @cherrypy.tools.json_in()
-    # @cherrypy.tools.gzip()
-    # def getAspectProjection(self):
-    #     cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-    #     input_json = cherrypy.request.json
-    #     if ('aspects' not in input_json) or (len(input_json['aspects']) <= 1):
-    #         to_use = ds.aspects()
-    #     else:
-    #         to_use = input_json['aspects']
-    #     return(_getDistances(ds, sorted(to_use)))
-
     @cherrypy.expose
     @cherrypy.config(**{'tools.cors.on': True})
     @cherrypy.tools.json_out()
@@ -272,10 +256,16 @@ class server(object):
             to_use = ds.aspects()
         else:
             to_use = input_json['aspects']
+        if ('bbox' not in input_json):
+            bbox=None
+        else:
+            bbox=input_json['bbox']
+
+        print(bbox)
 
         thresholds: list = [0.999, 0.75, 0.5]
         # thresholds: _lists_ of cutting points for the normalized hierarchies.
-        return(_mapHiers(ds, sorted(to_use), thresholds))
+        return(_mapHiers(ds, sorted(to_use), thresholds, bbox))
 
         # print('\n\n - map - \n\n')
         # print(input_json)
@@ -360,6 +350,13 @@ if __name__ == '__main__':
         #     'tools.staticdir.dir': './public'
         # }
     }
+
+    thresholds: list = [0.999, 0.75, 0.5]
+    to_use = ['14b48d89-0bea-491e-8f3a-cf363845c5a7', '15e7ff9d-1c4f-4acc-9c91-1e046b151af5', '1877f60e-241c-4050-9c79-5b6b44454973', '1d738eff-ad39-49e4-a837-f2596715b8fe', '1e52d9c3-5dde-4765-9b7c-e864e1a93d25', '204f536f-2cac-445c-bd15-040c866fe479', '22f6ce38-2905-4031-86bc-30d9961ac37e', '242b7fda-9589-4dca-8884-f3c878f1af8f', '2b58be95-055d-4552-895b-08b3e7bad170', '2d5a840f-df04-4dcd-9a4c-be1f642a9b0b', '38502f50-3d9f-409f-aad1-a67b2b58cdfb', '4556dd88-5790-4dc6-9577-b1608ce81995', '45e24c40-fccd-4569-8325-b6d310bcbb63', '49968c14-3b78-4018-ad4b-93ca92be7787', '4a37b2fe-529e-4d29-ad9b-9f673f1ac540', '52787af7-a197-42a3-b5bb-b66a9d75170d', '528fd86d-663c-46e8-9cca-b884db6e7ea6', '566cee34-a675-4dab-883c-56dcf43d2692', '57bbb4da-2fa3-4283-acb4-aa19b1220f0c', '5cdca1a8-a666-4b80-8be6-f41b66130f30',
+              '6096ec62-a36e-42da-b4ad-1f17f02d0401', '723dea41-7e9f-4749-ad7b-a1e017b12893', '73022894-6f58-46d3-bf49-b714d7bb7c31', '973082d5-4f3e-4d79-be6d-f783135b1eba', '9e43d7a8-8af1-4a02-a961-474080aa78b8', 'a61a5b30-4083-43fd-88c0-22d60c8d4295', 'b3114d6c-8480-4181-9fa0-f13981f781f3', 'b614e09d-5d70-4b96-8977-4737c0db6f13', 'b9f254c2-3035-4fae-bf80-de96241f3885', 'ba0b0a20-f757-4521-a5aa-8478311e96e0', 'c5d7e898-2832-472e-8bb5-822c46b8389e', 'cc818a72-420b-486f-a060-283302b5e49b', 'd1701771-1e66-4b0a-825e-71142f9acaa7', 'd1bd3caa-9820-41ee-b68c-2fbe86ec0543', 'd426366b-08c5-4e36-a9fe-a08ee154de90', 'd9633dd9-8079-47b0-af9d-7732157228ae', 'de0e9a71-2ddf-43f7-a149-af2602ddf614', 'e059fe12-15a9-459f-8d65-6d4af41ee7cf', 'f3b9dc44-86d1-493c-a826-220c7919d90c', 'fbba5ff9-9bca-4141-85f8-7de470208e60', 'fd9d6283-cc5f-4b61-a0d4-0e3c61a99bd2']
+    _mapHiers(ds, sorted(to_use), thresholds)
+    # exit()
+
     cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
     cherrypy.server.max_request_body_size = 0  # for upload
     cherrypy.server.socket_host = '0.0.0.0'

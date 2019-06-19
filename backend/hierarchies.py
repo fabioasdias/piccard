@@ -113,7 +113,7 @@ def _mergeAll(ds: dict, aspects: list, level:str='level') -> nx.Graph:
     return(F)
 
 @memory.cache(ignore=['ds'])
-def mapHierarchies(ds: dict, aspects: list, level:str='level') -> dict:
+def mapHierarchies(ds: dict, aspects: list, level:str='level', bbox:list=None) -> dict:
     """
     ds: datastore from srv.py (conf['ds']) 
     aspects:  list of aspects

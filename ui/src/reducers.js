@@ -27,16 +27,22 @@ export const reducer = (state={aspects:[]}, action)=>{
         case types.SELECT_GEOMETRY:
             return({...state, geometry:payload});
         case types.UPDATE_CLUSTERING:
-            return({...state, similarity:payload.similarity, clustering:payload.clustering})
+            return({...state, temporal:{aspects:payload.aspects,evolution:payload.evolution}, clustering:payload.clustering})
         default:
             return(state);
     }
 }
 
-export function requestClustering(aspects) {
+export function requestClustering(aspects,bbox) {
+    let args={aspects:aspects,bbox:bbox};
+    if (bbox!==undefined){
+        args.bbox=bbox;
+    }
+
     return function (dispatch) {
         return fetch(getURL.MapHierarchies(),  {
-            body: JSON.stringify({aspects:aspects}), // must match 'Content-Type' header
+            // must match 'Content-Type' header
+            body: JSON.stringify(args), 
             cache: 'no-cache', // *default, cache, reload, force-cache, only-if-cached
             credentials: 'same-origin', // include, *omit
             headers: {
@@ -50,6 +56,7 @@ export function requestClustering(aspects) {
           }).then(
             data => {
                 data.json().then((d)=> {//promise of a promise. really.
+                    console.log('hier full results',d);
                     dispatch(actionCreators.SelectAspects(aspects));
                     dispatch(actionCreators.UpdateClustering(d));
                 })
