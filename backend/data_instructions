@@ -8,7 +8,8 @@ Then put it in the 'shapefiles' subfolder, in the way the Makefile expects them.
 Now to fix the zoom ranges:
 ogr2ogr -f GeoJson US_tract_1970.geojson US_tract_1970.shp
 
-tippecanoe -o US_tract_1970.mbtiles -Z 2 -z 20 US_tract_1970.geojson;tippecanoe -o US_tract_1980.mbtiles -Z 2 -z 20 US_tract_1980.geojson;tippecanoe -o US_tract_1990.mbtiles -Z 2 -z 20 US_tract_1990.geojson; tippecanoe -o US_tract_2000.mbtiles -Z 2 -z 20 US_tract_2000.geojson;tippecanoe -o US_tract_2010.mbtiles -Z 2 -z 20 US_tract_2010.geojson
+tippecanoe -o US_tract_1970.mbtiles -Z 2 -z 15 US_tract_1970.geojson ; tippecanoe -o US_tract_1980.mbtiles -Z 2 -z 15 US_tract_1980.geojson ; tippecanoe -o US_tract_1990.mbtiles -Z 2 -z 15 US_tract_1990.geojson ; tippecanoe -o US_tract_2000.mbtiles -Z 2 -z 15 US_tract_2000.geojson ; tippecanoe -o US_tract_2010.mbtiles -Z 2 -z 15 US_tract_2010.geojson
+
 
 
 then upload that to mapbox. Get the ID and datasource strings and put in conf.json, on the backend folder
