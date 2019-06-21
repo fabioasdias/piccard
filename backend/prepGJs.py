@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     G=nx.read_gpickle(sys.argv[2])
     display={}
-    print('Make sure you are using 4269!')
+    print('Make sure you are using 4326!')
     with geoJsons(sys.argv[1]) as gj:
         for year,cgj in gj:
             display[year]={}

@@ -31,7 +31,7 @@ if __name__ == '__main__':
         i+=3
 
     geo = {}
-    print('Make sure you are using 4269!')
+    print('Make sure you are using 4326!')
     for i,bGeom in enumerate(baseGeometries):
         print(bGeom)
         geo[bGeom]=indexedPols()
