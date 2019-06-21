@@ -54,68 +54,81 @@ let MapboxMap = class MapboxMap extends React.Component {
     this.state={loaded:false, selected:undefined}
   }
   
-  componentDidUpdate(props) {
+  componentDidUpdate(props,state) {
+    console.log('UPDATE',props, state);
+
     let {geometries}=this.props;
     let cmaps = this.props.cmap;
-    let {selected} = this.state;
-    if ((selected===undefined)&&(geometries!==undefined)&&(geometries.length>0)){
-      selected=geometries[0].name;
-      this.setState({selected:selected})
-    }
-    console.log('selected',selected);
-    if ((cmaps!==undefined)&&(cmaps.hasOwnProperty(selected))){
-      let cmap=cmaps[selected];
-      let ids=Object.keys(cmap);
-    
-      let cMin = cmap[ids[0]][0];
-      let cMax = cmap[ids[0]][0];
-      for (let i=0; i<ids.length;i++){
-        for (let j=0; j<cmap[ids[i]].length; j++)
-        {
-          cMin=Math.min(cMin,cmap[ids[i]][j]);
-          cMax=Math.max(cMax,cmap[ids[i]][j]);  
-        }
-      }
-      let colours=[];
-      for (let i = 0; i<=cMax;i++){
-        colours.push(randomColor());
-      }
-      if (this.state.loaded){
-        for (let layer of geometries){
-          if (selected===layer.name){
-            if (this.map.getSource('s_'+layer.year)===undefined){
-              console.log('add source',layer.year);
-              this.map.addSource('s_'+layer.year, {
-                type: 'vector',
-                url: 'mapbox://'+layer.url,
-                });  
+    let {selected}=this.state;
+
+    console.log('selected', props, selected, state.selected);
+    if ((cmaps!==undefined)&&(geometries!==undefined)&&(geometries.length>0)){
+      
+      if (this.state.selected===undefined){
+        this.setState({selected:geometries[0].name})
+      } else {
+
+        if ((cmaps.hasOwnProperty(selected)) && 
+            ((this.state.selected===undefined)||
+            (this.state.selected!==state.selected))){
+
+            console.log('-selected',props,this.state.selected,state.selected);            
+
+            let cmap=cmaps[selected];
+            let ids=Object.keys(cmap);
+          
+            let cMin = cmap[ids[0]][0];
+            let cMax = cmap[ids[0]][0];
+            for (let i=0; i<ids.length;i++){
+              for (let j=0; j<cmap[ids[i]].length; j++)
+              {
+                cMin=Math.min(cMin,cmap[ids[i]][j]);
+                cMax=Math.max(cMax,cmap[ids[i]][j]);  
+              }
             }
-            if (this.map.getLayer('l_'+layer.year)===undefined){
-              console.log('add layer',layer.year);
-              this.map.addLayer({
-                id: 'l_'+layer.year,
-                type: 'fill',
-                source: 's_'+layer.year,
-                "source-layer" : layer.source,
-                'paint':{
-                  'fill-opacity': 0.9,
+            let colours=[];
+            for (let i = 0; i<=cMax;i++){
+              colours.push(randomColor());
+            }
+            if (this.state.loaded){
+              for (let layer of geometries){
+                if (selected===layer.name){
+                  if (this.map.getSource('s_'+layer.year)===undefined){
+                    console.log('add source',layer.year);
+                    this.map.addSource('s_'+layer.year, {
+                      type: 'vector',
+                      url: 'mapbox://'+layer.url,
+                      });  
+                  }
+                  if (this.map.getLayer('l_'+layer.year)===undefined){
+                    console.log('add layer',layer.year);
+                    this.map.addLayer({
+                      id: 'l_'+layer.year,
+                      type: 'fill',
+                      source: 's_'+layer.year,
+                      "source-layer" : layer.source,
+                      'paint':{
+                        'fill-opacity': 0.9,
+                      }
+                    }, 'bridge-motorway-2'); //'country-label-lg');   
+                  }
                 }
-              }, 'bridge-motorway-2'); //'country-label-lg');   
+                else{
+                  if (this.map.getLayer('l_'+layer.year)!==undefined){
+                    this.map.removeLayer('l_'+layer.year);
+                  }
+                  if (this.map.getSource('s_'+layer.year)!==undefined){
+                    this.map.removeSource('s_'+layer.year);
+                  }
+                }
+              }
+              this.setFill(colours);  
             }
           }
-          else{
-            if (this.map.getLayer('l_'+layer.year)!==undefined){
-              console.log('removing',layer.year);
-              this.map.removeLayer('l_'+layer.year);
-            }
-            if (this.map.getSource('s_'+layer.year)!==undefined){
-              this.map.removeSource('s_'+layer.year);
-            }
-          }
-        }
-        this.setFill(colours);  
+      
+        }      
       }
-    }
+
   }
 
   componentDidMount() {
@@ -129,7 +142,6 @@ let MapboxMap = class MapboxMap extends React.Component {
       this.setState({loaded:true})
       let geomControl = new GeomControl(this.props.geometries,
         (d)=>{
-          console.log('callback geomcontrol',d.target.value);
           this.setState({selected:d.target.value});
         }
         );
