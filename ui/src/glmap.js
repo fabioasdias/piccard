@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
 import randomColor from 'randomcolor';
+import {arrayEQ} from './util';
 
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
@@ -67,24 +68,24 @@ let MapboxMap = class MapboxMap extends React.Component {
       if (this.state.selected===undefined){
         this.setState({selected:geometries[0].name})
       } else {
-
+        console.log(props)
         if ((cmaps.hasOwnProperty(selected)) && 
-            ((this.state.selected===undefined)||
-            (this.state.selected!==state.selected))){
+            ((this.state.selected!==state.selected)||
 
-            console.log('-selected',props,this.state.selected,state.selected);            
+             (props.cmap===undefined)||
+             (!arrayEQ(cmaps[selected],props.cmap[selected]))
+             )){
+
+            
 
             let cmap=cmaps[selected];
             let ids=Object.keys(cmap);
           
-            let cMin = cmap[ids[0]][0];
-            let cMax = cmap[ids[0]][0];
+            let cMin = cmap[ids[0]];
+            let cMax = cmap[ids[0]];
             for (let i=0; i<ids.length;i++){
-              for (let j=0; j<cmap[ids[i]].length; j++)
-              {
-                cMin=Math.min(cMin,cmap[ids[i]][j]);
-                cMax=Math.max(cMax,cmap[ids[i]][j]);  
-              }
+                cMin=Math.min(cMin,cmap[ids[i]]);
+                cMax=Math.max(cMax,cmap[ids[i]]);  
             }
             let colours=[];
             for (let i = 0; i<=cMax;i++){
@@ -164,13 +165,10 @@ let MapboxMap = class MapboxMap extends React.Component {
               ],
               ['to-color', 
                 ["at", 
-                  ['at', 
-                    ['var','detail'],
-                    ['get',
-                      ['to-string', ['get', this.props.paintProp]],
-                      ['literal', this.props.cmap[this.state.selected]]
-                    ],
-                  ],  
+                  ['get',
+                    ['to-string', ['get', this.props.paintProp]],
+                    ['literal', this.props.cmap[this.state.selected]]
+                  ],
                   ['literal', colours]
                 ]
               ],

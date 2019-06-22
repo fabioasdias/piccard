@@ -33,16 +33,17 @@ if not exists(cachedir):
     makedirs(cachedir)
 memory = Memory(cachedir, verbose=0)
 
-def _bbox_create_buffer(bbox:dict)->list:
-    minX=bbox['_sw']['lng']
-    minY=bbox['_sw']['lat']
-    maxX=bbox['_ne']['lng']
-    maxY=bbox['_ne']['lat']
 
-    p1=np.array([minX,minY])
-    p2=np.array([maxX,maxY])
-    p1n=(p1-p2)*1.05+p2 #~10% a^2+b^2=c^2, so that number gets ^2
-    p2n=(p2-p1)*1.05+p1
+def _bbox_create_buffer(bbox: dict) -> list:
+    minX = bbox['_sw']['lng']
+    minY = bbox['_sw']['lat']
+    maxX = bbox['_ne']['lng']
+    maxY = bbox['_ne']['lat']
+
+    p1 = np.array([minX, minY])
+    p2 = np.array([maxX, maxY])
+    p1n = (p1-p2)*1.05+p2  # ~10% a^2+b^2=c^2, so that number gets ^2
+    p2n = (p2-p1)*1.05+p1
     # p1n=p1
     # p2n=p2
     return([np.floor(p1n[0]),
@@ -65,7 +66,7 @@ def cors():
 
 
 @memory.cache(ignore=['ds'])
-def _mapHiers(ds: dataStore, aspects: list, thresholds: list, bbox:list=None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int, bbox: list = None):
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
     print('got merged')
@@ -87,8 +88,6 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list, bbox:list=None):
     cl = {}
     for g in Gs:
         cl[g] = {}
-        for n in Gs[g]:
-            cl[g][n[1]] = []
 
     full_info_aspects = [{'name': ds.getAspectName(a),
                           'year': ds.getAspectYear(a),
@@ -99,132 +98,147 @@ def _mapHiers(ds: dataStore, aspects: list, thresholds: list, bbox:list=None):
                          for a in aspects]
 
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
-    #preparations for the domains in ParallelCoordinates (react-vis)
+    # preparations for the domains in ParallelCoordinates (react-vis)
     for i in range(len(full_info_aspects)):
         full_info_aspects[i]['order'] = i
         full_info_aspects[i]['visible'] = True
 
     geoms = sorted(list(Gs.keys()))
 
-    for threshold in thresholds:
-        cc2n = {}
-        for g in geoms:
-            divider = [e[:2]
-                       for e in Gs[g].edges(data='level')
-                       if (e[2] > threshold)]
-            Gs[g].remove_edges_from(divider)
-            cc2n[g] = {}
-            for cc, nodes in enumerate(nx.connected_components(Gs[g])):
-                cc2n[g][cc] = [n[1] for n in nodes]
-                for n in nodes:
-                    cl[g][n[1]].append(cc)
+    # for threshold in thresholds:
 
-        M = nx.DiGraph()
-        for g1 in geoms:
-            for g2 in geoms:
-                if (g1 != g2):
-                    X = ds.getCrossGeometry(g1, g2)
-                    for n in cl[g1]:
-                        source = (g1, cl[g1][n][-1])
-                        # area = sum([e[2] for e in X.edges(source,data='intersection')])
-                        if (source not in M):
-                            M.add_node(source)
-                        if 'area' not in M.node[source]:
-                            M.node[source]['area'] = {}
-                        if g2 not in M.node[source]['area']:
-                            M.node[source]['area'][g2] = 0
+    cc2n = {}
+    for g in geoms:
+        E = sorted([e for e in Gs[g].edges(data='level')],
+                   key=lambda e: e[2], reverse=True)
+        E = [e[:2] for e in E]
 
-                        for nn in X.neighbors((g1, n)):
-                            #only goes in if the target is inside the bbox
-                            if nn[1] in cl[g2]: 
-                                intersection = X[(g1, n)][nn]['intersection']
-                                M.node[source]['area'][g2] += intersection
-                                target = (g2, cl[g2][nn[1]][-1])
-                                if not target in M:
-                                    M.add_node(target)
-                                if not M.has_edge(source, target):
-                                    M.add_edge(source, target, area=0)
-                                M[source][target]['area'] += intersection
+        print('+',len(Gs[g].edges()))        
+        nOrig = nx.number_connected_components(Gs[g])
+        Gs[g].remove_edges_from(E[:nClusters])
 
-        for e in M.edges():
-            if e[1][0] in M.node[e[0]]['area']:
-                M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
+        i= nClusters
+        while i<len(E):
+            toGo=nClusters-(nx.number_connected_components(Gs[g])-nOrig)
+            if (toGo<=0):
+                break
+            Gs[g].remove_edges_from(E[i:(i+toGo)])
+            i+=toGo
 
-        # keeps only the highest sucessor for each geometry
-        for n in M:
-            to_remove = []
-            picks = {}
-            for nn in M.successors(n):
-                cval = M[n][nn]['area']
-                g = nn[0]
-                if g not in picks:
+        print('-',len(Gs[g].edges()))
+        print('\n')
+        cc2n[g] = {}
+        for cc, nodes in enumerate(nx.connected_components(Gs[g])):
+            cc2n[g][cc] = [n[1] for n in nodes]
+            for n in nodes:
+                cl[g][n[1]]=cc
+
+    M = nx.DiGraph()
+    for g1 in geoms:
+        for g2 in geoms:
+            if (g1 != g2):
+                X = ds.getCrossGeometry(g1, g2)
+                for n in cl[g1]:
+                    source = (g1, cl[g1][n])
+                    # area = sum([e[2] for e in X.edges(source,data='intersection')])
+                    if (source not in M):
+                        M.add_node(source)
+                    if 'area' not in M.node[source]:
+                        M.node[source]['area'] = {}
+                    if g2 not in M.node[source]['area']:
+                        M.node[source]['area'][g2] = 0
+
+                    for nn in X.neighbors((g1, n)):
+                        # only goes in if the target is inside the bbox
+                        if nn[1] in cl[g2]:
+                            intersection = X[(g1, n)][nn]['intersection']
+                            M.node[source]['area'][g2] += intersection
+                            target = (g2, cl[g2][nn[1]])
+                            if not target in M:
+                                M.add_node(target)
+                            if not M.has_edge(source, target):
+                                M.add_edge(source, target, area=0)
+                            M[source][target]['area'] += intersection
+
+    for e in M.edges():
+        if e[1][0] in M.node[e[0]]['area']:
+            M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
+
+    # keeps only the highest sucessor for each geometry
+    for n in M:
+        to_remove = []
+        picks = {}
+        for nn in M.successors(n):
+            cval = M[n][nn]['area']
+            g = nn[0]
+            if g not in picks:
+                picks[g] = (nn, cval)
+            else:
+                if cval > picks[g][1]:
+                    to_remove.append((n, picks[g][0]))
                     picks[g] = (nn, cval)
                 else:
-                    if cval > picks[g][1]:
-                        to_remove.append((n, picks[g][0]))
-                        picks[g] = (nn, cval)
-                    else:
-                        to_remove.append((n, nn))
-            M.remove_edges_from(to_remove)
+                    to_remove.append((n, nn))
+        M.remove_edges_from(to_remove)
 
-        points = {}
-        for info in full_info_aspects:
-            a = info['id']
-            g = info['geom']
-            points[a] = {}
-            for cc in cc2n[g]:
-                vals = [ds.getProjection(a, id) for id in cc2n[g][cc]]
-                vals = [x for x in vals if (x is not None)]
-                if vals:
-                    points[a][cc] = np.nanmedian(vals)
+    points = {}
+    for info in full_info_aspects:
+        a = info['id']
+        g = info['geom']
+        points[a] = {}
+        for cc in cc2n[g]:
+            vals = [ds.getProjection(a, id) for id in cc2n[g][cc]]
+            vals = [x for x in vals if (x is not None)]
+            if vals:
+                points[a][cc] = np.nanmedian(vals)
 
-        a = full_info_aspects[0]['id']
-        g = full_info_aspects[0]['geom']
-        paths = [[{'geom': n[0],
-                   'id':n[1],
-                   'x':a,
-                   'y':points[a][n[1]]}, ]
-                 for n in M if n[0] == g
-                 if n[1] in points[a]]
+    a = full_info_aspects[0]['id']
+    g = full_info_aspects[0]['geom']
+    paths = [[{'geom': n[0],
+               'id':n[1],
+               'x':a,
+               'y':points[a][n[1]]}, ]
+             for n in M if n[0] == g
+             if n[1] in points[a]]
 
-        for info in full_info_aspects[1:]:
-            g = info['geom']
-            a = info['id']
-            to_add = []
-            unused = set([n[1] for n in M if n[0] == g])
-            while paths:
-                current = paths.pop(0)
-                last = {**current[-1]}
-                if last['geom'] == g:  # same geometry:
-                    if last['id'] in points[a]:
-                        to_add.append(current+[last, ])
-                        to_add[-1][-1]['x'] = a
-                        to_add[-1][-1]['y'] = points[a][last['id']]
-                    unused.discard(last['id'])
-                else:
-                    options = [n for n in M.successors(
-                        (last['geom'], last['id'])) if n[0] == g]
-                    if not options:
-                        to_add.append(current)
-                    for op in options:
-                        unused.discard(op[1])
-                        if op[1] in points[a]:
-                            to_add.append(current+[{'geom': g,
-                                                    'id': op[1],
-                                                    'x':a,
-                                                    'y':points[a][op[1]]}, ])
-            # puts in the paths that didn't start at the first aspect
-            paths = to_add+[[{'geom': g,
-                              'id': x,
-                              'x': a,
-                              'y': points[a][x]}, ] for x in unused if x in points[a]]
+    for info in full_info_aspects[1:]:
+        g = info['geom']
+        a = info['id']
+        to_add = []
+        unused = set([n[1] for n in M if n[0] == g])
+        while paths:
+            current = paths.pop(0)
+            last = {**current[-1]}
+            if last['geom'] == g:  # same geometry:
+                if last['id'] in points[a]:
+                    to_add.append(current+[last, ])
+                    to_add[-1][-1]['x'] = a
+                    to_add[-1][-1]['y'] = points[a][last['id']]
+                unused.discard(last['id'])
+            else:
+                options = [n for n in M.successors(
+                    (last['geom'], last['id'])) if n[0] == g]
+                if not options:
+                    to_add.append(current)
+                for op in options:
+                    unused.discard(op[1])
+                    if op[1] in points[a]:
+                        to_add.append(current+[{'geom': g,
+                                                'id': op[1],
+                                                'x':a,
+                                                'y':points[a][op[1]]}, ])
+        # puts in the paths that didn't start at the first aspect
+        paths = to_add+[[{'geom': g,
+                          'id': x,
+                          'x': a,
+                          'y': points[a][x]}, ] for x in unused if x in points[a]]
 
-    #converts to parallelplots format                              
-    retPaths=[]
+    # converts to parallelplots format
+    retPaths = []
     for p in paths:
-        newPath={}
+        newPath = {}
         for step in p:
-            newPath[step['x']]=step['y']
+            newPath[step['x']] = step['y']
         retPaths.append(newPath)
 
     return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects})
@@ -275,21 +289,19 @@ class server(object):
             to_use = ds.aspects()
         else:
             to_use = input_json['aspects']
+
         if ('bbox' not in input_json):
-            bbox=None
+            bbox = None
         else:
             #{'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
-            bbox=_bbox_create_buffer(input_json['bbox'])
+            bbox = _bbox_create_buffer(input_json['bbox'])
 
-        print(bbox)
+        if ('nc' not in input_json):
+            nc = 10
+        else:
+            nc = int(input_json['nc'])
 
-        thresholds: list = [0.999, 0.75]
-        # thresholds: _lists_ of cutting points for the normalized hierarchies.
-        return(_mapHiers(ds, sorted(to_use), thresholds, bbox=bbox))
-
-        # print('\n\n - map - \n\n')
-        # print(input_json)
-        # print(to_use)
+        return(_mapHiers(ds, sorted(to_use), nc, bbox=bbox))
 
     @cherrypy.expose
     def index(self):
