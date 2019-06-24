@@ -21,7 +21,9 @@ import pandas as pd
 from dataStore import dataStore
 from joblib import Memory
 
-from sklearn.manifold import MDS, TSNE
+
+from sklearn.cluster import KMeans
+
 from random import sample
 
 import matplotlib.pylab as plt
@@ -66,7 +68,7 @@ def cors():
 
 
 @memory.cache(ignore=['ds'])
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: int = 10, bbox: list = None):
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
     print('got merged')
@@ -109,29 +111,14 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int, bbox: list = None):
 
     cc2n = {}
     for g in geoms:
-        E = sorted([e for e in Gs[g].edges(data='level')],
-                   key=lambda e: e[2], reverse=True)
-        E = [e[:2] for e in E]
-
-        print('+',len(Gs[g].edges()))        
-        nOrig = nx.number_connected_components(Gs[g])
-        Gs[g].remove_edges_from(E[:nClusters])
-
-        i= nClusters
-        while i<len(E):
-            toGo=nClusters-(nx.number_connected_components(Gs[g])-nOrig)
-            if (toGo<=0):
-                break
-            Gs[g].remove_edges_from(E[i:(i+toGo)])
-            i+=toGo
-
-        print('-',len(Gs[g].edges()))
-        print('\n')
+        Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level')
+                                 if e[2] >= threshold])
         cc2n[g] = {}
         for cc, nodes in enumerate(nx.connected_components(Gs[g])):
             cc2n[g][cc] = [n[1] for n in nodes]
             for n in nodes:
                 cl[g][n[1]]=cc
+
 
     M = nx.DiGraph()
     for g1 in geoms:
@@ -240,6 +227,14 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int, bbox: list = None):
         for step in p:
             newPath[step['x']] = step['y']
         retPaths.append(newPath)
+    
+    a2i={A['id']:A['order'] for A in full_info_aspects}
+    X = np.zeros((len(retPaths),len(full_info_aspects)))
+    for i,p in enumerate(retPaths):
+        for a in p:
+            X[i,a2i[a]]=p[a]
+    Y = KMeans(n_clusters=nClusters).fit_predict(X)
+
 
     return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects})
 
