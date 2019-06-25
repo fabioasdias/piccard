@@ -16,6 +16,26 @@ export function arrayEQ(a,b){
     return(true);
 }
 
+export function dictEQ(a,b){
+    if ((a===undefined)&&(b===undefined)){
+        return(true);
+    }
+    if ((a===undefined)||(b===undefined)){
+        return(false);
+    }
+    let ak=Object.keys(a);
+    let bk=Object.keys(b);
+    if (!arrayEQ(ak,bk)){
+        return(false);
+    }
+    // for (let aa in ak){
+    //     if (b[aa]!=a[aa]){
+    //         return(false);
+    //     }
+    // }
+    return(true);
+}
+
 
 export function toInt(d){
     return(parseInt(d,10));

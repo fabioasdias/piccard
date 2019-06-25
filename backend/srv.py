@@ -46,8 +46,6 @@ def _bbox_create_buffer(bbox: dict) -> list:
     p2 = np.array([maxX, maxY])
     p1n = (p1-p2)*1.05+p2  # ~10% a^2+b^2=c^2, so that number gets ^2
     p2n = (p2-p1)*1.05+p1
-    # p1n=p1
-    # p2n=p2
     return([np.floor(p1n[0]),
             np.floor(p1n[1]),
             np.ceil(p2n[0]),
@@ -127,46 +125,25 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
                 X = ds.getCrossGeometry(g1, g2)
                 for n in cl[g1]:
                     source = (g1, cl[g1][n])
-                    # area = sum([e[2] for e in X.edges(source,data='intersection')])
                     if (source not in M):
                         M.add_node(source)
-                    if 'area' not in M.node[source]:
-                        M.node[source]['area'] = {}
-                    if g2 not in M.node[source]['area']:
-                        M.node[source]['area'][g2] = 0
+                    if 'regions' not in M.node[source]:
+                        M.node[source]['regions']=set()
+                    M.node[source]['regions'].add(n)
 
                     for nn in X.neighbors((g1, n)):
                         # only goes in if the target is inside the bbox
                         if nn[1] in cl[g2]:
-                            intersection = X[(g1, n)][nn]['intersection']
-                            M.node[source]['area'][g2] += intersection
                             target = (g2, cl[g2][nn[1]])
+
                             if not target in M:
                                 M.add_node(target)
+                            if 'regions' not in M.node[target]:
+                                M.node[target]['regions']=set()
+                            M.node[target]['regions'].add(nn[1])
+
                             if not M.has_edge(source, target):
                                 M.add_edge(source, target, area=0)
-                            M[source][target]['area'] += intersection
-
-    for e in M.edges():
-        if e[1][0] in M.node[e[0]]['area']:
-            M[e[0]][e[1]]['area'] /= M.node[e[0]]['area'][e[1][0]]
-
-    # keeps only the highest sucessor for each geometry
-    for n in M:
-        to_remove = []
-        picks = {}
-        for nn in M.successors(n):
-            cval = M[n][nn]['area']
-            g = nn[0]
-            if g not in picks:
-                picks[g] = (nn, cval)
-            else:
-                if cval > picks[g][1]:
-                    to_remove.append((n, picks[g][0]))
-                    picks[g] = (nn, cval)
-                else:
-                    to_remove.append((n, nn))
-        M.remove_edges_from(to_remove)
 
     points = {}
     for info in full_info_aspects:

@@ -3,7 +3,6 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
 import randomColor from 'randomcolor';
-import {arrayEQ} from './util';
 
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
@@ -71,9 +70,8 @@ let MapboxMap = class MapboxMap extends React.Component {
         console.log(props)
         if ((cmaps.hasOwnProperty(selected)) && 
             ((this.state.selected!==state.selected)||
-
              (props.cmap===undefined)||
-             (!arrayEQ(cmaps[selected],props.cmap[selected]))
+             (Object.keys(cmaps[selected]).length!==Object.keys(props.cmap[selected]).length)
              )){
 
             
