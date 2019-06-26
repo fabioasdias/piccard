@@ -3,32 +3,26 @@ import json
 import os
 import pickle
 import sys
+import tempfile
 from itertools import combinations, combinations_with_replacement
 from os import makedirs
 from os.path import exists, join
+from random import sample
 from time import time
 
-import numpy as np
-
 import cherrypy
-import networkx as nx
-import tempfile
-
-from networkx.readwrite import json_graph
-from upload import processUploadFolder, gatherInfoJsons
-from hierarchies import mapHierarchies, compareHierarchies
-import pandas as pd
-from dataStore import dataStore
-from joblib import Memory
-
-
-from sklearn.cluster import KMeans
-
-from random import sample
-
 import matplotlib.pylab as plt
-
+import networkx as nx
+import numpy as np
+import pandas as pd
+from joblib import Memory
+from networkx.readwrite import json_graph
+from sklearn.cluster import KMeans
 from tqdm import tqdm
+
+from dataStore import dataStore
+from hierarchies import compareHierarchies, mapHierarchies
+from upload import gatherInfoJsons, processUploadFolder
 
 cachedir = './cache/'
 if not exists(cachedir):
@@ -115,8 +109,7 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
         for cc, nodes in enumerate(nx.connected_components(Gs[g])):
             cc2n[g][cc] = [n[1] for n in nodes]
             for n in nodes:
-                cl[g][n[1]]=cc
-
+                cl[g][n[1]] = cc
 
     M = nx.DiGraph()
     for g1 in geoms:
@@ -128,7 +121,7 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
                     if (source not in M):
                         M.add_node(source)
                     if 'regions' not in M.node[source]:
-                        M.node[source]['regions']=set()
+                        M.node[source]['regions'] = set()
                     M.node[source]['regions'].add(n)
 
                     for nn in X.neighbors((g1, n)):
@@ -139,7 +132,7 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
                             if not target in M:
                                 M.add_node(target)
                             if 'regions' not in M.node[target]:
-                                M.node[target]['regions']=set()
+                                M.node[target]['regions'] = set()
                             M.node[target]['regions'].add(nn[1])
 
                             if not M.has_edge(source, target):
@@ -198,20 +191,42 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
                           'y': points[a][x]}, ] for x in unused if x in points[a]]
 
     # converts to parallelplots format
-    retPaths = []
-    for p in paths:
+    tempPaths = []
+    clustersByPath = []
+    for i, p in enumerate(paths):
         newPath = {}
+        newCluster = {}
         for step in p:
             newPath[step['x']] = step['y']
-        retPaths.append(newPath)
-    
-    a2i={A['id']:A['order'] for A in full_info_aspects}
-    X = np.zeros((len(retPaths),len(full_info_aspects)))
-    for i,p in enumerate(retPaths):
-        for a in p:
-            X[i,a2i[a]]=p[a]
-    Y = KMeans(n_clusters=nClusters).fit_predict(X)
+            newCluster[step['x']] = step['id']
+        tempPaths.append(newPath)
+        clustersByPath.append(newCluster)
 
+    a2i = {A['id']: A['order'] for A in full_info_aspects}
+    X = np.zeros((len(tempPaths), len(full_info_aspects)))
+    for i, p in enumerate(tempPaths):
+        for a in p:
+            X[i, a2i[a]] = p[a]
+    Y = KMeans(n_clusters=nClusters).fit_predict(X).tolist()
+    print(list(set(Y)))
+
+    for g in cl:
+        cl[g] = {}
+
+    retPaths = [ {} for _ in range(nClusters)]
+    for i, p in enumerate(tempPaths):
+        for a in p:
+            g = ds.getGeometry(a)
+            cc = clustersByPath[i][a]
+            for n in M.node[(g, cc)]['regions']:
+                if n not in cl[g]:
+                    cl[g][n] = set()
+                cl[g][n].add(Y[i])
+        retPaths[Y[i]]=p
+
+    for g in cl:
+        for n in cl[g]:
+            cl[g][n] = list(cl[g][n])[0]
 
     return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects})
 
