@@ -223,12 +223,13 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
                     cl[g][n] = set()
                 cl[g][n].add(Y[i])
         retPaths[Y[i]]=p
+        retPaths[Y[i]]['id']=Y[i]
 
     for g in cl:
         for n in cl[g]:
             cl[g][n] = list(cl[g][n])[0]
 
-    return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects})
+    return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects, 'nclusters':nClusters})
 
 
 @cherrypy.expose

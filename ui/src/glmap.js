@@ -2,7 +2,6 @@ import React from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
-import randomColor from 'randomcolor';
 
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
@@ -85,10 +84,6 @@ let MapboxMap = class MapboxMap extends React.Component {
                 cMin=Math.min(cMin,cmap[ids[i]]);
                 cMax=Math.max(cMax,cmap[ids[i]]);  
             }
-            let colours=[];
-            for (let i = 0; i<=cMax;i++){
-              colours.push(randomColor());
-            }
             if (this.state.loaded){
               for (let layer of geometries){
                 if (selected===layer.name){
@@ -121,7 +116,7 @@ let MapboxMap = class MapboxMap extends React.Component {
                   }
                 }
               }
-              this.setFill(colours);  
+              this.setFill(this.props.colours);  
             }
           }
       

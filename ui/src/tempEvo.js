@@ -21,13 +21,16 @@ class TempEvo extends Component {
     render() {
         let retJSX=[];
         // let {dispatch}=this.props;
-        if (this.props.data!==undefined){
+        console.log('tempEvo props',this.props);
+        if ((this.props.data!==undefined)&&(this.props.colours!==undefined)){
             let {aspects,evolution}=this.props.data;
-            evolution=evolution.slice(0,200);
+            evolution=evolution.slice(0,200).map((d)=>{
+                return({...d,color:this.props.colours[d.id]})
+            });
             let domains=aspects.filter((d)=>{
                 return(d.visible);
             }).map((d)=>{
-                return({'name':d.id, domain:[0,1], getValue: (e)=> e[d.id]});
+                return({name:d.id, label: d.name, domain:[0,1], getValue: (e)=> e[d.id]});
             }).sort((a,b)=>{
                 return(a.order-b.order);
             });
@@ -37,7 +40,7 @@ class TempEvo extends Component {
                     domains={domains}
                     height={400}
                     width={1600}
-                    margin={{left: 40, right: 10, top: 20, bottom: 20}}
+                    margin={{left: 40, right: 10, top: 100, bottom: 20}}
                     showMarks={false}
                     tickFormat={(d)=>{}}
                     brushing={true}

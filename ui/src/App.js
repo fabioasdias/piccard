@@ -14,6 +14,7 @@ const mapStateToProps = (state) => ({
   geometry: state.geometry,
   clustering: state.clustering,
   temporal: state.temporal,
+  colours: state.colours,
   bbox: state.bbox
 });
 
@@ -70,6 +71,7 @@ class App extends Component {
                         geometries={availableGeometries}
                         paintProp={'GISJOIN'}
                         cmap={this.props.clustering}
+                        colours={this.props.colours}
                         bboxCallback={(box)=>{
                           console.log(box);
                           dispatch(actionCreators.UpdateBBOX(box));
@@ -77,6 +79,7 @@ class App extends Component {
                       />
                       <TempEvo 
                         data={this.props.temporal}
+                        colours={this.props.colours}
                         key='tp'
                       />
                     </div>);

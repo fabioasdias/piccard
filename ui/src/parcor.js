@@ -79,7 +79,7 @@ function getLabels(props) {
     return {
       x: domain.name,
       y: 1.1,
-      label: domain.name,
+      label: domain.label,
       style
     };
   });

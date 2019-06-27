@@ -1,4 +1,15 @@
 import {getURL} from './urls';
+import randomColor from 'randomcolor';
+
+
+function makeColours(n){
+    let colours=[];
+    for (let i = 0; i<=n;i++){
+      colours.push(randomColor());
+    }
+    return(colours);
+
+}
 
 export const types={
     SELECT_GEOMETRY: 'SelectGeometry',
@@ -31,7 +42,10 @@ export const reducer = (state={aspects:[]}, action)=>{
         case types.SELECT_GEOMETRY:
             return({...state, geometry:payload});
         case types.UPDATE_CLUSTERING:
-            return({...state, temporal:{aspects:payload.aspects,evolution:payload.evolution}, clustering:payload.clustering})
+            return({...state, 
+                    colours: makeColours(payload.nclusters),
+                    temporal:{aspects:payload.aspects,evolution:payload.evolution}, 
+                    clustering:payload.clustering})
         case types.UPDATE_BBOX:
             return({...state, bbox:payload})
         default:
