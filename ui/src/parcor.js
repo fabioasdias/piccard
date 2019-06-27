@@ -239,10 +239,8 @@ class ParallelCoordinates extends Component {
                     });  
                   }
                 }
-                console.log('sel',selected)
                 this.props.highlightCallback(selected.map((d) => d.id));
               }
-
               this.setState({
                 brushFilters: filters
               });
