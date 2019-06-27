@@ -80,7 +80,8 @@ function getLabels(props) {
       x: domain.name,
       y: 1.1,
       label: domain.label,
-      style
+      rotation: -20,
+      style:{...style, textAnchor:'start'}
     };
   });
 }
@@ -154,7 +155,7 @@ function getLines(props) {
 
 class ParallelCoordinates extends Component {
   state = {
-    brushFilters: {}
+    brushFilters: {},
   };
 
   render() {
@@ -224,12 +225,26 @@ class ParallelCoordinates extends Component {
         {axes.concat(lines).concat(labelSeries)}
         {brushing &&
           domains.map(d => {
-            const trigger = row => {
-              this.setState({
-                brushFilters: {
-                  ...brushFilters,
-                  [d.name]: row ? {min: row.bottom, max: row.top} : null
+            const trigger = (row) => {
+              let filters={
+                ...brushFilters,
+                [d.name]: row ? {min: row.bottom, max: row.top} : null
+              }
+              if (this.props.highlightCallback!==undefined){
+                let selected=this.props.data.slice();
+                for (let k in filters){
+                  if (filters[k]){
+                    selected=selected.filter((e)=>{
+                      return((e[k]>=filters[k].min)&&(e[k]<=filters[k].max));
+                    });  
+                  }
                 }
+                console.log('sel',selected)
+                this.props.highlightCallback(selected.map((d) => d.id));
+              }
+
+              this.setState({
+                brushFilters: filters
               });
             };
             return (

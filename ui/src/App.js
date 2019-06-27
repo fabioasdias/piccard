@@ -15,7 +15,8 @@ const mapStateToProps = (state) => ({
   clustering: state.clustering,
   temporal: state.temporal,
   colours: state.colours,
-  bbox: state.bbox
+  bbox: state.bbox,
+  selectedClusters: state.selectedClusters
 });
 
 // //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -72,6 +73,7 @@ class App extends Component {
                         paintProp={'GISJOIN'}
                         cmap={this.props.clustering}
                         colours={this.props.colours}
+                        highlight={this.props.selectedClusters}
                         bboxCallback={(box)=>{
                           console.log(box);
                           dispatch(actionCreators.UpdateBBOX(box));

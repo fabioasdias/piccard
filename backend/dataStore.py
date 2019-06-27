@@ -148,9 +148,7 @@ class dataStore(object):
         else:
             I = Rtree(join(self._geometry_folder,geom+'.rt'))
             hits=list(I.intersection(bbox, objects=True))
-            newG=nx.subgraph(G,[(geom,item.object) for item in hits])
-            print('newG',len(G),len(newG),len(newG.edges()))
-            return(newG)            
+            return(nx.subgraph(G,[(geom,item.object) for item in hits]))            
 
 
     def getCrossGeometry(self, g1: str, g2: str) -> nx.Graph():

@@ -3,8 +3,8 @@ import randomColor from 'randomcolor';
 
 
 function makeColours(n){
-    let colours=[];
-    for (let i = 0; i<=n;i++){
+    let colours=['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d','#666666'];
+    for (let i = colours.length; i<n;i++){
       colours.push(randomColor());
     }
     return(colours);
@@ -16,6 +16,7 @@ export const types={
     SELECT_ASPECTS: 'SelectAspects',
     UPDATE_CLUSTERING: 'UpdateClustering',
     UPDATE_BBOX: 'UpdateBBOX',
+    SELECT_CLUSTERS: 'SelectClusters'
 };
 // Helper functions to dispatch actions, optionally with payloads
 export const actionCreators = {
@@ -30,10 +31,13 @@ export const actionCreators = {
     },
     UpdateBBOX: (box) => {
         return({type: types.UPDATE_BBOX, payload:box});
+    },
+    SelectClusters: (selected) => {
+        return({type: types.SELECT_CLUSTERS, payload:selected})
     }
   };
 
-export const reducer = (state={aspects:[]}, action)=>{
+export const reducer = (state={aspects:[], selectedClusters:[]}, action)=>{
     const { type, payload } = action;
     console.log(state, type, payload);
     switch (type){
@@ -48,6 +52,8 @@ export const reducer = (state={aspects:[]}, action)=>{
                     clustering:payload.clustering})
         case types.UPDATE_BBOX:
             return({...state, bbox:payload})
+        case types.SELECT_CLUSTERS:
+            return({...state, selectedClusters:payload});
         default:
             return(state);
     }

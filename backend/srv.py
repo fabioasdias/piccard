@@ -60,24 +60,10 @@ def cors():
 
 
 @memory.cache(ignore=['ds'])
-def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: int = 10, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: int = 10, bbox: list = None):
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
     print('got merged')
-
-    # sim = []
-    # for a in ds.aspects():
-    #     print('comparing ', a)
-    #     g = ds.getGeometry(a)
-    #     if g not in Gs:
-    #         g = list(Gs.keys())[-1]
-    #     d = compareHierarchies(ds, Gs[g], a, g1=g)
-    #     sim.append({'id': a,
-    #                 'geometry': g,
-    #                 'name': ds.getAspectName(a)+' {0}'.format(d),
-    #                 'selected': a in aspects,
-    #                 'x': d,
-    #                 'y': ds.getAspectYear(a)})
 
     cl = {}
     for g in Gs:
@@ -88,6 +74,7 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
                           'geom': ds.getGeometry(a),
                           'cols': ds.getColumns(a),
                           'id': a,
+                          'visible': True,
                           'descr': ds.getDescriptions_AsDict(a)}
                          for a in aspects]
 
@@ -95,7 +82,6 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
     # preparations for the domains in ParallelCoordinates (react-vis)
     for i in range(len(full_info_aspects)):
         full_info_aspects[i]['order'] = i
-        full_info_aspects[i]['visible'] = True
 
     geoms = sorted(list(Gs.keys()))
 
@@ -117,26 +103,24 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
             if (g1 != g2):
                 X = ds.getCrossGeometry(g1, g2)
                 for n in cl[g1]:
-                    source = (g1, cl[g1][n])
+                    cc1 = cl[g1][n]
+                    source = (g1, cc1)
                     if (source not in M):
                         M.add_node(source)
-                    if 'regions' not in M.node[source]:
-                        M.node[source]['regions'] = set()
-                    M.node[source]['regions'].add(n)
 
                     for nn in X.neighbors((g1, n)):
                         # only goes in if the target is inside the bbox
                         if nn[1] in cl[g2]:
-                            target = (g2, cl[g2][nn[1]])
+                            cc2 = cl[g2][nn[1]]
+                            target = (g2, cc2)
 
                             if not target in M:
                                 M.add_node(target)
-                            if 'regions' not in M.node[target]:
-                                M.node[target]['regions'] = set()
-                            M.node[target]['regions'].add(nn[1])
 
                             if not M.has_edge(source, target):
-                                M.add_edge(source, target, area=0)
+                                M.add_edge(source, target, count=0)
+                            else:
+                                M[source][target]['count'] += 1
 
     points = {}
     for info in full_info_aspects:
@@ -148,15 +132,17 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
             vals = [x for x in vals if (x is not None)]
             if vals:
                 points[a][cc] = np.nanmedian(vals)
+            else:
+                points[a][cc] = -1
 
     a = full_info_aspects[0]['id']
     g = full_info_aspects[0]['geom']
-    paths = [[{'geom': n[0],
-               'id':n[1],
-               'x':a,
-               'y':points[a][n[1]]}, ]
-             for n in M if n[0] == g
-             if n[1] in points[a]]
+    paths = [[{'geom': m[0],
+               'id': m[1],
+               'x': a,
+               'y': points[a][m[1]]}, ]
+             for m in M if m[0] == g
+             if m[1] in points[a]]
 
     for info in full_info_aspects[1:]:
         g = info['geom']
@@ -168,9 +154,12 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
             last = {**current[-1]}
             if last['geom'] == g:  # same geometry:
                 if last['id'] in points[a]:
-                    to_add.append(current+[last, ])
-                    to_add[-1][-1]['x'] = a
-                    to_add[-1][-1]['y'] = points[a][last['id']]
+                    to_add.append(current+[{
+                        'geom': last['geom'],
+                        'id':last['id'],
+                        'x':a,
+                        'y':points[a][last['id']]
+                    }, ])
                 unused.discard(last['id'])
             else:
                 options = [n for n in M.successors(
@@ -202,34 +191,39 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
         tempPaths.append(newPath)
         clustersByPath.append(newCluster)
 
-    a2i = {A['id']: A['order'] for A in full_info_aspects}
-    X = np.zeros((len(tempPaths), len(full_info_aspects)))
-    for i, p in enumerate(tempPaths):
-        for a in p:
-            X[i, a2i[a]] = p[a]
-    Y = KMeans(n_clusters=nClusters).fit_predict(X).tolist()
-    print(list(set(Y)))
+    if len(tempPaths) > nClusters:
+        a2i = {A['id']: A['order'] for A in full_info_aspects}
+        X = np.zeros((len(tempPaths), len(full_info_aspects)))
+        for i, p in enumerate(tempPaths):
+            for a in p:
+                X[i, a2i[a]] = p[a]
+        Y = KMeans(n_clusters=nClusters).fit_predict(X).tolist()
+    else:
+        Y = [i for i in range(len(tempPaths))]
 
     for g in cl:
-        cl[g] = {}
+        for n in cl[g]:
+            cl[g][n] = set()
 
-    retPaths = [ {} for _ in range(nClusters)]
+    retPaths = [{} for _ in range(nClusters)]
     for i, p in enumerate(tempPaths):
         for a in p:
             g = ds.getGeometry(a)
             cc = clustersByPath[i][a]
-            for n in M.node[(g, cc)]['regions']:
-                if n not in cl[g]:
-                    cl[g][n] = set()
+            for n in cc2n[g][cc]:
                 cl[g][n].add(Y[i])
-        retPaths[Y[i]]=p
-        retPaths[Y[i]]['id']=Y[i]
+        retPaths[Y[i]] = p  # TODO better paths (not only the last!)
+        retPaths[Y[i]]['id'] = Y[i]
 
     for g in cl:
         for n in cl[g]:
-            cl[g][n] = list(cl[g][n])[0]
+            if len(cl[g][n]) == 0:
+                cl[g][n] = []
+            else:
+                # TODO order and pass the whole thing
+                cl[g][n] = list(cl[g][n])[0]
 
-    return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects, 'nclusters':nClusters})
+    return({'clustering': cl, 'evolution': retPaths, 'aspects': full_info_aspects, 'nclusters': nClusters})
 
 
 @cherrypy.expose
@@ -289,7 +283,7 @@ class server(object):
         else:
             nc = int(input_json['nc'])
 
-        return(_mapHiers(ds, sorted(to_use), nc, bbox=bbox))
+        return(_mapHiers(ds, sorted(to_use), nClusters=nc, bbox=bbox))
 
     @cherrypy.expose
     def index(self):
@@ -371,10 +365,9 @@ if __name__ == '__main__':
         # }
     }
 
-    # thresholds: list = [0.999, 0.75, 0.5]
-    # to_use = ['14b48d89-0bea-491e-8f3a-cf363845c5a7', '15e7ff9d-1c4f-4acc-9c91-1e046b151af5', '1877f60e-241c-4050-9c79-5b6b44454973', '1d738eff-ad39-49e4-a837-f2596715b8fe', '1e52d9c3-5dde-4765-9b7c-e864e1a93d25', '204f536f-2cac-445c-bd15-040c866fe479', '22f6ce38-2905-4031-86bc-30d9961ac37e', '242b7fda-9589-4dca-8884-f3c878f1af8f', '2b58be95-055d-4552-895b-08b3e7bad170', '2d5a840f-df04-4dcd-9a4c-be1f642a9b0b', '38502f50-3d9f-409f-aad1-a67b2b58cdfb', '4556dd88-5790-4dc6-9577-b1608ce81995', '45e24c40-fccd-4569-8325-b6d310bcbb63', '49968c14-3b78-4018-ad4b-93ca92be7787', '4a37b2fe-529e-4d29-ad9b-9f673f1ac540', '52787af7-a197-42a3-b5bb-b66a9d75170d', '528fd86d-663c-46e8-9cca-b884db6e7ea6', '566cee34-a675-4dab-883c-56dcf43d2692', '57bbb4da-2fa3-4283-acb4-aa19b1220f0c', '5cdca1a8-a666-4b80-8be6-f41b66130f30',
-    #           '6096ec62-a36e-42da-b4ad-1f17f02d0401', '723dea41-7e9f-4749-ad7b-a1e017b12893', '73022894-6f58-46d3-bf49-b714d7bb7c31', '973082d5-4f3e-4d79-be6d-f783135b1eba', '9e43d7a8-8af1-4a02-a961-474080aa78b8', 'a61a5b30-4083-43fd-88c0-22d60c8d4295', 'b3114d6c-8480-4181-9fa0-f13981f781f3', 'b614e09d-5d70-4b96-8977-4737c0db6f13', 'b9f254c2-3035-4fae-bf80-de96241f3885', 'ba0b0a20-f757-4521-a5aa-8478311e96e0', 'c5d7e898-2832-472e-8bb5-822c46b8389e', 'cc818a72-420b-486f-a060-283302b5e49b', 'd1701771-1e66-4b0a-825e-71142f9acaa7', 'd1bd3caa-9820-41ee-b68c-2fbe86ec0543', 'd426366b-08c5-4e36-a9fe-a08ee154de90', 'd9633dd9-8079-47b0-af9d-7732157228ae', 'de0e9a71-2ddf-43f7-a149-af2602ddf614', 'e059fe12-15a9-459f-8d65-6d4af41ee7cf', 'f3b9dc44-86d1-493c-a826-220c7919d90c', 'fbba5ff9-9bca-4141-85f8-7de470208e60', 'fd9d6283-cc5f-4b61-a0d4-0e3c61a99bd2']
-    # _mapHiers(ds, sorted(to_use), thresholds)
+    # to_use = ['01bb3d0d-e092-41c1-8f2a-69b4b6071816', '12aaca5a-2bdb-46df-8539-61bc4a9d47fd', '2f387e23-87dd-4ca7-b235-ce2885480559', '3bfe7577-1f6d-4ff5-93af-1ca818629e45', '43894ad2-9584-484f-9637-e6f56ccd2c1b', '44be0540-3a5d-4f93-a587-9ed927226eee', '53c5e1c8-54f9-4d64-a70f-744652a9c871', '5cd8f9e2-102e-4e8c-a1d9-9f7b8b511020',
+    #           '6f892c29-8f17-4b26-a983-95a269f21951', '94e0b99f-fefd-4b55-b37e-9d6d74d43312', '9b515e1b-1563-41f0-96e4-c525c1842a2d', 'a4a6da16-ebff-4965-92df-ff3d5fbdc3d5', 'ca2901c6-cc6c-4e5b-b080-f82587e2475e', 'db096ab2-4013-474d-ae54-e7da8b1ebbd8', 'dd498cf9-9b41-4f0a-b274-a508ea2f0270', 'e28a0680-164e-4a77-aa53-8a2694056988']
+    # _mapHiers(ds, sorted(to_use), threshold=0.5)
     # exit()
 
     cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)

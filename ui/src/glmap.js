@@ -2,7 +2,7 @@ import React from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
-
+import chroma from 'chroma-js';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
 
@@ -13,11 +13,11 @@ class GeomControl {
   }
   onAdd(map){
     this.map = map;
-    console.log(this.geoms);
+
     this.container = document.createElement('div');
     // this.container.className = 'geom-control';
     this.container.className = 'mapboxgl-ctrl';
-    console.log('cont',this.container)
+
 
     var sel = document.createElement("SELECT");
     sel.setAttribute("id", "mySelect");
@@ -54,22 +54,21 @@ let MapboxMap = class MapboxMap extends React.Component {
   }
   
   componentDidUpdate(props,state) {
-    console.log('UPDATE',props, state);
+
 
     let {geometries}=this.props;
     let cmaps = this.props.cmap;
     let {selected}=this.state;
 
-    console.log('selected', props, selected, state.selected);
     if ((cmaps!==undefined)&&(geometries!==undefined)&&(geometries.length>0)){
       
       if (this.state.selected===undefined){
         this.setState({selected:geometries[0].name})
       } else {
-        console.log(props)
         if ((cmaps.hasOwnProperty(selected)) && 
             ((this.state.selected!==state.selected)||
              (props.cmap===undefined)||
+             (props.highlight.length!==this.props.highlight.length)||
              (Object.keys(cmaps[selected]).length!==Object.keys(props.cmap[selected]).length)
              )){
 
@@ -88,14 +87,12 @@ let MapboxMap = class MapboxMap extends React.Component {
               for (let layer of geometries){
                 if (selected===layer.name){
                   if (this.map.getSource('s_'+layer.year)===undefined){
-                    console.log('add source',layer.year);
                     this.map.addSource('s_'+layer.year, {
                       type: 'vector',
                       url: 'mapbox://'+layer.url,
                       });  
                   }
                   if (this.map.getLayer('l_'+layer.year)===undefined){
-                    console.log('add layer',layer.year);
                     this.map.addLayer({
                       id: 'l_'+layer.year,
                       type: 'fill',
@@ -116,7 +113,20 @@ let MapboxMap = class MapboxMap extends React.Component {
                   }
                 }
               }
-              this.setFill(this.props.colours);  
+              if (this.props.highlight.length>0){
+                let newColours=this.props.colours.slice().map((c)=>{
+                  return(chroma(c).brighten().desaturate(2).hex());
+                });
+                //copies back the normal colours for the selected
+                for (let i=0; i< this.props.highlight.length;i++){
+                  newColours[this.props.highlight[i]]=this.props.colours[this.props.highlight[i]];
+                }
+                this.setFill(newColours);  
+
+              }else{
+                this.setFill(this.props.colours);  
+              }
+              
             }
           }
       
@@ -172,8 +182,7 @@ let MapboxMap = class MapboxMap extends React.Component {
       for (let layer of this.props.geometries){
         if (this.map.getLayer('l_'+layer.year)!==undefined){
           this.map.setPaintProperty('l_'+layer.year, 
-          'fill-color', 
-              ['let', 'detail', 0, exp]
+          'fill-color', exp
           );
           // This may work or not, but runs out of memory...
           // this.map.setPaintProperty('l_'+layer.year, 
