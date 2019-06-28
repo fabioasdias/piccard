@@ -3,6 +3,13 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
 import chroma from 'chroma-js';
+import { connect } from 'react-redux';
+import { actionCreators, requestClustering } from './reducers';
+
+const mapStateToProps = (state) => ({  
+  aspects: state.aspects,  
+});
+
 
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
 
@@ -44,18 +51,42 @@ class GeomControl {
   }
 }
 
+class UpdateButton {
+  constructor(cb){
+    this.cb=cb;
+  }
+  onAdd(map){
+    // Update
+    this.map = map;
 
+    this.container = document.createElement('div');
+    // this.container.className = 'geom-control';
+    this.container.className = 'mapboxgl-ctrl';
+
+
+    var btn = document.createElement("BUTTON");
+    btn.setAttribute("id", "myButton");
+    btn.innerHTML="Update";
+    btn.onclick=this.cb;
+    this.container.appendChild(btn)
+    this.container.onclick = this.cb;
+    return(this.container);
+  }
+  onRemove(){
+    this.container.parentNode.removeChild(this.container);
+    this.map = undefined;
+  }
+
+}
 
 let MapboxMap = class MapboxMap extends React.Component {
   map;
   constructor(props){
     super(props);
-    this.state={loaded:false, selected:undefined}
+    this.state={loaded:false, selected:undefined, bbox:undefined}
   }
   
   componentDidUpdate(props,state) {
-
-
     let {geometries}=this.props;
     let cmaps = this.props.cmap;
     let {selected}=this.state;
@@ -136,6 +167,7 @@ let MapboxMap = class MapboxMap extends React.Component {
   }
 
   componentDidMount() {
+    let {dispatch}=this.props;
     this.map = new mapboxgl.Map({
       container: this.mapContainer,
       zoom: 5,
@@ -149,12 +181,14 @@ let MapboxMap = class MapboxMap extends React.Component {
           this.setState({selected:d.target.value});
         }
         );
+      let updbutton = new UpdateButton((d)=>{
+        dispatch(requestClustering(this.props.aspects,this.state.bbox));
+      })
       this.map.addControl(geomControl);
+      this.map.addControl(updbutton,'top-left');
     });
     this.map.on('moveend',()=>{
-      if (this.props.bboxCallback!==undefined){
-        this.props.bboxCallback(this.map.getBounds());
-      }
+      this.setState({bbox:this.map.getBounds()})
     });    
   }
 
@@ -212,5 +246,5 @@ let MapboxMap = class MapboxMap extends React.Component {
   }
 }
 
+export default  connect(mapStateToProps)(MapboxMap);
 
-export default MapboxMap;

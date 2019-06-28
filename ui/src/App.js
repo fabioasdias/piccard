@@ -15,7 +15,6 @@ const mapStateToProps = (state) => ({
   clustering: state.clustering,
   temporal: state.temporal,
   colours: state.colours,
-  bbox: state.bbox,
   selectedClusters: state.selectedClusters
 });
 
@@ -59,14 +58,6 @@ class App extends Component {
                       key='upp'
                     />);
       }else{
-        retJSX.push(<div key="adv">
-          <button onClick={(e)=>{
-            this.setState({showUploadPanel:true});
-          }}>Upload data</button>
-          <button onClick={(e)=>{
-            dispatch(requestClustering(this.props.aspects,this.props.bbox));
-          }}>Update</button>
-          </div>);  
         retJSX.push(<div >
                       <MapboxMap 
                         geometries={availableGeometries}
@@ -74,10 +65,6 @@ class App extends Component {
                         cmap={this.props.clustering}
                         colours={this.props.colours}
                         highlight={this.props.selectedClusters}
-                        bboxCallback={(box)=>{
-                          console.log(box);
-                          dispatch(actionCreators.UpdateBBOX(box));
-                        }}
                       />
                       <TempEvo 
                         data={this.props.temporal}
@@ -85,6 +72,11 @@ class App extends Component {
                         key='tp'
                       />
                     </div>);
+        retJSX.push(<div key="adv">
+                      <button onClick={(e)=>{
+                        this.setState({showUploadPanel:true});
+                      }}>Upload data</button>
+                    </div>);                      
       }
     }
     return (

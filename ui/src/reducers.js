@@ -15,7 +15,6 @@ export const types={
     SELECT_GEOMETRY: 'SelectGeometry',
     SELECT_ASPECTS: 'SelectAspects',
     UPDATE_CLUSTERING: 'UpdateClustering',
-    UPDATE_BBOX: 'UpdateBBOX',
     SELECT_CLUSTERS: 'SelectClusters'
 };
 // Helper functions to dispatch actions, optionally with payloads
@@ -28,9 +27,6 @@ export const actionCreators = {
     },
     UpdateClustering: (clsim) => {
         return({type: types.UPDATE_CLUSTERING, payload:clsim})
-    },
-    UpdateBBOX: (box) => {
-        return({type: types.UPDATE_BBOX, payload:box});
     },
     SelectClusters: (selected) => {
         return({type: types.SELECT_CLUSTERS, payload:selected})
@@ -50,8 +46,6 @@ export const reducer = (state={aspects:[], selectedClusters:[]}, action)=>{
                     colours: makeColours(payload.nclusters),
                     temporal:{aspects:payload.aspects,evolution:payload.evolution}, 
                     clustering:payload.clustering})
-        case types.UPDATE_BBOX:
-            return({...state, bbox:payload})
         case types.SELECT_CLUSTERS:
             return({...state, selectedClusters:payload});
         default:
