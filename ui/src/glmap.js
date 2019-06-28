@@ -176,6 +176,7 @@ let MapboxMap = class MapboxMap extends React.Component {
 
     this.map.on('load', () => {
       this.setState({loaded:true})
+      console.log('map loaded')
       let geomControl = new GeomControl(this.props.geometries,
         (d)=>{
           this.setState({selected:d.target.value});
@@ -193,7 +194,6 @@ let MapboxMap = class MapboxMap extends React.Component {
   }
 
   setFill(colours){
-    console.log('set fill')
     let exp=['case',
               [
                 'has',

@@ -1,6 +1,7 @@
 .TempEvo {
-    width:90%;
-    height:400px;
+    width:50%;
+    min-width: 500px;
+    height:fit-content;
     position: relative;
     border: solid;
     border-color: darkgray;
@@ -8,6 +9,7 @@
     margin: 1px;
     float:left;
 }
+
 .tooltip {
     position: absolute;
     width: fit-content;

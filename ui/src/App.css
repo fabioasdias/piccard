@@ -1,12 +1,9 @@
-.App {
-  width: 95%;
-  height: 900px;
-  padding: 5px;
-  display: block;
+.button {
+  width: fit-content;
+  min-width: 80px;
+  height: fit-content;
+  min-height: 20px;
 }
-
-
-
 .App-header {
   background-color: #222;
   height: 45px;

@@ -1,6 +1,7 @@
 .mapboxgl-map{
-    width:90%;
-    height:500px;
+    width:50%;
+    min-width: 500px;
+    height:800px;
     border: solid;
     margin: 1px;
     border-color: darkgray;

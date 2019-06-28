@@ -206,6 +206,7 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
             cl[g][n] = set()
 
     retPaths = [{} for _ in range(nClusters)]
+    aspects = [a['id'] for a in full_info_aspects]
     for i, p in enumerate(tempPaths):
         for a in p:
             g = ds.getGeometry(a)
@@ -214,6 +215,9 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
                 cl[g][n].add(Y[i])
         retPaths[Y[i]] = p  # TODO better paths (not only the last!)
         retPaths[Y[i]]['id'] = Y[i]
+        for a in aspects:
+            if a not in retPaths[Y[i]]:
+                retPaths[Y[i]][a]=-1
 
     for g in cl:
         for n in cl[g]:

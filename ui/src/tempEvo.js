@@ -16,9 +16,22 @@ const mapStateToProps = (state) => ({
 class TempEvo extends Component {
     constructor(props){
         super(props);
-        this.state={tooltip:undefined};
+        this.state={tooltip:undefined, width: window.innerWidth,};
     }
-
+    componentWillMount() {
+        window.addEventListener('resize', this.handleWindowSizeChange);
+      }
+      
+      // make sure to remove the listener
+      // when the component is not mounted anymore
+      componentWillUnmount() {
+        window.removeEventListener('resize', this.handleWindowSizeChange);
+      }
+      
+      handleWindowSizeChange = () => {
+        this.setState({ width: window.innerWidth });
+      };
+    
     render() {
         let retJSX=[];
         let {dispatch}=this.props;
@@ -30,41 +43,40 @@ class TempEvo extends Component {
             let domains=aspects.filter((d)=>{
                 return(d.visible);
             }).map((d)=>{
-                return({ name:d.id, 
+                return({ ...d,
+                         name:d.id, 
                          label: d.name, 
+                         cols: d.cols,
+                         descr: d.descr,
                          domain:[0,1], 
                          getValue: (e)=> e[d.id]});
             }).sort((a,b)=>{
-                return(a.order-b.order);
+                return(b.order-a.order);
             });
             let highcb=(sel)=>{
                 dispatch(actionCreators.SelectClusters(sel));
             }
+            console.log('tempEvo',evolution);
+            let W=this.state.width;
             retJSX.push(<div>
                 <ParallelCoordinates
                     data={evolution}
                     domains={domains}
-                    height={400}
-                    width={1600}
+                    height={Math.max(domains.length*40,800)}
+                    width={(W<600)?W:W*0.5}
                     highlightCallback={highcb}
-                    margin={{left: 10, right: 60, top: 100, bottom: 20}}
-                    showMarks={false}
+                    margin={{left: 20, right: W/12, top: 20, bottom: 20}}
+                    showMarks={true}
                     tickFormat={(d)=>{}}
                     brushing={true}
                     colorType={'literal'}
                     style={{
                         deselectedLineStyle:{
-                            strokeOpacity:0,
-                            color:'gray'
+                            strokeOpacity:0.25,
                         },
-                        line:{
+                        lines:{
                             strokeOpacity:0.9,
                         },
-                        // axes: {
-                            // line: {},
-                            // ticks: {},
-                            // text: {}
-                        // },
                         // labels: {
                         //     fontSize: 10,
                         //     style: {

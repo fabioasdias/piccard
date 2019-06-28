@@ -15,6 +15,7 @@ const mapStateToProps = (state) => ({
   clustering: state.clustering,
   temporal: state.temporal,
   colours: state.colours,
+  loading: state.loading,
   selectedClusters: state.selectedClusters
 });
 
@@ -32,55 +33,71 @@ const mapStateToProps = (state) => ({
 class App extends Component {
   constructor(props){
     super(props);
-    this.state={showLoading:true, 
-                showUploadPanel:false,
+    this.state={showUploadPanel:false,
                 availableAspects:[],
+                width: window.innerWidth,
                 availableGeometries:[]}
+
   }
+  componentWillMount() {
+    window.addEventListener('resize', this.handleWindowSizeChange);
+  }
+  
+  // make sure to remove the listener
+  // when the component is not mounted anymore
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleWindowSizeChange);
+  }
+  
+  handleWindowSizeChange = () => {
+    this.setState({ width: window.innerWidth });
+  };
 
   render() {
     let retJSX=[];
-    let {showLoading,showUploadPanel,availableGeometries}=this.state;
-    let {dispatch}=this.props;
-    if (showLoading===true){
+    let {showUploadPanel,availableGeometries}=this.state;
+    let {loading}=this.props;
+    if (loading){
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
-    }else{
+    }
+
+    retJSX.push(<MapboxMap 
+                    geometries={availableGeometries}
+                    paintProp={'GISJOIN'}
+                    cmap={this.props.clustering}
+                    colours={this.props.colours}
+                    highlight={this.props.selectedClusters}
+                  />);
+    retJSX.push(<TempEvo 
+                    data={this.props.temporal}
+                    colours={this.props.colours}
+                    key='tp'
+                  />);
+    retJSX.push(<button 
+                    className="button" 
+                    onClick={(e)=>{
+                      this.setState({showUploadPanel:true});
+                    }}>Upload data</button>);
       if (showUploadPanel===true){
-        retJSX.push(<div>
+        retJSX.push(
             <button onClick={(e)=>{
               this.setState({showUploadPanel:false});
             }}>Hide Advanced</button>
-          </div>);  
+          );  
         retJSX.push(<Aspects 
                       availableGeometries={availableGeometries}
                       key='asp'/>);
         retJSX.push(<Upload 
                       key='upp'
                     />);
-      }else{
-        retJSX.push(<div >
-                      <MapboxMap 
-                        geometries={availableGeometries}
-                        paintProp={'GISJOIN'}
-                        cmap={this.props.clustering}
-                        colours={this.props.colours}
-                        highlight={this.props.selectedClusters}
-                      />
-                      <TempEvo 
-                        data={this.props.temporal}
-                        colours={this.props.colours}
-                        key='tp'
-                      />
-                    </div>);
-        retJSX.push(<div key="adv">
-                      <button onClick={(e)=>{
-                        this.setState({showUploadPanel:true});
-                      }}>Upload data</button>
-                    </div>);                      
       }
+    
+    let disp='flex';
+    if (this.state.width<600){
+      disp='block'
     }
     return (
-        <div key='base' className="App">    
+        <div key='base' style={{display:disp, width:'95%', height: 'fit-content'}}>    
           {retJSX}
         </div>
     );
@@ -97,7 +114,6 @@ class App extends Component {
         this.setState({availableAspects:data});                
         dispatch(requestClustering(data));
       });
-    this.setState({showLoading:false})
   }   
 }
 

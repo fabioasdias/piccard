@@ -15,7 +15,8 @@ export const types={
     SELECT_GEOMETRY: 'SelectGeometry',
     SELECT_ASPECTS: 'SelectAspects',
     UPDATE_CLUSTERING: 'UpdateClustering',
-    SELECT_CLUSTERS: 'SelectClusters'
+    SELECT_CLUSTERS: 'SelectClusters',
+    START_LOADING: 'StartLoading',
 };
 // Helper functions to dispatch actions, optionally with payloads
 export const actionCreators = {
@@ -30,10 +31,13 @@ export const actionCreators = {
     },
     SelectClusters: (selected) => {
         return({type: types.SELECT_CLUSTERS, payload:selected})
+    },
+    StartLoading: ()=>{
+        return({type: types.START_LOADING});
     }
   };
 
-export const reducer = (state={aspects:[], selectedClusters:[]}, action)=>{
+export const reducer = (state={aspects:[], selectedClusters:[], loading:true}, action)=>{
     const { type, payload } = action;
     console.log(state, type, payload);
     switch (type){
@@ -41,11 +45,14 @@ export const reducer = (state={aspects:[], selectedClusters:[]}, action)=>{
             return({...state, aspects:payload});
         case types.SELECT_GEOMETRY:
             return({...state, geometry:payload});
+        case types.START_LOADING:
+            return({...state, loading:true});
         case types.UPDATE_CLUSTERING:
             return({...state, 
                     colours: makeColours(payload.nclusters),
                     temporal:{aspects:payload.aspects,evolution:payload.evolution}, 
-                    clustering:payload.clustering})
+                    clustering:payload.clustering,
+                    loading:false})
         case types.SELECT_CLUSTERS:
             return({...state, selectedClusters:payload});
         default:
@@ -55,11 +62,13 @@ export const reducer = (state={aspects:[], selectedClusters:[]}, action)=>{
 
 export function requestClustering(aspects,bbox) {
     let args={aspects:aspects,bbox:bbox};
+
     if (bbox!==undefined){
         args.bbox=bbox;
     }
-    console.log('request', args)
+    
     return function (dispatch) {
+        // dispatch(actionCreators.StartLoading());
         return fetch(getURL.MapHierarchies(),  {
             // must match 'Content-Type' header
             body: JSON.stringify(args), 

@@ -22,6 +22,7 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {scaleLinear} from 'd3-scale';
 import {format} from 'd3-format';
+import './parcor.css';
 
 import {DISCRETE_COLOR_RANGE} from 'react-vis/dist/theme';
 import {
@@ -55,12 +56,11 @@ function getAxes(props) {
       <DecorativeAxis
         animation={animation}
         key={`${index}-axis`}
-        axisStart={{x: domain.name, y: 0}}
-        axisEnd={{x: domain.name, y: 1}}
+        axisStart={{y: domain.name, x: 0}}
+        axisEnd={{y: domain.name, x: 1}}
         axisDomain={sortedDomain}
-        numberOfTicks={5}
+        numberOfTicks={domain.cols.length}
         tickValue={domainTickFormat}
-        style={style.axes}
       />
     );
   });
@@ -75,16 +75,63 @@ function getAxes(props) {
  */
 function getLabels(props) {
   const {domains, style} = props;
-  return domains.map((domain, index) => {
-    return {
-      x: domain.name,
-      y: 1.1,
+  let ret=[];
+  for (let i=0;i<domains.length;i++){
+    let domain=domains[i];
+    ret.push({
+      y: domain.name,
+      x: 1.05,
       label: domain.label,
-      rotation: -20,
-      style:{...style, textAnchor:'start'}
-    };
-  });
+      yOffset: -10,
+      // rotation: -20,
+      style:{...style, textAnchor:'end', dominantBaseline: 'text-after-edge'}
+    });
+    ret.push({
+      y: domain.name,
+      x: 1.05,
+      label: domain.year.toString(),
+      yOffset: +10,
+      style:{...style, textAnchor:'end', dominantBaseline: 'text-after-edge', fontSize:12}
+    });
+
+  }
+  return(ret);
 }
+
+/**
+ * Generate "sub" labels for the ends of the axes
+ * @param {Object} props
+ - props.domains {Array} array of object specifying the way each axis is to be plotted
+ - props.style {object} style object for just the labels
+ * @return {Array} the prepped data for the labelSeries
+ */
+function getSubLabels(props) {
+  const {domains, style, width} = props;
+  let ret=[];
+  for (let i=0;i<domains.length;i++){
+    let N = domains[i].cols.length;
+    if (N*50 < width){
+      for (let j=0;j<N;j++){
+        ret.push({
+          x: (j+0.5)/N,
+          y: domains[i].name,
+          label: domains[i].descr[domains[i].cols[j]].slice(0,20),
+          // rotation: (j%2===0)?-7:+7,
+          style:{...style, 
+                 fill: 'black',
+                 stroke:'white',
+                 strokeWidth:0.1,
+                 textAnchor:'middle', 
+                 fontSize:8,
+                 dominantBaseline: (j%2===0)?'text-after-edge':'text-before-edge'}
+                 
+        });
+      }  
+    }
+  }
+  return(ret);
+}
+
 
 /**
  * Generate the actual lines to be plotted
@@ -116,19 +163,25 @@ function getLines(props) {
 
   return data.map((row, rowIndex) => {
     let withinFilteredRange = true;
-    const mappedData = domains.map((domain, index) => {
-      const {getValue, name} = domain;
+    const mappedData = domains.filter((domain)=>{
+        const {getValue, name, visible} = domain;
+        let xVal = scales[name](getValue ? getValue(row) : row[name]);
+        if ((brushFilters.hasOwnProperty(name))&&(brushFilters[name]!==null)&&(xVal<0)){
+          withinFilteredRange=false;
+        }
+        return((visible)&&(xVal>=0));
+      }).map((domain, index) => {
+        const {getValue, name} = domain;
 
-      // watch out! Gotcha afoot
-      // yVal after being scale is in [0, 1] range
-      const yVal = scales[name](getValue ? getValue(row) : row[name]);
-      const filter = brushFilters[name];
-      // filter value after being scale back from pixel space is also in [0, 1]
-      if (filter && (yVal < filter.min || yVal > filter.max)) {
-        withinFilteredRange = false;
-      }
-      return {x: name, y: yVal};
-    });
+        // xVal after being scale is in [0, 1] range
+        const xVal = scales[name](getValue ? getValue(row) : row[name]);
+        const filter = brushFilters[name];
+        // filter value after being scale back from pixel space is also in [0, 1]
+        if (filter && (xVal < filter.min || xVal > filter.max)) {
+          withinFilteredRange = false;
+        }
+        return {y: name, x: xVal};
+      });
     const selectedName = `${predefinedClassName}-line`;
     const unselectedName = `${selectedName} ${predefinedClassName}-line-unselected`;
     const lineProps = {
@@ -145,7 +198,7 @@ function getLines(props) {
         ...style.deselectedLineStyle
       };
     }
-    return showMarks ? (
+    return (showMarks&&withinFilteredRange) ? (
       <LineMarkSeries {...lineProps} />
     ) : (
       <LineSeries {...lineProps} />
@@ -204,8 +257,16 @@ class ParallelCoordinates extends Component {
         data={getLabels({domains, style: style.labels})}
       />
     );
+    const subLabelsSeries = (
+      <LabelSeries
+        animation
+        key={'sub'+className}
+        className={`${predefinedClassName}-sublabel`}
+        data={getSubLabels({domains, style: style.labels, width})}
+      />
+    );
 
-    const {marginLeft, marginRight} = getInnerDimensions(
+    const {marginTop, marginBottom} = getInnerDimensions(
       this.props,
       DEFAULT_MARGINS
     );
@@ -218,17 +279,17 @@ class ParallelCoordinates extends Component {
         className={`${className} ${predefinedClassName}`}
         onMouseLeave={onMouseLeave}
         onMouseEnter={onMouseEnter}
-        xType="ordinal"
-        yDomain={[0, 1]}
+        yType="ordinal"
+        xDomain={[0, 1]}
       >
         {children}
-        {axes.concat(lines).concat(labelSeries)}
+        {axes.concat(lines).concat(labelSeries).concat(subLabelsSeries)}
         {brushing &&
           domains.map(d => {
             const trigger = (row) => {
               let filters={
                 ...brushFilters,
-                [d.name]: row ? {min: row.bottom, max: row.top} : null
+                [d.name]: row ? {min: row.left, max: row.right} : null
               }
               if (this.props.highlightCallback!==undefined){
                 let selected=this.props.data.slice();
@@ -249,13 +310,13 @@ class ParallelCoordinates extends Component {
               <Highlight
                 key={d.name}
                 drag
-                highlightX={d.name}
+                highlightY={d.name}
                 onBrushEnd={trigger}
                 onDragEnd={trigger}
-                highlightWidth={
-                  (width - marginLeft - marginRight) / domains.length
+                highlightHeight={
+                  (height - marginTop - marginBottom) / domains.length
                 }
-                enableX={false}
+                enableY={false}
               />
             );
           })}
@@ -295,13 +356,11 @@ ParallelCoordinates.defaultProps = {
   colorRange: DISCRETE_COLOR_RANGE,
   style: {
     axes: {
-      line: {},
+      line: {stroke:'grey'},
       ticks: {},
       text: {}
     },
     labels: {
-      fontSize: 10,
-      textAnchor: 'middle'
     },
     lines: {
       strokeWidth: 1,
