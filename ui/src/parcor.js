@@ -116,7 +116,6 @@ function getSubLabels(props) {
           x: (j+0.5)/N,
           y: domains[i].name,
           label: domains[i].descr[domains[i].cols[j]].slice(0,20),
-          // rotation: (j%2===0)?-7:+7,
           style:{...style, 
                  fill: 'black',
                  stroke:'white',
@@ -309,7 +308,6 @@ class ParallelCoordinates extends Component {
             return (
               <Highlight
                 key={d.name}
-                drag
                 highlightY={d.name}
                 onBrushEnd={trigger}
                 onDragEnd={trigger}

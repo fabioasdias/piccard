@@ -73,11 +73,12 @@ class App extends Component {
                     colours={this.props.colours}
                     key='tp'
                   />);
-    retJSX.push(<button 
+    retJSX.push(<div><button 
                     className="button" 
                     onClick={(e)=>{
+                      console.log('upload data click')
                       this.setState({showUploadPanel:true});
-                    }}>Upload data</button>);
+                    }}>Upload data</button></div>);
       if (showUploadPanel===true){
         retJSX.push(
             <button onClick={(e)=>{
@@ -92,7 +93,7 @@ class App extends Component {
                     />);
       }
     
-    let disp='flex';
+    let disp='block';
     if (this.state.width<600){
       disp='block'
     }

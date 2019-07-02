@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     for ign,thisbGeom in enumerate(baseGeometries):
         pos={}
-        for nextbGeom in baseGeometries[ign+1:]:
+        for nextbGeom in baseGeometries[ign:]:
             print(thisbGeom, nextbGeom)
 
             B = nx.Graph()

@@ -78,7 +78,7 @@ class dataStore(object):
             data=Y, index=self._data[aspectID].index, columns=['1D'])
         df.to_csv(join(self._data_folder,
                        '{0}.proj'.format(aspectID)), sep='\t')
-
+    # @profile                           
     def _check_and_read(self, aspectID: str, data: bool = False, proj: bool = False) -> None:
         """
         Checks if the basic info for given aspect is in memory, reads it from disk otherwise.
@@ -155,8 +155,6 @@ class dataStore(object):
         """
             Returns the graph that connects nodes of the _geometry_ g1 to g2 (and vice versa)
         """
-        if (g1 == g2):
-            return(None)
         fname = crossGeomFileName(g1, g2)
         if fname in self._cross:
             return(self._cross[fname])
@@ -182,10 +180,14 @@ class dataStore(object):
                 VarInfo = {**aspect}
                 dtypes = dict(data.dtypes)
                 dtypes = {k: str(dtypes[k]) for k in dtypes.keys()}
+                mins = {k:data[k].dropna('all').min() for k in dtypes.keys()}
+                maxs = {k:data[k].dropna('all').max() for k in dtypes.keys()}
 
                 VarInfo.update({'id': str(uuid4()),
                                 'descriptions': {c: info['columns'][c] for c in aspect['columns']},
                                 'dtypes': dtypes,
+                                'mins': mins,
+                                'maxs': maxs
                                 })
                 del(VarInfo['enabled'])
                 with open(join(self._data_folder, VarInfo['id']+'.tsv'), 'w') as fout:
@@ -249,7 +251,7 @@ class dataStore(object):
 
     def getProjection(self, aspectID: str, id: str) -> float:
         """
-            Returns the pre-computed proj projection of the 'id' point from aspectID.
+            Returns the pre-computed projection of the 'id' point from aspectID.
         """
         self._check_and_read(aspectID, proj=True)
         if id in self._projection[aspectID]:
