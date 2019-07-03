@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
 import chroma from 'chroma-js';
 import { connect } from 'react-redux';
-import { actionCreators, requestClustering } from './reducers';
+import {requestClustering } from './reducers';
 
 const mapStateToProps = (state) => ({  
   aspects: state.aspects,  
@@ -184,7 +184,7 @@ let MapboxMap = class MapboxMap extends React.Component {
         );
       let updbutton = new UpdateButton((d)=>{
         dispatch(requestClustering(this.props.aspects,this.state.bbox));
-      })
+      });
       this.map.addControl(geomControl);
       this.map.addControl(updbutton,'top-left');
     });

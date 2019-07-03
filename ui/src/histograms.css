@@ -1,0 +1,7 @@
+.histograms{
+    width: fit-content;
+    height: fit-content;
+    border: solid;
+    border-color: red;
+    border-width: thin;
+}

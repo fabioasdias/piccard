@@ -44,7 +44,7 @@ const DEFAULT_FORMAT = format('.2r');
  * @return {Array} the plotted axis components
  */
 function getAxes(props) {
-  const {animation, domains, style, tickFormat} = props;
+  const {animation, domains, tickFormat} = props;//style,
   return domains.map((domain, index) => {
     const sortedDomain = domain.domain;
 

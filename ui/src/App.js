@@ -2,10 +2,11 @@ import React, {Component } from 'react';
 import './App.css';
 import TempEvo from './tempEvo';
 import { connect } from 'react-redux';
-import {getURL, getData, sendData} from './urls';
+import {getURL, getData} from './urls';
 import MapboxMap from './glmap';
 import Upload from './upload';
 import Aspects from './aspects';
+import Histograms from './histograms';
 import { actionCreators, requestClustering } from './reducers';
 // import {arrayEQ} from './util';
 
@@ -61,18 +62,26 @@ class App extends Component {
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }
 
-    retJSX.push(<MapboxMap 
-                    geometries={availableGeometries}
-                    paintProp={'GISJOIN'}
-                    cmap={this.props.clustering}
-                    colours={this.props.colours}
-                    highlight={this.props.selectedClusters}
-                  />);
+    // retJSX.push(<MapboxMap 
+    //                 geometries={availableGeometries}
+    //                 paintProp={'GISJOIN'}
+    //                 cmap={this.props.clustering}
+    //                 colours={this.props.colours}
+    //                 highlight={this.props.selectedClusters}
+    //               />);
     retJSX.push(<TempEvo 
                     data={this.props.temporal}
                     colours={this.props.colours}
                     key='tp'
                   />);
+    retJSX.push(<Histograms 
+                    aspects={this.props.aspect_hist}
+                    paths={this.props.path_this}
+                    colours={this.props.colours}
+
+                    key='hists'
+                  />);
+
     retJSX.push(<div><button 
                     className="button" 
                     onClick={(e)=>{
@@ -93,7 +102,7 @@ class App extends Component {
                     />);
       }
     
-    let disp='block';
+    let disp='flex';
     if (this.state.width<600){
       disp='block'
     }

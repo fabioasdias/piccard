@@ -15,7 +15,7 @@ export const types={
     SELECT_GEOMETRY: 'SelectGeometry',
     SELECT_ASPECTS: 'SelectAspects',
     UPDATE_CLUSTERING: 'UpdateClustering',
-    SELECT_CLUSTERS: 'SelectClusters',
+    SELECT_PATHS: 'SelectClusters',
     START_LOADING: 'StartLoading',
 };
 // Helper functions to dispatch actions, optionally with payloads
@@ -30,14 +30,14 @@ export const actionCreators = {
         return({type: types.UPDATE_CLUSTERING, payload:clsim})
     },
     SelectClusters: (selected) => {
-        return({type: types.SELECT_CLUSTERS, payload:selected})
+        return({type: types.SELECT_PATHS, payload:selected})
     },
     StartLoading: ()=>{
         return({type: types.START_LOADING});
     }
   };
 
-export const reducer = (state={aspects:[], selectedClusters:[], loading:true}, action)=>{
+export const reducer = (state={aspects:[], selectedPaths:[], loading:true}, action)=>{
     const { type, payload } = action;
     console.log(state, type, payload);
     switch (type){
@@ -52,9 +52,11 @@ export const reducer = (state={aspects:[], selectedClusters:[], loading:true}, a
                     colours: makeColours(payload.nclusters),
                     temporal:{aspects:payload.aspects,evolution:payload.evolution}, 
                     clustering:payload.clustering,
+                    aspect_hist:payload.aspect_hist,
+                    path_hist:payload.path_hist,
                     loading:false})
-        case types.SELECT_CLUSTERS:
-            return({...state, selectedClusters:payload});
+        case types.SELECT_PATHS:
+            return({...state, selectedPaths:payload});
         default:
             return(state);
     }

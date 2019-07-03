@@ -3,8 +3,7 @@ import { connect } from 'react-redux';
 import './style.css';
 import './tempEvo.css';
 import ParallelCoordinates from './parcor';
-import { LabelSeries} from 'react-vis';
-import { actionCreators, requestClustering } from './reducers';
+import { actionCreators } from './reducers';
 
 
 
