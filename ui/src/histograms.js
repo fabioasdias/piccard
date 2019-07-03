@@ -73,7 +73,7 @@ class Histograms extends Component {
                     for (let j=0;j<aspect_hist[a].length;j++){
                         aspJSX.push(<OnePlot
                                         title={aspects[i].descr[aspects[i].cols[j]]}
-                                        dataDetail={(selectedPaths.length>0)?path_hist[a][selectedPaths[0]][j]:[]} //TODO show all paths
+                                        dataDetail={(selectedPaths.length>0)?path_hist[a][selectedPaths[0]][j]:aspect_hist[a][j]} //TODO show all paths
                                         colourDetail={(selectedPaths.length>0)?colours[selectedPaths[0]]:'darkblue'} //TODO show all paths
                                         dataGlobal={aspect_hist[a][j]}
                                         colourGlobal={'darkblue'}
