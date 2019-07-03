@@ -12,12 +12,15 @@ import { actionCreators, requestClustering } from './reducers';
 
 const mapStateToProps = (state) => ({  
   aspects: state.aspects,  
+  aspect_info: state.aspect_info,
   geometry: state.geometry,
   clustering: state.clustering,
   temporal: state.temporal,
   colours: state.colours,
   loading: state.loading,
-  selectedClusters: state.selectedClusters
+  aspect_hist: state.aspect_hist,
+  path_hist: state.path_hist,
+  selectedPaths: state.selectedPaths
 });
 
 // //https://dev.to/gaels/an-alternative-to-handle-global-state-in-react-the-url--3753
@@ -67,7 +70,7 @@ class App extends Component {
     //                 paintProp={'GISJOIN'}
     //                 cmap={this.props.clustering}
     //                 colours={this.props.colours}
-    //                 highlight={this.props.selectedClusters}
+    //                 highlight={this.props.selectedPaths}
     //               />);
     retJSX.push(<TempEvo 
                     data={this.props.temporal}
@@ -75,10 +78,11 @@ class App extends Component {
                     key='tp'
                   />);
     retJSX.push(<Histograms 
-                    aspects={this.props.aspect_hist}
-                    paths={this.props.path_this}
+                    aspects={this.props.aspect_info}
+                    aspect_hist={this.props.aspect_hist}
+                    path_hist={this.props.path_hist}
                     colours={this.props.colours}
-
+                    selectedPaths={this.props.selectedPaths}
                     key='hists'
                   />);
 
@@ -102,7 +106,7 @@ class App extends Component {
                     />);
       }
     
-    let disp='flex';
+    let disp='block';
     if (this.state.width<600){
       disp='block'
     }

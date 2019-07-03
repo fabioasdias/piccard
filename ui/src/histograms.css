@@ -1,7 +1,31 @@
 .histograms{
     width: fit-content;
+    /* max-width: 90%; */
     height: fit-content;
     border: solid;
     border-color: red;
     border-width: thin;
+    display: flex;
+
+}
+.oneAspect{
+    width: fit-content;
+    /* max-width: 90%; */
+    height: fit-content;
+    border: solid;
+    border-color: green;
+    border-width: thin;
+    float: left;
+    display: block;
+    margin: 10px;
+    padding: 5px;
+}
+.onePlot{
+    width: fit-content;
+    height: fit-content;
+    border: solid;
+    border-color: blue;
+    border-width: thin;
+    float: left;
+    margin:10px;
 }

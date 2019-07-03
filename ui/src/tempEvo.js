@@ -8,7 +8,7 @@ import { actionCreators } from './reducers';
 
 
 const mapStateToProps = (state) => ({
-    selectedClusters: state.selectedClusters,
+    selectedPaths: state.selectedPaths,
   });
 
 
@@ -53,7 +53,7 @@ class TempEvo extends Component {
                 return(b.order-a.order);
             });
             let highcb=(sel)=>{
-                dispatch(actionCreators.SelectClusters(sel));
+                dispatch(actionCreators.SelectPaths(sel));
             }
             console.log('tempEvo',evolution);
             let W=this.state.width;

@@ -15,7 +15,7 @@ export const types={
     SELECT_GEOMETRY: 'SelectGeometry',
     SELECT_ASPECTS: 'SelectAspects',
     UPDATE_CLUSTERING: 'UpdateClustering',
-    SELECT_PATHS: 'SelectClusters',
+    SELECT_PATHS: 'SelectPaths',
     START_LOADING: 'StartLoading',
 };
 // Helper functions to dispatch actions, optionally with payloads
@@ -29,7 +29,7 @@ export const actionCreators = {
     UpdateClustering: (clsim) => {
         return({type: types.UPDATE_CLUSTERING, payload:clsim})
     },
-    SelectClusters: (selected) => {
+    SelectPaths: (selected) => {
         return({type: types.SELECT_PATHS, payload:selected})
     },
     StartLoading: ()=>{
@@ -51,6 +51,7 @@ export const reducer = (state={aspects:[], selectedPaths:[], loading:true}, acti
             return({...state, 
                     colours: makeColours(payload.nclusters),
                     temporal:{aspects:payload.aspects,evolution:payload.evolution}, 
+                    aspect_info: payload.aspects,
                     clustering:payload.clustering,
                     aspect_hist:payload.aspect_hist,
                     path_hist:payload.path_hist,
