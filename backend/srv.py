@@ -251,8 +251,7 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
         path_hist[a]=[[np.zeros(NBINS) for _ in range(N)] for _ in range(nClusters)]
 
 
-        vMin=np.empty(N)
-        vMin[:]=np.nan
+        vMin=np.zeros(N)
         vMax=np.empty(N)
         vMax[:]=np.nan
 
@@ -261,35 +260,31 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
         for n in cl[g]:
             vals = ds.getData(a, n)
             if vals is not None:
-                vMin=np.nanmin([vMin,vals],axis=0)
-                vMax=np.nanmax([vMax,vals],axis=0)
                 for cc in cl[g][n]:
+                    sA=np.sum(vals)
+                    if sA>0:
+                        vals=vals/sA
                     allVals[cc].append(vals)         
 
-                    
         for cc in range(nClusters):
             vals=np.array(allVals[cc])
             if vals.shape[0]==0: #nothing in here (?)
                 continue
             for col in range(N):
-                tH, _= np.histogram(np.squeeze(vals[:,col]),bins=NBINS,range=(vMin[col],vMax[col]))                
+                tH, _= np.histogram(np.squeeze(vals[:,col]),bins=NBINS,range=(0,1))                
                 aspect_hist[a][col]=aspect_hist[a][col]+tH
                 path_hist[a][cc][col]=path_hist[a][cc][col]+tH
-        # plt.figure()        
-        # plt.title(ds.getAspectName(a))
-        for col in range(N):
-            sA=np.sum(aspect_hist[a][col])
-            if sA>0:
-                aspect_hist[a][col]=(aspect_hist[a][col]/sA)
-            aspect_hist[a][col]=aspect_hist[a][col].tolist()
 
+        minP=0
+        maxP=0
+        for col in range(N):
+            aspect_hist[a][col]=aspect_hist[a][col].tolist()
             for cc in range(nClusters):
-                sA=np.sum(path_hist[a][cc][col])
-                if sA>0:
-                    path_hist[a][cc][col]=(path_hist[a][cc][col]/sA)
                 path_hist[a][cc][col]=path_hist[a][cc][col].tolist()                    
-    #         plt.plot(aspect_hist[a][col],'x-')
-    # plt.show()
+                minP=np.min([minP,np.min(path_hist[a][cc][col])])
+                maxP=np.max([maxP,np.max(path_hist[a][cc][col])])
+
+
         
     for g in cl:
         for n in cl[g]:
@@ -298,14 +293,11 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
             else:
                 # TODO order and pass the whole thing
                 cl[g][n] = list(cl[g][n])[0]
-        
-
             
     return({'clustering': cl, 
             'evolution': retPaths, 
+            'hist' :{'aspect':aspect_hist, 'path':path_hist},
             'aspects': full_info_aspects, 
-            'aspect_hist': aspect_hist,
-            'path_hist': path_hist,
             'nclusters': nClusters})
 
 

@@ -1,3 +1,9 @@
+.titles{
+    max-width: 400px;
+    width: fit-content;
+    margin: auto;
+    display: flex;
+}
 .histograms{
     width: fit-content;
     /* max-width: 90%; */

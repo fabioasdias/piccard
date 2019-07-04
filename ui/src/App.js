@@ -18,8 +18,7 @@ const mapStateToProps = (state) => ({
   temporal: state.temporal,
   colours: state.colours,
   loading: state.loading,
-  aspect_hist: state.aspect_hist,
-  path_hist: state.path_hist,
+  hist: state.hist,
   selectedPaths: state.selectedPaths
 });
 
@@ -79,8 +78,7 @@ class App extends Component {
                   />);
     retJSX.push(<Histograms 
                     aspects={this.props.aspect_info}
-                    aspect_hist={this.props.aspect_hist}
-                    path_hist={this.props.path_hist}
+                    data={this.props.hist}
                     colours={this.props.colours}
                     selectedPaths={this.props.selectedPaths}
                     key='hists'
