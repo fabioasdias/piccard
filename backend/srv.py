@@ -29,7 +29,7 @@ if not exists(cachedir):
     makedirs(cachedir)
 memory = Memory(cachedir, verbose=0)
 
-NBINS=40
+NBINS=50
 
 
 def _mergePaths(p1: dict, p2: dict, id: int):
