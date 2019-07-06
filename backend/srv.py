@@ -29,7 +29,7 @@ if not exists(cachedir):
     makedirs(cachedir)
 memory = Memory(cachedir, verbose=0)
 
-NBINS=50
+NBINS = 50
 
 
 def _mergePaths(p1: dict, p2: dict, id: int):
@@ -80,8 +80,8 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-@memory.cache(ignore=['ds'])
-# @profile
+# @memory.cache(ignore=['ds'])
+@profile
 def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: int = 10, bbox: list = None):
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
@@ -106,9 +106,6 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
         full_info_aspects[i]['order'] = i
 
     geoms = sorted(list(Gs.keys()))
-
-    # for threshold in thresholds:
-
     cc2n = {}
     for g in geoms:
         Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level')
@@ -142,6 +139,12 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
                             M.add_edge(source, target, count=0)
                         else:
                             M[source][target]['count'] += 1
+
+    #TODO - keeping only the highest count, for now
+    for n in M:
+        succ=sorted(M.out_edges(n,data='count'),key=lambda x: x[2],reverse=True)
+        if len(succ)>1:
+            M.remove_edges_from(succ[1:])
 
     points = {}
     for info in full_info_aspects:
@@ -228,10 +231,13 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
 
     retPaths = [{} for _ in range(nClusters)]
     aspects = [a['id'] for a in full_info_aspects]
+
     for i, p in enumerate(tempPaths):
         for a in p:
             g = ds.getGeometry(a)
             cc = clustersByPath[i][a]
+            # WRONG!!!
+            # Get the paths following the CrossGeometry, not just the clusters.
             for n in cc2n[g][cc]:
                 cl[g][n].add(Y[i])
 
@@ -244,48 +250,47 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
 
     path_hist = {}
     aspect_hist = {}
-    #histograms for each aspect/cluster
+    # histograms for each aspect/cluster
     for a in aspects:
         N = len(ds.getColumns(a))
-        aspect_hist[a]=[np.zeros(NBINS) for _ in range(N)]
-        path_hist[a]=[[np.zeros(NBINS) for _ in range(N)] for _ in range(nClusters)]
+        aspect_hist[a] = [np.zeros(NBINS) for _ in range(N)]
+        path_hist[a] = [[np.zeros(NBINS) for _ in range(N)]
+                        for _ in range(nClusters)]
 
 
-        vMin=np.zeros(N)
-        vMax=np.empty(N)
-        vMax[:]=np.nan
+        vMax = np.empty(N)
+        vMax[:] = np.nan
 
-        g = ds.getGeometry(a)        
-        allVals=[[] for _ in range(nClusters)]
+        g = ds.getGeometry(a)
+        allVals = [[] for _ in range(nClusters)]
         for n in cl[g]:
             vals = ds.getData(a, n)
             if vals is not None:
                 for cc in cl[g][n]:
-                    sA=np.sum(vals)
-                    if sA>0:
-                        vals=vals/sA
-                    allVals[cc].append(vals)         
+                    sA = np.sum(vals)
+                    if sA > 0:
+                        vals = vals/sA
+                    allVals[cc].append(vals)
 
         for cc in range(nClusters):
-            vals=np.array(allVals[cc])
-            if vals.shape[0]==0: #nothing in here (?)
+            vals = np.array(allVals[cc])
+            if vals.shape[0] == 0:  # nothing in here (?)
                 continue
             for col in range(N):
-                tH, _= np.histogram(np.squeeze(vals[:,col]),bins=NBINS,range=(0,1))                
-                aspect_hist[a][col]=aspect_hist[a][col]+tH
-                path_hist[a][cc][col]=path_hist[a][cc][col]+tH
+                tH, _ = np.histogram(np.squeeze(
+                    vals[:, col]), bins=NBINS, range=(0, 1))
+                aspect_hist[a][col] = aspect_hist[a][col]+tH
+                path_hist[a][cc][col] = path_hist[a][cc][col]+tH
 
-        minP=0
-        maxP=0
+        minP = 0
+        maxP = 0
         for col in range(N):
-            aspect_hist[a][col]=aspect_hist[a][col].tolist()
+            aspect_hist[a][col] = aspect_hist[a][col].tolist()
             for cc in range(nClusters):
-                path_hist[a][cc][col]=path_hist[a][cc][col].tolist()                    
-                minP=np.min([minP,np.min(path_hist[a][cc][col])])
-                maxP=np.max([maxP,np.max(path_hist[a][cc][col])])
+                path_hist[a][cc][col] = path_hist[a][cc][col].tolist()
+                minP = np.min([minP, np.min(path_hist[a][cc][col])])
+                maxP = np.max([maxP, np.max(path_hist[a][cc][col])])
 
-
-        
     for g in cl:
         for n in cl[g]:
             if len(cl[g][n]) == 0:
@@ -293,11 +298,11 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
             else:
                 # TODO order and pass the whole thing
                 cl[g][n] = list(cl[g][n])[0]
-            
-    return({'clustering': cl, 
-            'evolution': retPaths, 
-            'hist' :{'aspect':aspect_hist, 'path':path_hist},
-            'aspects': full_info_aspects, 
+
+    return({'clustering': cl,
+            'evolution': retPaths,
+            'hist': {'aspect': aspect_hist, 'path': path_hist},
+            'aspects': full_info_aspects,
             'nclusters': nClusters})
 
 
@@ -440,10 +445,10 @@ if __name__ == '__main__':
         # }
     }
 
-    # to_use = ['12aaca5a-2bdb-46df-8539-61bc4a9d47fd', '2f387e23-87dd-4ca7-b235-ce2885480559', ]#'3bfe7577-1f6d-4ff5-93af-1ca818629e45',]# '43894ad2-9584-484f-9637-e6f56ccd2c1b', '44be0540-3a5d-4f93-a587-9ed927226eee', '53c5e1c8-54f9-4d64-a70f-744652a9c871', '5cd8f9e2-102e-4e8c-a1d9-9f7b8b511020',]
-    #         #   '01bb3d0d-e092-41c1-8f2a-69b4b6071816',  '6f892c29-8f17-4b26-a983-95a269f21951', '94e0b99f-fefd-4b55-b37e-9d6d74d43312', '9b515e1b-1563-41f0-96e4-c525c1842a2d', 'a4a6da16-ebff-4965-92df-ff3d5fbdc3d5', 'ca2901c6-cc6c-4e5b-b080-f82587e2475e', 'd62dfdb5-7e9e-4b97-828a-b5587798079d', 'db096ab2-4013-474d-ae54-e7da8b1ebbd8', 'dd498cf9-9b41-4f0a-b274-a508ea2f0270', 'e28a0680-164e-4a77-aa53-8a2694056988']
-    # _mapHiers(ds, sorted(to_use))
-    # exit()
+    to_use = ['0019481a-63bf-493d-8e18-a1c6c8ef01cb', '020cbd0c-40e7-47d9-aa70-656036700e9c']#, '24763a5f-bacf-4d98-ad9d-c29a56878da0', '2483230c-ef8a-4a51-b206-e0f35c79a383', '37bf5584-d1e5-42ee-80f6-351f5fd2a484', '3beee586-5670-412c-bbed-98335c9237af', '40510cfd-ccbb-4651-83c1-15bbe3e0d3e2', '4458f9fe-13ca-4d95-8d3f-575525e78887', '49ee87db-7a3e-4256-8f65-15ef59738367', '4ea664be-8e3f-4d0c-a597-1a0c008aaa81', '5a430fae-4a61-4282-ae26-362461b34be0',
+            #   '898d8b39-1c8c-4f1c-ac1b-5f408f2cbc0d', '95d2566e-cb0f-4242-98b8-0fc4b203b1e6', 'a5821660-d3fd-4fed-be40-5ac518cd5267', 'acc5e333-f167-4bb9-a061-497ae0d961a2', 'b84181aa-62d4-4621-9e30-c39a38156877', 'b9b3226f-0792-4dfa-b73b-d6311032c222', 'e3bc4825-2e47-4eec-9f63-f085ec79e763', 'e3cbdf8d-ac9d-426a-aabf-e028e17482b9', 'e980de5a-76c2-4d72-b70d-61d41e753409', 'f9689b58-efd6-4394-8d68-b46c47ae711e', 'f9aeec6f-9df7-459a-9aa6-f8a2332f7e37']
+    _mapHiers(ds, sorted(to_use))
+    exit()
 
     cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
     cherrypy.server.max_request_body_size = 0  # for upload

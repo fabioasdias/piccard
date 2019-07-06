@@ -132,8 +132,7 @@ class dataStore(object):
         """
         if (aspectID not in self._hiers):
             if len(self._hiers) > MAX_CACHE:
-                first = list(self._hiers.keys())[0]
-                del(self._hiers[first])
+                del(self._hiers[choice(list(self._hiers.keys()))])
 
             G = nx.read_gpickle(join(self._data_folder, aspectID+'.gp'))
             m = _getMaxLevel(G, level)
@@ -180,14 +179,14 @@ class dataStore(object):
                 VarInfo = {**aspect}
                 dtypes = dict(data.dtypes)
                 dtypes = {k: str(dtypes[k]) for k in dtypes.keys()}
-                mins = {k:data[k].dropna('all').min() for k in dtypes.keys()}
-                maxs = {k:data[k].dropna('all').max() for k in dtypes.keys()}
+                # mins = {k:float(data[k].dropna(how='all').min()) for k in dtypes.keys()}
+                # maxs = {k:data[k].dropna(how='all').max() for k in dtypes.keys()}
 
                 VarInfo.update({'id': str(uuid4()),
                                 'descriptions': {c: info['columns'][c] for c in aspect['columns']},
                                 'dtypes': dtypes,
-                                'mins': mins,
-                                'maxs': maxs
+                                # 'mins': mins,
+                                # 'maxs': maxs
                                 })
                 del(VarInfo['enabled'])
                 with open(join(self._data_folder, VarInfo['id']+'.tsv'), 'w') as fout:
