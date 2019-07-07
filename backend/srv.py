@@ -81,7 +81,7 @@ def cors():
 
 
 # @memory.cache(ignore=['ds'])
-@profile
+# @profile
 def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: int = 10, bbox: list = None):
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
@@ -100,12 +100,17 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
                           'descr': ds.getDescriptions_AsDict(a)}
                          for a in aspects]
 
+    geoms = []
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
     # preparations for the domains in ParallelCoordinates (react-vis)
     for i in range(len(full_info_aspects)):
+        # ensures a chronological order for the geoms
+        if full_info_aspects[i]['geom'] not in geoms:
+            geoms.append(full_info_aspects[i]['geom'])
         full_info_aspects[i]['order'] = i
 
-    geoms = sorted(list(Gs.keys()))
+    paths = ds.getPaths([a['id'] for a in full_info_aspects])
+
     cc2n = {}
     for g in geoms:
         Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level')
@@ -116,92 +121,56 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
             for n in nodes:
                 cl[g][n[1]] = cc
 
+    # points = {}
+    # for info in full_info_aspects:
+    #     a = info['id']
+    #     g = info['geom']
+    #     points[a] = {}
+    #     for cc in cc2n[g]:
+    #         vals = [ds.getProjection(a, id) for id in cc2n[g][cc]]
+    #         vals = [x for x in vals if (x is not None)]
+    #         if vals:
+    #             points[a][cc] = np.nanmedian(vals)
+    #         else:
+    #             points[a][cc] = -1
+
     M = nx.DiGraph()
-    for g1 in geoms:
-        for g2 in geoms:
-            X = ds.getCrossGeometry(g1, g2)
-            for n in cl[g1]:
-                cc1 = cl[g1][n]
-                source = (g1, cc1)
-                if (source not in M):
-                    M.add_node(source)
+    for p in paths:
+        j = 0
+        while (p[j][0] == -1)and(p[j][1] == -1):  # path didn't start yet
+            j += 1
 
-                for nn in X.neighbors((g1, n)):
-                    # only goes in if the target is inside the bbox
-                    if nn[1] in cl[g2]:
-                        cc2 = cl[g2][nn[1]]
-                        target = (g2, cc2)
+        for i in range(j+1, len(p)):
+            n = p[i-1]
 
-                        if not target in M:
-                            M.add_node(target)
+            source = (n[0], cl[n[0]][n[1]])  # (geom, cluster)
+            if (source not in M):
+                M.add_node(source)
 
-                        if not M.has_edge(source, target):
-                            M.add_edge(source, target, count=0)
-                        else:
-                            M[source][target]['count'] += 1
+            m = p[i]
+            target = (m[0], cl[m[0]][m[1]])
+            if not target in M:
+                M.add_node(target)
 
-    #TODO - keeping only the highest count, for now
-    for n in M:
-        succ=sorted(M.out_edges(n,data='count'),key=lambda x: x[2],reverse=True)
-        if len(succ)>1:
-            M.remove_edges_from(succ[1:])
-
-    points = {}
-    for info in full_info_aspects:
-        a = info['id']
-        g = info['geom']
-        points[a] = {}
-        for cc in cc2n[g]:
-            vals = [ds.getProjection(a, id) for id in cc2n[g][cc]]
-            vals = [x for x in vals if (x is not None)]
-            if vals:
-                points[a][cc] = np.nanmedian(vals)
+            if not M.has_edge(source, target):
+                M.add_edge(source, target, count=0)
             else:
-                points[a][cc] = -1
+                M[source][target]['count'] += 1
 
-    a = full_info_aspects[0]['id']
-    g = full_info_aspects[0]['geom']
+    # #TODO - keeping only the highest count, for now
+    # for n in M:
+    #     succ=sorted(M.out_edges(n,data='count'),key=lambda x: x[2],reverse=True)
+    #     if len(succ)>1:
+    #         M.remove_edges_from(succ[1:])
+
+    #TODO - HERE
+
     paths = [[{'geom': m[0],
                'id': m[1],
                'x': a,
                'y': points[a][m[1]]}, ]
              for m in M if m[0] == g
              if m[1] in points[a]]
-
-    for info in full_info_aspects[1:]:
-        g = info['geom']
-        a = info['id']
-        to_add = []
-        unused = set([n[1] for n in M if n[0] == g])
-        while paths:
-            current = paths.pop(0)
-            last = {**current[-1]}
-            if last['geom'] == g:  # same geometry:
-                if last['id'] in points[a]:
-                    to_add.append(current+[{
-                        'geom': last['geom'],
-                        'id':last['id'],
-                        'x':a,
-                        'y':points[a][last['id']]
-                    }, ])
-                unused.discard(last['id'])
-            else:
-                options = [n for n in M.successors(
-                    (last['geom'], last['id'])) if n[0] == g]
-                if not options:
-                    to_add.append(current)
-                for op in options:
-                    unused.discard(op[1])
-                    if op[1] in points[a]:
-                        to_add.append(current+[{'geom': g,
-                                                'id': op[1],
-                                                'x':a,
-                                                'y':points[a][op[1]]}, ])
-        # puts in the paths that didn't start at the first aspect
-        paths = to_add+[[{'geom': g,
-                          'id': x,
-                          'x': a,
-                          'y': points[a][x]}, ] for x in unused if x in points[a]]
 
     # converts to parallelplots format
     tempPaths = []
@@ -256,7 +225,6 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
         aspect_hist[a] = [np.zeros(NBINS) for _ in range(N)]
         path_hist[a] = [[np.zeros(NBINS) for _ in range(N)]
                         for _ in range(nClusters)]
-
 
         vMax = np.empty(N)
         vMax[:] = np.nan
@@ -445,8 +413,10 @@ if __name__ == '__main__':
         # }
     }
 
-    to_use = ['0019481a-63bf-493d-8e18-a1c6c8ef01cb', '020cbd0c-40e7-47d9-aa70-656036700e9c']#, '24763a5f-bacf-4d98-ad9d-c29a56878da0', '2483230c-ef8a-4a51-b206-e0f35c79a383', '37bf5584-d1e5-42ee-80f6-351f5fd2a484', '3beee586-5670-412c-bbed-98335c9237af', '40510cfd-ccbb-4651-83c1-15bbe3e0d3e2', '4458f9fe-13ca-4d95-8d3f-575525e78887', '49ee87db-7a3e-4256-8f65-15ef59738367', '4ea664be-8e3f-4d0c-a597-1a0c008aaa81', '5a430fae-4a61-4282-ae26-362461b34be0',
-            #   '898d8b39-1c8c-4f1c-ac1b-5f408f2cbc0d', '95d2566e-cb0f-4242-98b8-0fc4b203b1e6', 'a5821660-d3fd-4fed-be40-5ac518cd5267', 'acc5e333-f167-4bb9-a061-497ae0d961a2', 'b84181aa-62d4-4621-9e30-c39a38156877', 'b9b3226f-0792-4dfa-b73b-d6311032c222', 'e3bc4825-2e47-4eec-9f63-f085ec79e763', 'e3cbdf8d-ac9d-426a-aabf-e028e17482b9', 'e980de5a-76c2-4d72-b70d-61d41e753409', 'f9689b58-efd6-4394-8d68-b46c47ae711e', 'f9aeec6f-9df7-459a-9aa6-f8a2332f7e37']
+    # , '24763a5f-bacf-4d98-ad9d-c29a56878da0', '2483230c-ef8a-4a51-b206-e0f35c79a383', '37bf5584-d1e5-42ee-80f6-351f5fd2a484', '3beee586-5670-412c-bbed-98335c9237af', '40510cfd-ccbb-4651-83c1-15bbe3e0d3e2', '4458f9fe-13ca-4d95-8d3f-575525e78887', '49ee87db-7a3e-4256-8f65-15ef59738367', '4ea664be-8e3f-4d0c-a597-1a0c008aaa81', '5a430fae-4a61-4282-ae26-362461b34be0',
+    to_use = ['0019481a-63bf-493d-8e18-a1c6c8ef01cb',
+              '020cbd0c-40e7-47d9-aa70-656036700e9c']
+    #   '898d8b39-1c8c-4f1c-ac1b-5f408f2cbc0d', '95d2566e-cb0f-4242-98b8-0fc4b203b1e6', 'a5821660-d3fd-4fed-be40-5ac518cd5267', 'acc5e333-f167-4bb9-a061-497ae0d961a2', 'b84181aa-62d4-4621-9e30-c39a38156877', 'b9b3226f-0792-4dfa-b73b-d6311032c222', 'e3bc4825-2e47-4eec-9f63-f085ec79e763', 'e3cbdf8d-ac9d-426a-aabf-e028e17482b9', 'e980de5a-76c2-4d72-b70d-61d41e753409', 'f9689b58-efd6-4394-8d68-b46c47ae711e', 'f9aeec6f-9df7-459a-9aa6-f8a2332f7e37']
     _mapHiers(ds, sorted(to_use))
     exit()
 

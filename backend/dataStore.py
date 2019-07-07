@@ -37,6 +37,39 @@ class dataStore(object):
         self._geometry_folder = geometry_folder
         self._data_folder = data_folder
 
+    def getPaths(self, aspects: list) -> list:
+        """
+        Computes all the possible paths between the aspects, *in order*.
+        """
+        geoms = [self.getGeometry(a) for a in aspects]
+        paths = []
+        for i in range(len(geoms)):
+            g = geoms[i]
+            if i == 0:
+                X = self.getCrossGeometry(g, g)
+            else:    
+                X = self.getCrossGeometry(geoms[i-1], g)
+
+            unused = set([n for n in X if n[0] == g])
+            to_add = []
+            while paths:
+                current = paths.pop(0)
+                last = current[-1]
+                if last[0] == g:  # same geometry:
+                    to_add.append(current+[last, ])
+                else:
+                    options = [n for n in X.neighbors(last) if n[0] == g]
+                    if not options:
+                        to_add.append(current)
+                    for op in options:
+                        unused.discard(op)
+                        to_add.append((current+[op, ]))
+
+            # puts in the paths that start in this aspect
+            paths = to_add+[[(-1,-1),]*i+[n, ] for n in unused]
+
+        return(paths)
+
     def _do_projection(self, aspectID: str):
         """
             Computes and saves a 1D projection of the data for aspectID
@@ -55,7 +88,6 @@ class dataStore(object):
             # print(bins, step)
             # plt.hist(Y, 100)
             # plt.show()
-
 
             # return()
             # # plt.figure()
@@ -78,7 +110,8 @@ class dataStore(object):
             data=Y, index=self._data[aspectID].index, columns=['1D'])
         df.to_csv(join(self._data_folder,
                        '{0}.proj'.format(aspectID)), sep='\t')
-    # @profile                           
+    # @profile
+
     def _check_and_read(self, aspectID: str, data: bool = False, proj: bool = False) -> None:
         """
         Checks if the basic info for given aspect is in memory, reads it from disk otherwise.
@@ -104,7 +137,7 @@ class dataStore(object):
 
         if proj and (aspectID not in self._projection):
             if not exists(join(self._data_folder, '{0}.proj'.format(aspectID))):
-                print('proj',aspectID, self.getAspectName(aspectID))
+                print('proj', aspectID, self.getAspectName(aspectID))
                 self._do_projection(aspectID)
 
             if (len(self._projection)) > MAX_CACHE:
@@ -117,7 +150,6 @@ class dataStore(object):
             self._projection[aspectID] = self._projection[aspectID].set_index(
                 [self._info[aspectID]['index'], ]).to_dict()['1D']
 
-
     def aspects(self) -> list:
         aspects = glob(join(self._data_folder, '*.info.json'))
         return([basename(x)[:-10] for x in aspects])
@@ -126,7 +158,7 @@ class dataStore(object):
         hiers = glob(join(self._data_folder, '*.gp'))
         return([basename(x)[:-3] for x in hiers])
 
-    def getHierarchy(self, aspectID: str, level: str = 'level', bbox:list=None) -> nx.Graph():
+    def getHierarchy(self, aspectID: str, level: str = 'level', bbox: list = None) -> nx.Graph():
         """
             Returns the graph with the hierarchy of aspectID (same ID as the aspect that created it)
         """
@@ -145,10 +177,9 @@ class dataStore(object):
         if bbox is None:
             return(G)
         else:
-            I = Rtree(join(self._geometry_folder,geom+'.rt'))
-            hits=list(I.intersection(bbox, objects=True))
-            return(nx.subgraph(G,[(geom,item.object) for item in hits]))            
-
+            I = Rtree(join(self._geometry_folder, geom+'.rt'))
+            hits = list(I.intersection(bbox, objects=True))
+            return(nx.subgraph(G, [(geom, item.object) for item in hits]))
 
     def getCrossGeometry(self, g1: str, g2: str) -> nx.Graph():
         """
