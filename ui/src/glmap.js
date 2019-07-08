@@ -194,23 +194,37 @@ let MapboxMap = class MapboxMap extends React.Component {
   }
 
   setFill(colours){
-    let exp=['case',
-              [
-                'has',
-                ['to-string', ['get', this.props.paintProp]],
-                ['literal', this.props.cmap[this.state.selected]]
-              ],
-              ['to-color', 
-                ["at", 
-                  ['get',
-                    ['to-string', ['get', this.props.paintProp]],
-                    ['literal', this.props.cmap[this.state.selected]]
-                  ],
-                  ['literal', colours]
-                ]
-              ],
-              "rgba(255, 255, 255, 0)"
-            ];
+    // let exp=['case',
+    //           [
+    //             'has',
+    //             ['to-string', ['get', this.props.paintProp]],
+    //             ['literal', this.props.cmap[this.state.selected]]
+    //           ],
+    //           ['to-color', 
+    //             ["at", 
+    //               ['get',
+    //                 ['to-string', ['get', this.props.paintProp]],
+    //                 ['literal', this.props.cmap[this.state.selected]]
+    //               ],
+    //               ['literal', colours]
+    //             ]
+    //           ],
+    //           "rgba(255, 255, 255, 0)"
+    //         ];
+    let exp=[
+      "interpolate",
+      ["linear"],
+      ['get',
+        ['to-string', ['get', this.props.paintProp]],
+        ['literal', this.props.cmap[this.state.selected]]
+      ],
+      0, "rgba(33,102,172,0)",
+      0.2, "rgb(103,169,207)",
+      0.4, "rgb(209,229,240)",
+      0.6, "rgb(253,219,199)",
+      0.8, "rgb(239,138,98)",
+      1, "rgb(178,24,43)"
+    ];
 
     if (colours!==undefined){
       for (let layer of this.props.geometries){

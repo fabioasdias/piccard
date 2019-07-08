@@ -82,7 +82,7 @@ def cors():
 
 # @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: int = 10, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.8, nClusters: int = 10, bbox: list = None):
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
     print('got merged')
@@ -109,17 +109,36 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
             geoms.append(full_info_aspects[i]['geom'])
         full_info_aspects[i]['order'] = i
 
-    paths = ds.getPaths([a['id'] for a in full_info_aspects])
-
+    # cutting the hierarchy
     cc2n = {}
     for g in geoms:
+        # plt.figure()
+        # plt.title(g)
+        # plt.hist([e[2] for e in Gs[g].edges(data='level')],100)
+        print(g, nx.number_connected_components(Gs[g]))
         Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level')
                                  if e[2] >= threshold])
         cc2n[g] = {}
+        print(g, nx.number_connected_components(Gs[g]))
         for cc, nodes in enumerate(nx.connected_components(Gs[g])):
             cc2n[g][cc] = [n[1] for n in nodes]
             for n in nodes:
-                cl[g][n[1]] = cc
+                # cl[g][n[1]] = cc
+                neig = [e[2] for e in Gs[g].edges(n, data='level')]
+                if neig:
+                    v = max(neig)
+                    if v >= threshold:
+                        cl[g][n[1]] = 0.8
+                    else:
+                        cl[g][n[1]] = 0.2
+                else:
+                    cl[g][n[1]] = 0
+    # plt.show()
+    return({'clustering': cl,
+            'evolution': [],
+            'hist': {'aspect': [], 'path': []},
+            'aspects': full_info_aspects,
+            'nclusters': nClusters})
 
     # points = {}
     # for info in full_info_aspects:
@@ -133,6 +152,8 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
     #             points[a][cc] = np.nanmedian(vals)
     #         else:
     #             points[a][cc] = -1
+
+    paths = ds.getPaths([a['id'] for a in full_info_aspects])
 
     M = nx.DiGraph()
     for p in paths:
@@ -413,10 +434,8 @@ if __name__ == '__main__':
         # }
     }
 
-    # , '24763a5f-bacf-4d98-ad9d-c29a56878da0', '2483230c-ef8a-4a51-b206-e0f35c79a383', '37bf5584-d1e5-42ee-80f6-351f5fd2a484', '3beee586-5670-412c-bbed-98335c9237af', '40510cfd-ccbb-4651-83c1-15bbe3e0d3e2', '4458f9fe-13ca-4d95-8d3f-575525e78887', '49ee87db-7a3e-4256-8f65-15ef59738367', '4ea664be-8e3f-4d0c-a597-1a0c008aaa81', '5a430fae-4a61-4282-ae26-362461b34be0',
-    to_use = ['0019481a-63bf-493d-8e18-a1c6c8ef01cb',
-              '020cbd0c-40e7-47d9-aa70-656036700e9c']
-    #   '898d8b39-1c8c-4f1c-ac1b-5f408f2cbc0d', '95d2566e-cb0f-4242-98b8-0fc4b203b1e6', 'a5821660-d3fd-4fed-be40-5ac518cd5267', 'acc5e333-f167-4bb9-a061-497ae0d961a2', 'b84181aa-62d4-4621-9e30-c39a38156877', 'b9b3226f-0792-4dfa-b73b-d6311032c222', 'e3bc4825-2e47-4eec-9f63-f085ec79e763', 'e3cbdf8d-ac9d-426a-aabf-e028e17482b9', 'e980de5a-76c2-4d72-b70d-61d41e753409', 'f9689b58-efd6-4394-8d68-b46c47ae711e', 'f9aeec6f-9df7-459a-9aa6-f8a2332f7e37']
+    to_use = ['02eefdfc-dc72-474c-85c3-ce3e59a133a6', '1af5a377-86f2-4816-b1dc-aada2df72aa4', '4f0c2562-d594-470d-882b-bbfb2261d3a0', '567441ac-70a1-4e53-9ba8-4b1cc253b8e8', '6a0fbff3-5a2d-45cf-8410-0762e186bc5a',
+              '850af2f7-e35b-4d7c-83f3-651fdea385f9', '8ece5ba8-8fa6-42e5-b4f3-39e8a50593bd', 'a5a13dc6-bc5d-4a39-899f-25870aa77d7b', 'd47e64f7-9c9b-4955-9294-b04878a4a546', 'ff418162-6b89-4d38-89b6-d17195d3d2ae']
     _mapHiers(ds, sorted(to_use))
     exit()
 
