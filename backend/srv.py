@@ -82,14 +82,7 @@ def cors():
 
 # @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.8, nClusters: int = 10, bbox: list = None):
-    Gs = mapHierarchies(ds, aspects, bbox=bbox)
-
-    print('got merged')
-
-    cl = {}
-    for g in Gs:
-        cl[g] = {}
+def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: int = 10, bbox: list = None):
 
     full_info_aspects = [{'name': ds.getAspectName(a),
                           'year': ds.getAspectYear(a),
@@ -99,6 +92,35 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.8, nClusters: i
                           'visible': True,
                           'descr': ds.getDescriptions_AsDict(a)}
                          for a in aspects]
+
+
+    a=aspects[0]
+    g=ds.getGeometry(a)
+    G=ds.getHierarchy(a)
+    cl = {}
+    cl[g]={}
+    for n in G:
+        neig = [e[2] for e in G.edges(n, data='level')]
+        if neig:
+            v = max(neig)
+            cl[g][n[1]]=v
+
+    return({'clustering': cl,
+            'evolution': [],
+            'hist': {'aspect': [], 'path': []},
+            'aspects': full_info_aspects,
+            'nclusters': nx.number_connected_components(G)})
+
+
+
+    Gs = mapHierarchies(ds, aspects, bbox=bbox)
+
+    print('got merged')
+
+    cl = {}
+    for g in Gs:
+        cl[g] = {}
+
 
     geoms = []
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
@@ -112,9 +134,6 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.8, nClusters: i
     # cutting the hierarchy
     cc2n = {}
     for g in geoms:
-        # plt.figure()
-        # plt.title(g)
-        # plt.hist([e[2] for e in Gs[g].edges(data='level')],100)
         print(g, nx.number_connected_components(Gs[g]))
         Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level')
                                  if e[2] >= threshold])
@@ -123,22 +142,14 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.8, nClusters: i
         for cc, nodes in enumerate(nx.connected_components(Gs[g])):
             cc2n[g][cc] = [n[1] for n in nodes]
             for n in nodes:
-                # cl[g][n[1]] = cc
-                neig = [e[2] for e in Gs[g].edges(n, data='level')]
-                if neig:
-                    v = max(neig)
-                    if v >= threshold:
-                        cl[g][n[1]] = 0.8
-                    else:
-                        cl[g][n[1]] = 0.2
-                else:
-                    cl[g][n[1]] = 0
+                cl[g][n[1]] = cc
     # plt.show()
     return({'clustering': cl,
             'evolution': [],
             'hist': {'aspect': [], 'path': []},
             'aspects': full_info_aspects,
-            'nclusters': nClusters})
+            'nclusters': max([nx.number_connected_components(Gs[g]) for g in Gs])})
+            # 'nclusters': nClusters})
 
     # points = {}
     # for info in full_info_aspects:
@@ -434,9 +445,24 @@ if __name__ == '__main__':
         # }
     }
 
-    to_use = ['02eefdfc-dc72-474c-85c3-ce3e59a133a6', '1af5a377-86f2-4816-b1dc-aada2df72aa4', '4f0c2562-d594-470d-882b-bbfb2261d3a0', '567441ac-70a1-4e53-9ba8-4b1cc253b8e8', '6a0fbff3-5a2d-45cf-8410-0762e186bc5a',
-              '850af2f7-e35b-4d7c-83f3-651fdea385f9', '8ece5ba8-8fa6-42e5-b4f3-39e8a50593bd', 'a5a13dc6-bc5d-4a39-899f-25870aa77d7b', 'd47e64f7-9c9b-4955-9294-b04878a4a546', 'ff418162-6b89-4d38-89b6-d17195d3d2ae']
-    _mapHiers(ds, sorted(to_use))
+    # to_use = ['02eefdfc-dc72-474c-85c3-ce3e59a133a6', '1af5a377-86f2-4816-b1dc-aada2df72aa4', '4f0c2562-d594-470d-882b-bbfb2261d3a0', '567441ac-70a1-4e53-9ba8-4b1cc253b8e8', '6a0fbff3-5a2d-45cf-8410-0762e186bc5a',
+    #           '850af2f7-e35b-4d7c-83f3-651fdea385f9', '8ece5ba8-8fa6-42e5-b4f3-39e8a50593bd', 'a5a13dc6-bc5d-4a39-899f-25870aa77d7b', 'd47e64f7-9c9b-4955-9294-b04878a4a546', 'ff418162-6b89-4d38-89b6-d17195d3d2ae']
+    # _mapHiers(ds, sorted(to_use))
+    # exit()
+
+    input_json=[{"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST1"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST2"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"T3A","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["T3A","T3B","T3C"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"EYT","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["EYT001","EYT002","EYT003","EYT004","EYT005","EYT006","EYT007","EYT008","EYT009","EYT010","EYT011","EYT012","EYT013","EYT014","EYT015","EYT016","EYT017"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"ET6","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["ET6001","ET6002","ET6003","ET6004","ET6005","ET6006","ET6007","ET6008","ET6009","ET6010"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"EUZ","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["EUZ001","EUZ002","EUZ003","EUZ004","EUZ005","EUZ006","EUZ007","EUZ008","EUZ009","EUZ010","EUZ011","EUZ012","EUZ013","EUZ014","EUZ015","EUZ016","EUZ017","EUZ018","EUZ019","EUZ020","EUZ021","EUZ022","EUZ023","EUZ024","EUZ025"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"ET5","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["ET5001","ET5002","ET5003","ET5004","ET5005","ET5006","ET5007","ET5008","ET5009","ET5010","ET5011","ET5012","ET5013","ET5014","ET5015","ET5016","ET5017","ET5018","ET5019","ET5020","ET5021","ET5022","ET5023","ET5024","ET5025","ET5026","ET5027","ET5028","ET5029","ET5030","ET5031","ET5032","ET5033","ET5034","ET5035","ET5036","ET5037","ET5038","ET5039","ET5040","ET5041","ET5042","ET5043","ET5044","ET5045","ET5046","ET5047","ET5048","ET5049","ET5050","ET5051","ET5052","ET5053","ET5054","ET5055","ET5056","ET5057","ET5058","ET5059","ET5060","ET5061","ET5062"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"E3C","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["E3C001","E3C002","E3C003","E3C004","E3C005","E3C006","E3C007","E3C008","E3C009","E3C010","E3C011","E3C012","E3C013","E3C014","E3C015","E3C016","E3C017","E3C018","E3C019","E3C020","E3C021","E3C022","E3C023","E3C024","E3C025","E3C026","E3C027","E3C028","E3C029","E3C030","E3C031","E3C032","E3C033","E3C034","E3C035","E3C036"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"ET4","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["ET4001","ET4002","ET4003","ET4004","ET4005","ET4006","ET4007","ET4008","ET4009","ET4010","ET4011","ET4012","ET4013","ET4014","ET4015","ET4016","ET4017","ET4018","ET4019","ET4020","ET4021","ET4022","ET4023","ET4024","ET4025","ET4026","ET4027","ET4028","ET4029","ET4030","ET4031","ET4032","ET4033","ET4034","ET4035","ET4036","ET4037","ET4038","ET4039","ET4040","ET4041","ET4042","ET4043","ET4044","ET4045","ET4046","ET4047","ET4048","ET4049","ET4050","ET4051","ET4052","ET4053","ET4054","ET4055","ET4056","ET4057","ET4058","ET4059","ET4060","ET4061","ET4062","ET4063","ET4064","ET4065","ET4066","ET4067","ET4068","ET4069","ET4070","ET4071","ET4072","ET4073","ET4074","ET4075","ET4076","ET4077","ET4078","ET4079","ET4080","ET4081","ET4082","ET4083","ET4084","ET4085","ET4086","ET4087","ET4088","ET4089","ET4090","ET4091","ET4092","ET4093","ET4094","ET4095","ET4096","ET4097","ET4098","ET4099","ET4100","ET4101","ET4102","ET4103","ET4104","ET4105","ET4106","ET4107","ET4108","ET4109","ET4110","ET4111","ET4112","ET4113","ET4114","ET4115","ET4116","ET4117","ET4118","ET4119","ET4120","ET4121","ET4122","ET4123","ET4124","ET4125","ET4126","ET4127","ET4128","ET4129","ET4130","ET4131","ET4132","ET4133","ET4134","ET4135","ET4136","ET4137","ET4138","ET4139","ET4140","ET4141","ET4142","ET4143","ET4144","ET4145","ET4146","ET4147","ET4148","ET4149","ET4150","ET4151","ET4152","ET4153","ET4154","ET4155","ET4156","ET4157","ET4158","ET4159","ET4160","ET4161","ET4162","ET4163","ET4164","ET4165","ET4166","ET4167","ET4168","ET4169","ET4170","ET4171","ET4172","ET4173","ET4174","ET4175","ET4176","ET4177","ET4178","ET4179","ET4180","ET4181","ET4182","ET4183","ET4184","ET4185","ET4186","ET4187","ET4188","ET4189","ET4190","ET4191","ET4192","ET4193","ET4194","ET4195","ET4196","ET4197","ET4198","ET4199","ET4200","ET4201","ET4202","ET4203","ET4204","ET4205","ET4206","ET4207","ET4208","ET4209","ET4210","ET4211","ET4212","ET4213","ET4214","ET4215","ET4216","ET4217","ET4218","ET4219","ET4220","ET4221","ET4222","ET4223","ET4224","ET4225","ET4226","ET4227","ET4228","ET4229","ET4230","ET4231","ET4232","ET4233","ET4234","ET4235","ET4236","ET4237","ET4238","ET4239","ET4240","ET4241","ET4242","ET4243","ET4244","ET4245","ET4246","ET4247","ET4248","ET4249","ET4250","ET4251","ET4252","ET4253","ET4254","ET4255","ET4256","ET4257","ET4258","ET4259","ET4260","ET4261","ET4262","ET4263","ET4264","ET4265","ET4266","ET4267","ET4268","ET4269","ET4270","ET4271","ET4272","ET4273","ET4274","ET4275","ET4276","ET4277","ET4278","ET4279","ET4280","ET4281","ET4282","ET4283","ET4284","ET4285","ET4286","ET4287","ET4288","ET4289","ET4290","ET4291","ET4292","ET4293","ET4294","ET4295","ET4296","ET4297","ET4298","ET4299","ET4300","ET4301","ET4302","ET4303","ET4304","ET4305","ET4306","ET4307","ET4308","ET4309","ET4310"]},
+     {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"ESA","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["ESA001"]},
+     {"enabled":True,"year":1990,"geometry":"US_CT_1990","name":"E33","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["E33001","E33002","E33003","E33004","E33005","E33006","E33007"]},]
+
+    ds.createAspect(input_json, dirconf['upload'])
     exit()
 
     cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
