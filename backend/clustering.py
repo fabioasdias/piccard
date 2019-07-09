@@ -7,12 +7,13 @@ import numpy as np
 from matplotlib import cm
 from networkx.drawing.nx_agraph import graphviz_layout
 from scipy.ndimage import gaussian_filter
-from scipy.spatial.distance import cdist, euclidean
-from scipy.stats import wasserstein_distance
+from scipy.spatial.distance import cdist, cosine, euclidean
 from sklearn.neighbors import NearestNeighbors
-
+from tqdm import tqdm
 
 NBINS = 100
+THR_STEP = 0.10
+THR_START = 0.10
 
 
 def _clusterDistance(G, C1, C2, layer):
@@ -23,15 +24,18 @@ def _clusterDistance(G, C1, C2, layer):
     s1 = np.sum(h1)
     if (s1 > 0):
         h1 = h1/s1
-    X1 = np.cumsum(h1)
+    # X1 = np.cumsum(h1)
 
     h2 = C2['histogram']
     s2 = np.sum(h2)
     if (s2 > 0):
         h2 = h2/s2
-    X2 = np.cumsum(h2)
+    # X2 = np.cumsum(h2)
 
-    D = np.sum(np.abs(X1-X2))/NBINS
+    # D = np.sum(np.abs(X1-X2))/NBINS
+    # D = cosine(h1,h2)
+    D = euclidean(h1, h2)/np.sqrt(2)
+
     return(D)
 
 
@@ -72,10 +76,10 @@ def _createHist(vals, minVal, maxVal):
     return(th)
 
 
-def ComputeClustering(G: nx.Graph, layer: str): #, k: int = 10
+def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     """This function changes the graph G. 
-    'layer' represents the key that stores the data."""
-    # 'k' is the number of knn edges to consider for each node after the geographic phase."""
+    'layer' represents the key that stores the data.
+    'k' is the number of knn edges to consider for each node after the geographic phase."""
 
     firstNode = list(G.nodes())[0]
     NDIMS = len(G.node[firstNode][layer])
@@ -84,7 +88,7 @@ def ComputeClustering(G: nx.Graph, layer: str): #, k: int = 10
     i2n = {}
     cData = []
     i = 0
-    to_remove=[]
+    to_remove = []
     for n in G:
         vals = G.node[n][layer]
         if np.any(np.isnan(vals)):
@@ -97,14 +101,25 @@ def ComputeClustering(G: nx.Graph, layer: str): #, k: int = 10
 
     G.remove_nodes_from(to_remove)
 
-    # neigh = NearestNeighbors(k)
-    # if NDIMS == 1:
-    #     cData = (cData - cData.min()) / (cData.max() - cData.min())
-    # neigh.fit(np.atleast_2d(cData))
+    neigh = NearestNeighbors(k)
+    if NDIMS == 1:
+        cData = (cData - cData.min()) / (cData.max() - cData.min())
+    neigh.fit(np.atleast_2d(cData))
 
-    # A = np.nonzero(neigh.kneighbors_graph())
-    # extra_edges=[(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
-    extra_edges=[]
+    A = np.nonzero(neigh.kneighbors_graph())
+
+    extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
+    extra_edges = [e for e in extra_edges if not G.has_edge(e[0],e[1])]#only non-existing links
+
+    # pos={}
+    # for n in G:
+    #     pos[n]=G.node[n]['pos'][:2]
+    # nx.draw_networkx_nodes(G,pos=pos,node_size=2)
+    # nx.draw_networkx_edges(G,pos=pos,edgelist=extra_edges)
+    # plt.show()
+
+    print(len(extra_edges))
+    # extra_edges=[]
 
     e2i = {}
     i2e = {}
@@ -150,26 +165,24 @@ def ComputeClustering(G: nx.Graph, layer: str): #, k: int = 10
     E = {e2i[e]: True for e in e2i}
     NE = len(G.edges())
 
-    level = 0
-    geographic = True
+    curThreshold = THR_START
 
     while (NE > 0):
-        print('-----------------\n\nlevel ', level)
+        # print('-----------------\n\nlevel ', level)
 
-        level += 1
+        # level += 1
 
         H = {}
         queued = dict()
         dv = []
-        if geographic:
-            to_use=E
-        else:
-            to_use=[e2i[ee] for ee in extra_edges]
+        # if geographic:
+        #     to_use = [e2i[ee] for ee in G.edges()]
+        # else:
+        #     to_use = [e2i[ee] for ee in extra_edges]
 
-        for ee in to_use:
-            if (E[ee] == False):
-                continue
-
+        to_use = [ee for ee in e2i.keys() if E[ee]]
+        print('heaping distances')
+        for ee in tqdm(to_use):
             e = i2e[ee]
             x = Find(G.node[e[0]])
             xid = x['id']
@@ -183,96 +196,64 @@ def ComputeClustering(G: nx.Graph, layer: str): #, k: int = 10
                     cD = _clusterDistance(G, x, y, layer=layer)
                     if (numel not in H):
                         H[numel] = []
-
-                    # if not geographic:
-                    #     print(x['histogram'])
-                    #     print(y['histogram'])
-                    #     plt.plot(x['histogram'],'xr')
-                    #     plt.plot(y['histogram'],'ob')
-                    #     plt.show()
-                    #     print('.',cD)
-                    heappush(H[numel], (cD, K, (x, y)))
+                    heappush(H[numel], (cD, K, [(x,y), e])) #distance, ID, data
                     dv.append(cD)
         if (not dv):
             break
 
-        print('(min:{0:2.3f}, max:{1:2.3f}, median:{2:2.3f})'.format(np.min(dv), np.max(dv), np.median(dv)),geographic)
-
+        print('(min:{0:2.3f}, max:{1:2.3f}, median:{2:2.3f})'.format(
+            np.min(dv), np.max(dv), np.median(dv)))
 
         # if the minimum pair is too different (as in max difference), start with the knn edges
-        if np.isclose(np.min(dv), np.max(dv)):
-            if geographic:
-                geographic = False
-                print('going knn')
-                continue            
-            #already tried the knn edges, clump the rest
-            else:
-                print('all different')
-                # roots = list(set([Find(G.node[x])['id'] for x in G.nodes()]))
-                # id2i = {k: i for i, k in enumerate(roots)}
-                # R = len(roots)
-                # D = np.zeros((R, R))-1
-                # for (x,y) in extra_edges:
-                #     xx = Find(G.node[x])
-                #     ix = id2i[xx['id']]
-                #     yy = Find(G.node[y])
-                #     iy = id2i[yy['id']]
-                #     if D[ix, iy] == -1:
-                #         D[ix, iy] = _clusterDistance(G, xx, yy, layer=layer)
-                # D=D+D.T
-                # for i in range(R):
-                #     D[i,i]=1
-
-                # print(np.min(D),np.max(D))
-                # plt.imshow(D)
-                # plt.colorbar()
-                # plt.figure()
-                # plt.hist(D.flatten(),100)
-                # plt.show()
-
+        minV = np.min(dv)
+        if (minV > curThreshold):
+            if np.isclose(minV, np.max(dv)):
+                print('Last level', minV)
                 for e in G.edges():
                     if G[e[0]][e[1]]['level'] == -1:
-                        G[e[0]][e[1]]['level'] = level
+                        G[e[0]][e[1]]['level'] = minV
                 break
 
-        else:
-            to_merge = []
-            used = {}
-            el = []
-            quantileThreshold = np.percentile(dv, 25)
-            # Prefers to merge small clusters first
-            for numel in sorted(H.keys()):
-                while len(H[numel]) > 0:
-                    el = heappop(H[numel])
-                    x, y = el[2]
-                    if (el[0] > quantileThreshold):
-                        break
-                    if (x['id'] in used) or (y['id'] in used):
-                        continue
-                    used[x['id']] = True
-                    used[y['id']] = True
-                    to_merge.append((x, y))
+            curThreshold += THR_STEP
+            continue
 
-
-            removedEdges = 0
-            for (x, y) in to_merge:
-                x = Find(x)
-                y = Find(y)
-                XE = set([e2i[e] for e in list(G.edges(x['members']))])
-                YE = set([e2i[e] for e in list(G.edges(y['members']))])
-                rE = list(XE.intersection(YE))
-                removedEdges += len(rE)
+        to_merge = []
+        used = {}
+        el = []
+        # curThreshold = np.percentile(dv, 25)
+        # Prefers to merge small clusters first
+        for numel in sorted(H.keys()):
+            while len(H[numel]) > 0:
+                el = heappop(H[numel])
+                roots, _ = el[2]
+                x,y = roots
+                if (el[0] > curThreshold):
+                    break
+                if (x['id'] in used) or (y['id'] in used):
+                    continue
+                used[x['id']] = True
+                used[y['id']] = True
+                to_merge.append(el[2])
+        print('merging')
+        for (roots, e) in tqdm(to_merge):
+            x,y = roots
+            XE = set([e2i[e] for e in list(G.edges(x['members']))])
+            YE = set([e2i[e] for e in list(G.edges(y['members']))])
+            rE = list(XE.intersection(YE))
+            if not rE: #knn edge
+                # e=(xx,yy) #keep the originals, otherwise e2i doesn't know them
+                G.add_edge(e[0], e[1])
+                G[e[0]][e[1]]['level'] = curThreshold
+                E[e2i[e]] = False
+            else:
                 for ee in list(rE):
                     e = i2e[ee]
-                    if not geographic:
-                        print('merging',e)
-
-                    G[e[0]][e[1]]['level'] = level
+                    G[e[0]][e[1]]['level'] = curThreshold
                     E[ee] = False
                     NE -= 1
-                Union(x, y)
-            roots = set([Find(G.node[x])['id'] for x in G.nodes()])
-            print('level {0} #clusters {1} '.format(level, len(
-                roots))+'QT {0:2.3f} (min:{1:2.3f}, max:{2:2.3f}, median:{3:2.3f})'.format(quantileThreshold, np.min(dv), np.max(dv), np.median(dv)))
+            Union(x, y)
+        roots = set([Find(G.node[x])['id'] for x in G.nodes()])
+        print('level {0} #clusters {1} '.format(curThreshold, len(roots)))
+
 
     return(G)
