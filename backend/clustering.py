@@ -42,6 +42,7 @@ def _createHist(vals, minVal, maxVal):
     th, _ = np.histogram(vals, bins=NBINS, range=(minVal, maxVal))
     return(th)
 
+@profile
 def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     """This function changes the graph G. 
     'layer' represents the key that stores the data.
@@ -78,27 +79,11 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
     extra_edges = [e for e in extra_edges if not G.has_edge(e[0],e[1])]#only non-existing links
 
-    # pos={}
-    # for n in G:
-    #     pos[n]=G.node[n]['pos'][:2]
-    # nx.draw_networkx_nodes(G,pos=pos,node_size=2)
-    # nx.draw_networkx_edges(G,pos=pos,edgelist=extra_edges)
-    # plt.show()
-
-    print(len(extra_edges))
-    # extra_edges=[]
-    # extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
-    # extra_edges = [e for e in extra_edges if not G.has_edge(
-    #     e[0], e[1])]  # only non-existing links
-
     extra_edges=[]
-    # print(G.node[firstNode][layer])
 
     if NDIMS == 1:
         minVal = G.node[firstNode][layer][0]
         maxVal = G.node[firstNode][layer][0]
-
-    # nToVisit = []
 
     C = nx.Graph()
     C.add_nodes_from(G.nodes())
@@ -124,10 +109,8 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
         C.add_edge(x, y, distance=dist)
 
     tempC = C.copy()
-    tempC.remove_edges_from([e[:2] for e in tempC.edges(
-        data='distance') if not np.isclose(0, e[2])])
-    to_merge = [nodes for nodes in nx.connected_components(
-        tempC) if len(nodes) > 1]
+    tempC.remove_edges_from([e[:2] for e in tempC.edges(data='distance') if not np.isclose(0, e[2])])
+    to_merge = [nodes for nodes in nx.connected_components(tempC) if len(nodes) > 1]
     del(tempC)
 
     newNodeId = 0
@@ -185,26 +168,23 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
 
         touched = {}
         backlog = []
+        nodes_to_update=[]
         while len(SE)>0:
             while len(SE) > 0:
                 (v, x, y) = SE.pop()
-                newNeighbors = set(list(C.neighbors(x))+list(C.neighbors(y)))
                 if (v[0] >= curThreshold):
                     break
-                if any([c in touched for c in newNeighbors]):
-                    touched[x]=True
-                    touched[y]=True
+                if (x in touched) or (y in touched):
                     backlog.append((v, x, y))
                 else:
+                    touched[x]=True
+                    touched[y]=True
                     break
 
             if (v[0] >= curThreshold):
                 backlog.append((v, x, y))
                 SE.batch_add(backlog)
                 break
-
-            for c in newNeighbors:
-                touched[c] = True
 
             SE.remove([x, y])
             # assert(len([i for i in range(len(SE._data)) if x in SE._data[i].val and i not in SE._frees])==0)
@@ -230,16 +210,23 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
             C.add_node(newNodeId)
             C.node[newNodeId]['members'] = newMembers
             C.node[newNodeId]['histogram'] = newHist
+            newNeighbors=set(list(C.neighbors(x))+list(C.neighbors(y)))
             newNeighbors.discard(x)
             newNeighbors.discard(y)
 
+            nodes_to_update.append(newNodeId)
             for n in newNeighbors:
-                v = ((_clusterDistance(C, newNodeId, n, layer=layer), min(
-                    [len(C.node[x]['members']), len(C.node[y]['members'])])), newNodeId, n)
-                SE.add(v)
-                C.add_edge(newNodeId, n)
+                C.add_edge(newNodeId, n, distance=-1)
 
             C.remove_nodes_from([x, y])
             # print(len(C))
+        
+        for new_node in nodes_to_update:
+            for n in C.neighbors(new_node):
+                if C[new_node][n]['distance']==-1:
+                    v = ((_clusterDistance(C, new_node, n, layer=layer), 
+                          min([len(C.node[new_node]['members']), len(C.node[n]['members'])])), 
+                          new_node, n)
+                    SE.add(v)
 
     return(G)
