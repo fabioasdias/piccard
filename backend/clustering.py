@@ -9,31 +9,33 @@ from scipy.ndimage import gaussian_filter
 from scipy.spatial.distance import cdist, cosine, euclidean
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
-from sortedEdges import SortedEdges
+from heapq import heapify, heappop, heappush
 
 NBINS = 100
-THR_STEP = 0.10
-THR_START = 0.10
+THR_STEP = 0.05
+THR_START = 0.05
 
 
 def _clusterDistance(G, x, y, layer):
     h1 = G.node[x]['histogram']
     h2 = G.node[y]['histogram']
-    if np.any(np.isnan(h1)) or np.any(np.isnan(h2)):
-        return(1)
+    # if np.any(np.isnan(h1)) or np.any(np.isnan(h2)):
+    #     return(1)
 
-    s1 = np.sum(h1)
-    if (s1 > 0):
-        h1 = h1/s1
+    # s1 = np.sum(h1)
+    # if (s1 > 0):
+    #     h1 = h1/s1
+    # # X1 = np.cumsum(h1)
 
-    s2 = np.sum(h2)
-    if (s2 > 0):
-        h2 = h2/s2
-    # X2 = np.cumsum(h2)
+    # s2 = np.sum(h2)
+    # if (s2 > 0):
+    #     h2 = h2/s2
+    # # X2 = np.cumsum(h2)
 
     # D = np.sum(np.abs(X1-X2))/NBINS
-    # D = cosine(h1,h2)
-    D = euclidean(h1, h2)/np.sqrt(2)
+    D = cosine(h1, h2)
+    # else:
+    #     D = euclidean(h1, h2)/np.sqrt(2)
 
     return(D)
 
@@ -42,7 +44,9 @@ def _createHist(vals, minVal, maxVal):
     th, _ = np.histogram(vals, bins=NBINS, range=(minVal, maxVal))
     return(th)
 
-@profile
+# @profile
+
+
 def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     """This function changes the graph G. 
     'layer' represents the key that stores the data.
@@ -57,7 +61,7 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     i = 0
     to_remove = []
     for n in G:
-        if (layer not in G.node[n]) or (G.node[n][layer] is None) or np.any(np.isnan(G.node[n][layer])):
+        if (layer not in G.node[n]) or (G.node[n][layer] is None) or np.any(np.isnan(G.node[n][layer])) or (np.sum(G.node[n][layer]) == 0):
             to_remove.append(n)
             continue
         i2n[i] = n
@@ -66,58 +70,66 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     cData = np.array(cData)
 
     G.remove_nodes_from(to_remove)
+    firstNode = list(G.nodes())[0]
+
     for e in G.edges():
         G[e[0]][e[1]]['level'] = -1
 
     neigh = NearestNeighbors(k)
     if NDIMS == 1:
-        cData = (cData - cData.min()) / (cData.max() - cData.min())
+        if not np.isclose(0,cData.max()-cData.min()):
+            cData = (cData - cData.min()) / (cData.max() - cData.min())
+
     neigh.fit(np.atleast_2d(cData))
 
     A = np.nonzero(neigh.kneighbors_graph())
 
     extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
-    extra_edges = [e for e in extra_edges if not G.has_edge(e[0],e[1])]#only non-existing links
+    extra_edges = [e for e in extra_edges if not G.has_edge(
+        e[0], e[1])]  # only non-existing links
 
-    extra_edges=[]
+    extra_edges = []
 
     if NDIMS == 1:
         minVal = G.node[firstNode][layer][0]
         maxVal = G.node[firstNode][layer][0]
 
     C = nx.Graph()
-    C.add_nodes_from(G.nodes())
+    n2i = {n: i for i, n in enumerate(G)}
+    C.add_nodes_from(range(len(n2i)))
+    newNodeId = len(n2i)+1  # the +1 is probably not necessary
 
     for n in G.nodes():
-        C.node[n]['members'] = [n, ]
+        C.node[n2i[n]]['members'] = [n, ]
         if (G.node[n][layer] is not None):
             if NDIMS == 1:
                 minVal = min((minVal, G.node[n][layer][0]))
                 maxVal = max((maxVal, G.node[n][layer][0]))
     if NDIMS == 1:
         print('Value range: {0}-{1}'.format(minVal, maxVal))
-        for n in G():
-            C.node[n]['histogram'] = _createHist(
+        for n in G:
+            C.node[n2i[n]]['histogram'] = _createHist(
                 G.node[n][layer], minVal, maxVal,)
     else:
         for n in G:
-            C.node[n]['histogram'] = G.node[n][layer][:]
+            C.node[n2i[n]]['histogram'] = G.node[n][layer][:]
 
     print('computing distances')
     for (x, y) in tqdm(list(G.edges())+extra_edges):
-        dist = _clusterDistance(C, x, y, layer=layer)
-        C.add_edge(x, y, distance=dist)
+        dist = _clusterDistance(C, n2i[x], n2i[y], layer=layer)
+        C.add_edge(n2i[x], n2i[y], distance=dist)
 
     tempC = C.copy()
-    tempC.remove_edges_from([e[:2] for e in tempC.edges(data='distance') if not np.isclose(0, e[2])])
-    to_merge = [nodes for nodes in nx.connected_components(tempC) if len(nodes) > 1]
+    tempC.remove_edges_from([e[:2] for e in tempC.edges(
+        data='distance') if not np.isclose(0, e[2])])
+    to_merge = [nodes for nodes in nx.connected_components(
+        tempC) if len(nodes) > 1]
     del(tempC)
 
-    newNodeId = 0
     for nodes in to_merge:
         members = []
-        for n in nodes:
-            members.extend(C.node[n]['members'])
+        for nid in nodes:
+            members.extend(C.node[nid]['members'])
         smallG = nx.subgraph(G, members)
         for e in smallG.edges():
             G[e[0]][e[1]]['level'] = 0
@@ -130,9 +142,9 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
 
         newMembers = list(set(members))
 
-        newHist = C.node[newMembers[0]]['histogram']
+        newHist = C.node[n2i[newMembers[0]]]['histogram']
         for i in range(1, len(newMembers)):
-            newHist = newHist+C.node[newMembers[i]]['histogram']
+            newHist = newHist+C.node[n2i[newMembers[i]]]['histogram']
 
         newNodeId += 1
         C.add_node(newNodeId)
@@ -143,54 +155,49 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
             for n in C.neighbors(c):
                 if (n not in nodes) and ('distance' in C[c][n]):
                     C.add_edge(newNodeId, n, distance=C[c][n]['distance'])
-
         C.remove_nodes_from(nodes)
 
-    SE = SortedEdges()
-    SE.batch_add([(
-        (C[x][y]['distance'],
-         min([len(C.node[x]['members']), len(C.node[y]['members'])])),
-        x, y) for (x, y) in tqdm(C.edges())])
     curThreshold = THR_START
 
-    while len(C) > 1:
-        dMin = SE.minVal()[0][0]
-        dMax = SE.maxVal()[0][0]
-        print(len(C), dMin, dMax)
-        if np.isclose(dMin, dMax):
+    while len(C) > nx.number_connected_components(G):
+        H = []
+        for e in C.edges():
+            if ('distance' not in C[e[0]][e[1]]) or (C[e[0]][e[1]]['distance'] == -1):
+                dist = _clusterDistance(C, e[0], e[1], layer=layer)
+                C[e[0]][e[1]]['distance'] = dist
+            else:
+                dist = C[e[0]][e[1]]['distance']
+                
+            v = (min([len(C.node[e[0]]['members']), len(C.node[e[1]]['members'])]),
+                 dist,
+                 e[0],
+                 e[1])
+                
+            H.append(v)
+        heapify(H)
+
+        dMin = H[0][1]
+        dMax = max([v[1] for v in H])
+        print(len(C), curThreshold, len(H), dMin, dMax)
+
+        while (dMin >= curThreshold):
+            curThreshold += THR_STEP
+
+        if np.isclose(curThreshold, 1) or np.isclose(dMin, dMax):
+            print('last')
             for e in G.edges():
                 if G[e[0]][e[1]]['level'] == -1:
                     G[e[0]][e[1]]['level'] = curThreshold
+            return(G)
 
-        while (dMin > curThreshold):
-            curThreshold += THR_STEP
-            continue
-
-        touched = {}
-        backlog = []
-        nodes_to_update=[]
-        while len(SE)>0:
-            while len(SE) > 0:
-                (v, x, y) = SE.pop()
-                if (v[0] >= curThreshold):
+        while len(H) > 0:
+            # already merged before
+            while (len(H) > 0):
+                (_, v, x, y) = heappop(H)
+                if  (v < curThreshold) and (x in C) and (y in C):
                     break
-                if (x in touched) or (y in touched):
-                    backlog.append((v, x, y))
-                else:
-                    touched[x]=True
-                    touched[y]=True
-                    break
-
-            if (v[0] >= curThreshold):
-                backlog.append((v, x, y))
-                SE.batch_add(backlog)
+            else:
                 break
-
-            SE.remove([x, y])
-            # assert(len([i for i in range(len(SE._data)) if x in SE._data[i].val and i not in SE._frees])==0)
-            # assert(len([i for i in range(len(SE._data)) if y in SE._data[i].val and i not in SE._frees])==0)
-            assert(not any([x in backlog[i] for i in range(len(backlog))]))
-            assert(not any([y in backlog[i] for i in range(len(backlog))]))
 
             XE = set([(min(e), max(e)) for e in G.edges(C.node[x]['members'])])
             YE = set([(min(e), max(e)) for e in G.edges(C.node[y]['members'])])
@@ -210,23 +217,11 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
             C.add_node(newNodeId)
             C.node[newNodeId]['members'] = newMembers
             C.node[newNodeId]['histogram'] = newHist
-            newNeighbors=set(list(C.neighbors(x))+list(C.neighbors(y)))
+            newNeighbors = set(list(C.neighbors(x))+list(C.neighbors(y)))
             newNeighbors.discard(x)
             newNeighbors.discard(y)
-
-            nodes_to_update.append(newNodeId)
+            C.remove_nodes_from([x, y])
             for n in newNeighbors:
                 C.add_edge(newNodeId, n, distance=-1)
-
-            C.remove_nodes_from([x, y])
-            # print(len(C))
-        
-        for new_node in nodes_to_update:
-            for n in C.neighbors(new_node):
-                if C[new_node][n]['distance']==-1:
-                    v = ((_clusterDistance(C, new_node, n, layer=layer), 
-                          min([len(C.node[new_node]['members']), len(C.node[n]['members'])])), 
-                          new_node, n)
-                    SE.add(v)
 
     return(G)

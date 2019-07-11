@@ -167,9 +167,9 @@ class dataStore(object):
                 del(self._hiers[choice(list(self._hiers.keys()))])
 
             G = nx.read_gpickle(join(self._data_folder, aspectID+'.gp'))
-            m = _getMaxLevel(G, level)
-            for e in G.edges():
-                G[e[0]][e[1]][level] /= m
+            # m = _getMaxLevel(G, level)
+            # for e in G.edges():
+            #     G[e[0]][e[1]][level] /= m
             self._hiers[aspectID] = G
         else:
             G = self._hiers[aspectID]
