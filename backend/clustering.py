@@ -29,6 +29,7 @@ def _clusterDistance(G, x, y, layer):
     s2 = np.sum(h2)
     if (s2 > 0):
         h2 = h2/s2
+    # X2 = np.cumsum(h2)
 
     # D = np.sum(np.abs(X1-X2))/NBINS
     # D = cosine(h1,h2)
@@ -41,7 +42,6 @@ def _createHist(vals, minVal, maxVal):
     th, _ = np.histogram(vals, bins=NBINS, range=(minVal, maxVal))
     return(th)
 
-@profile
 def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     """This function changes the graph G. 
     'layer' represents the key that stores the data.
@@ -75,6 +75,18 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
 
     A = np.nonzero(neigh.kneighbors_graph())
 
+    extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
+    extra_edges = [e for e in extra_edges if not G.has_edge(e[0],e[1])]#only non-existing links
+
+    # pos={}
+    # for n in G:
+    #     pos[n]=G.node[n]['pos'][:2]
+    # nx.draw_networkx_nodes(G,pos=pos,node_size=2)
+    # nx.draw_networkx_edges(G,pos=pos,edgelist=extra_edges)
+    # plt.show()
+
+    print(len(extra_edges))
+    # extra_edges=[]
     # extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
     # extra_edges = [e for e in extra_edges if not G.has_edge(
     #     e[0], e[1])]  # only non-existing links
