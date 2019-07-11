@@ -1,5 +1,6 @@
 from collections import defaultdict
 from tqdm import tqdm
+from numpy import floor
 
 class unit:
     def __init__(self, val=None):
@@ -8,6 +9,8 @@ class unit:
         self.previous = None
 
 
+N_INDEX=1000
+
 class SortedEdges:
     def __init__(self):
         self._data = []
@@ -15,6 +18,7 @@ class SortedEdges:
         self._head = None
         self._tail = None
         self._byNode = defaultdict(list)
+        self._index = [{'val':None,'loc':-1} for _ in range(N_INDEX)]
 
     def __repr__(self):
         cursor = S._head
@@ -36,15 +40,35 @@ class SortedEdges:
 
     # @profile
     def add(self, val: tuple):
+        """
+            Adds to the structure.
+            val: -> ((v,#),x,y)
+            v = 0-1 priority value (smaller first)
+            # = tie breaking
+            (x,y) related info (see .remove)
+        """
         node = unit(val)
-        nodes = [val[2], val[3]]
+        nodes = list(val[1:])
+
 
         if not self._frees:
             pos = len(self._data)
             self._data.append(node)
         else:
-            pos = self._frees.pop(0)
+            pos = self._frees.pop()
             self._data[pos] = node
+
+
+        priority = val[0][0]
+        hint = self._head
+        bin = int(floor(priority/(1/N_INDEX)))
+        if (self._index[bin]['val'] is not None):
+            hint = self._index[bin]['loc']
+            #if we dont have values, or the value belongs to the bin, but it is larger (or it doesn't belong to the bin)
+        if (self._index[bin]['val'] is None) or (self._index[bin]['val']>priority) or (self._index[bin]['val']<(bin*(1/N_INDEX))):
+            self._index[bin]['val']=priority
+            self._index[bin]['loc']=pos
+
 
         for n in nodes:
             self._byNode[n].append(pos)
@@ -52,49 +76,76 @@ class SortedEdges:
         if self._head is None:
             self._head = pos
             self._tail = pos
-        else:
-            cursor = self._head
-            last = self._head
-            while (self._data[cursor].val[0] < val[0]):
-                if self._data[cursor].next is not None:
-                    last = cursor
-                    cursor = self._data[cursor].next
-                else: # at the tail
-                    self._data[cursor].next = pos
-                    self._data[pos].previous = cursor
-                    self._tail = pos
-                    return
+            return
+        if self._data[self._head].val[0] >= val[0]: #at the head
+            self._data[pos].next=self._head
+            self._data[self._head].previous=pos
+            self._head=pos
+            return
+        if self._data[self._tail].val[0] < val[0]: #at the tail
+            self._data[self._tail].next = pos
+            self._data[pos].previous = self._tail
+            self._tail = pos
+            return
 
-            if (last == cursor):# at head
-                self._data[pos].next=self._head
-                self._data[self._head].previous=pos
-                self._head=pos
-                return
-                
+        cursor = hint
+        while (self._data[cursor].val[0] < val[0]):
+            cursor = self._data[cursor].next
 
-            self._data[pos].next = cursor
-            self._data[pos].previous = last
+        last = self._data[cursor].previous
+        self._data[pos].next = cursor
+        self._data[pos].previous = last
+        if last is not None:
             self._data[last].next = pos
-            self._data[cursor].previous = pos
+        self._data[cursor].previous = pos
 
     def pop(self):
         """Removes and returns the lowest val"""
-        if self._head is None:
+        if (self._head is None) or (len(self)==0):
             raise Exception("The structure is empty")
         val = self._data[self._head].val
         self._frees.append(self._head)
-        self._head = self._data[self._head].next
-        self._data[self._head].previous = None
+        if len(self)==0:
+            self._head=None
+            self._tail=None
+        else:
+            self._head = self._data[self._head].next
+            self._data[self._head].previous = None
         return(val)
 
     def _remove(self, pos):
-        p = self._data[pos].previous
-        n = self._data[pos].next
-        if n is None:
-            self._tail = p
-        self._data[p].next = n
-        self._data[n].previous = p
+        """Removes an entry. If it is already marked as removed, do nothing (and don't fail)"""
+        if pos in self._frees:
+            return
         self._frees.append(pos)
+
+        if len(self)==0:
+            self._head=None
+            self._tail=None
+            self._index= [{'val':None,'loc':-1} for _ in range(N_INDEX)]
+        else:
+            if self._data[pos].previous is None:
+                p=self._head
+            else:
+                p = self._data[pos].previous
+
+            bin = int(floor(self._data[pos].val[0][0]/(1/N_INDEX)))
+            if pos == self._index[bin]['loc']:
+                self._index[bin]['val']=self._data[p].val[0][0]
+                self._index[bin]['loc']=p
+
+
+            if pos == self._head:
+                self._head=self._data[pos].next
+            elif pos == self._tail:
+                self._tail=self._data[pos].previous   
+            else:
+                n = self._data[pos].next
+                p = self._data[pos].previous
+                if n is not None:
+                    self._data[n].previous=p
+                if p is not None:
+                    self._data[p].next=n        
 
     def remove(self, nbunch: list):
         """ Removes all entries corresponding to nodes in  nbunch"""
@@ -117,18 +168,8 @@ class SortedEdges:
 if __name__ == "__main__":
     # testing
     S = SortedEdges()
-    S.add((1, 1, 'a', 'b'))
+    S.add(((0.05, 1), 'a', 'b'))
+    S.add(((0.515, 1), 'a', 'b'))
+    S.add(((0.52, 1), 'a', 'b'))
+    S.add(((0.510, 1), 'a', 'b'))
     print(S)
-    print('\n')
-    S.add((3, 1, 'a', 'b'))
-    print(S)
-    print('\n')
-    S.add((2, 1, 'a', 'b'))
-    print(S)
-    print('\n')
-    S.add((0, 1, 'a', 'b'))
-    print(S)
-    print('\n')
-    S.add((4, 1, 'a', 'b'))
-    print(S)
-    print('\n')
