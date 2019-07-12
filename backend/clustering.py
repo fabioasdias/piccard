@@ -47,10 +47,10 @@ def _createHist(vals, minVal, maxVal):
 # @profile
 
 
-def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
+def ComputeClustering(G: nx.Graph, layer: str, k: int = 0):
     """This function changes the graph G. 
     'layer' represents the key that stores the data.
-    'k' is the number of knn edges to consider for each node after the geographic phase."""
+    'k' is the number of extra knn edges to consider for each node"""
 
     firstNode = list(G.nodes())[0]
     NDIMS = len(G.node[firstNode][layer])
@@ -75,20 +75,22 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 1):
     for e in G.edges():
         G[e[0]][e[1]]['level'] = -1
 
-    neigh = NearestNeighbors(k)
-    if NDIMS == 1:
-        if not np.isclose(0,cData.max()-cData.min()):
-            cData = (cData - cData.min()) / (cData.max() - cData.min())
 
-    neigh.fit(np.atleast_2d(cData))
+    if k > 0:
+        neigh = NearestNeighbors(k)
+        if NDIMS == 1:
+            if not np.isclose(0,cData.max()-cData.min()):
+                cData = (cData - cData.min()) / (cData.max() - cData.min())
 
-    A = np.nonzero(neigh.kneighbors_graph())
+        neigh.fit(np.atleast_2d(cData))
 
-    extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
-    extra_edges = [e for e in extra_edges if not G.has_edge(
-        e[0], e[1])]  # only non-existing links
+        A = np.nonzero(neigh.kneighbors_graph())
 
-    extra_edges = []
+        extra_edges = [(i2n[A[0][i]], i2n[A[1][i]]) for i in range(A[0].shape[0])]
+        extra_edges = [e for e in extra_edges if not G.has_edge(
+            e[0], e[1])]  # only non-existing links
+    else:
+        extra_edges = []
 
     if NDIMS == 1:
         minVal = G.node[firstNode][layer][0]
