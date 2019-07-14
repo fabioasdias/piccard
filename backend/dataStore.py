@@ -8,13 +8,48 @@ import matplotlib.pylab as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
+from rtree.index import Rtree
 from scipy.stats import skew
 from sklearn.preprocessing import minmax_scale
-from rtree.index import Rtree
+from tqdm import tqdm
+
 from clustering import ComputeClustering
 from hierarchies import compareHierarchies
 
 MAX_CACHE = 10
+SANITY = False
+
+
+def _check_level(G: nx.Graph):
+    nodes = list(G.nodes())
+    for x in tqdm(G, desc='checking paths', total=len(nodes)):
+        used = {n: False for n in G}
+        used[x] = True
+        vals = [e[2] for e in G.edges(x, data='level')]
+        if len(set(vals)) <= 1:  # plateau or empty set
+            continue
+        cutoff = max(vals)
+        # list([[(n,G[x][n]['level']),] for n in G.neighbors(x)])
+        to_do = [[(x, 0), ], ]
+        while to_do:
+            p = to_do.pop(0)
+            last_node, maxDistance = p[-1]
+            if G.has_edge(x, last_node):
+                try:
+                    assert(maxDistance >= G[x][last_node]['level'])
+                except:
+                    print(x, last_node, G[x][last_node]
+                          ['level'], maxDistance, p)
+                    raise
+            else:
+                for y in G.neighbors(last_node):
+                    if used[y]:
+                        continue
+                    used[y] = True
+                    # if this edge is more distant than anything in G.neighbors(x), there is no viable path
+                    if G[last_node][y]['level'] < cutoff:
+                        to_do.append(
+                            p+[(y, max([maxDistance, G[last_node][y]['level']]))])
 
 
 def _getMaxLevel(G: nx.Graph, level: str = 'level') -> int:
@@ -47,7 +82,7 @@ class dataStore(object):
             g = geoms[i]
             if i == 0:
                 X = self.getCrossGeometry(g, g)
-            else:    
+            else:
                 X = self.getCrossGeometry(geoms[i-1], g)
 
             unused = set([n for n in X if n[0] == g])
@@ -66,7 +101,7 @@ class dataStore(object):
                         to_add.append((current+[op, ]))
 
             # puts in the paths that start in this aspect
-            paths = to_add+[[(-1,-1),]*i+[n, ] for n in unused]
+            paths = to_add+[[(-1, -1), ]*i+[n, ] for n in unused]
 
         return(paths)
 

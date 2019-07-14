@@ -107,7 +107,6 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
     # # nx.draw_networkx_edges(G,pos,edgelist=E,edge_color=[e[2] for e in E])
     # # plt.show()
 
-
     # for n in G:
     #     neig = [e[2] for e in G.edges(n, data='level')]
     #     if neig:
@@ -120,7 +119,6 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
     #         'nclusters': nx.number_connected_components(G)})
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
-
     print('got merged')
 
     cl = {}
@@ -148,6 +146,14 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: 
             cc2n[g][cc] = [n[1] for n in nodes]
             for n in nodes:
                 cl[g][n[1]] = cc
+
+    # for i in range(1, len(geoms)):
+    #     g1 = geoms[i-1]
+    #     g2 = geoms[i]
+    #     X = ds.getCrossGeometry(g1, g2)
+    #     for e in Gs[g2]:
+
+
     # plt.show()
     return({'clustering': cl,
             'evolution': [],
@@ -450,7 +456,11 @@ if __name__ == '__main__':
         # }
     }
 
-    # to_use = ['e1b75590-5200-4df2-b48f-2a2ae346b2f4',]
+    # to_use = ['1a1671a0-c53c-4034-b3ad-6d2db4f29a85',
+    #           '2def2598-f4b8-418b-b716-9c6ecf42d988',
+    #           '40237c4d-56f3-428d-92ab-641f5d24e7d4',
+    #           '89aab2a8-c2c0-4a1c-8d23-e1b915a730a2',
+    #           'a67ed2e7-a095-4d16-95db-c12a756369f1', ]
     # _mapHiers(ds, sorted(to_use))
     # exit()
 

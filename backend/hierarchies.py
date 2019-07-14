@@ -101,25 +101,24 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph, level: str = 'level') ->
 
     # print(list(G1.nodes())[0])
     # print(list(G2.nodes())[0])
-    # for lvl in [0.1, 0.25, 0.5,0.75, 0.8, 0.9]:
-    #     C = G2.copy()
-    #     C.remove_edges_from([e[:2]
-    #                          for e in C.edges(data=level) if e[2] >= lvl])
-    #     for cc, nodes in enumerate(nx.connected_components(C)):
-    #         for n in nodes:
-    #             C.node[n]['cc'] = cc
+    for lvl in [0.1, 0.25, 0.5,0.75, 0.8, 0.9]:
+        C = G2.copy()
+        C.remove_edges_from([e[:2]
+                             for e in C.edges(data=level) if e[2] >= lvl])
+        for cc, nodes in enumerate(nx.connected_components(C)):
+            for n in nodes:
+                C.node[n]['cc'] = cc
 
-    #     R = H.copy()
-    #     R.remove_edges_from([e[:2]
-    #                          for e in R.edges(data=level) if e[2] >= lvl])
-    #     for nodes in nx.connected_components(R):
-    #         otherside=[]
-    #         for nn in nodes:
-    #             otherside.extend(X.neighbors(nn))
-    #         if len(set([C.node[n]['cc'] for n in otherside])) > 1:
-    #             print('got something', n, len(nodes),otherside,C.node[n]['cc'])
-    #             input('.')
+        R = H.copy()
+        R.remove_edges_from([e[:2]
+                             for e in R.edges(data=level) if e[2] >= lvl])
 
+        for cc, nodes in enumerate(nx.connected_components(R)):
+            for n in nodes:
+                R.node[n]['cc'] = cc
+
+        for e in R:
+            pass
     return(H)
 
 # @profile

@@ -116,8 +116,7 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 0):
         for n in G:
             C.node[n2i[n]]['histogram'] = G.node[n][layer][:]
 
-    print('computing distances')
-    for (x, y) in tqdm(list(G.edges())+extra_edges):
+    for (x, y) in tqdm(list(G.edges())+extra_edges,desc="computing distances"):
         dist = _clusterDistance(C, n2i[x], n2i[y], layer=layer)
         C.add_edge(n2i[x], n2i[y], distance=dist)
 
