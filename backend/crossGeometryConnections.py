@@ -44,27 +44,32 @@ if __name__ == '__main__':
     for ign,thisbGeom in enumerate(baseGeometries):
         pos={}
         for nextbGeom in baseGeometries[ign:]:
-            print(thisbGeom, nextbGeom)
-
             B = nx.Graph()
-            #adds all possible nodes (also on the next for)
-            for tid,tgeom in geo[nextbGeom].iterIDGeom('Geom_ID'):
-                B.add_node((nextbGeom,tid))
-                # point=tgeom.representative_point()
-                # pos[(nextbGeom,tid)]=[point.x+0.001,point.y+0.001]
 
-            for tid,tgeom in geo[thisbGeom].iterIDGeom('Geom_ID'):
-                B.add_node((thisbGeom,tid))
-                # point=tgeom.representative_point()
-                # pos[(thisbGeom,tid)]=[point.x,point.y]
+            print(thisbGeom, nextbGeom)
+            if thisbGeom==nextbGeom:
+                for tid,tgeom in geo[nextbGeom].iterIDGeom('Geom_ID'):
+                    B.add_node((nextbGeom,tid))
+                    B.add_edge((nextbGeom,tid),(nextbGeom,tid),intersection=tgeom.area)
+            else:
+                #adds all possible nodes (also on the next for)
+                for tid,tgeom in geo[nextbGeom].iterIDGeom('Geom_ID'):
+                    B.add_node((nextbGeom,tid))
+                    # point=tgeom.representative_point()
+                    # pos[(nextbGeom,tid)]=[point.x+0.001,point.y+0.001]
 
-                for polID in geo[nextbGeom].search(shape(tgeom).buffer(-1e-6)):   
-                    matched=geo[nextbGeom].getPolygon(polID) 
-                    nID=geo[nextbGeom].getProperty(polID,'Geom_ID')
-                    # print(tgeom.intersection(matched).area/tgeom.area,(thisbGeom, tid),(nextbGeom, nID))
-                    interArea=tgeom.intersection(matched).area
-                    if ((interArea/tgeom.area)>0.05) or ((interArea/matched.area)>0.05):
-                        B.add_edge((thisbGeom, tid),(nextbGeom, nID), intersection=interArea)
+                for tid,tgeom in geo[thisbGeom].iterIDGeom('Geom_ID'):
+                    B.add_node((thisbGeom,tid))
+                    # point=tgeom.representative_point()
+                    # pos[(thisbGeom,tid)]=[point.x,point.y]
+
+                    for polID in geo[nextbGeom].search(shape(tgeom).buffer(-1e-6)):   
+                        matched=geo[nextbGeom].getPolygon(polID) 
+                        nID=geo[nextbGeom].getProperty(polID,'Geom_ID')
+                        # print(tgeom.intersection(matched).area/tgeom.area,(thisbGeom, tid),(nextbGeom, nID))
+                        interArea=tgeom.intersection(matched).area
+                        if ((interArea/tgeom.area)>0.05) or ((interArea/matched.area)>0.05):
+                            B.add_edge((thisbGeom, tid),(nextbGeom, nID), intersection=interArea)
 
             print('edges',len(B.edges()))
 
