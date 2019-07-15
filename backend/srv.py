@@ -82,7 +82,7 @@ def cors():
 
 # @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.75, nClusters: int = 10, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: int = 10, bbox: list = None):
 
     full_info_aspects = [{'name': ds.getAspectName(a),
                           'year': ds.getAspectYear(a),
