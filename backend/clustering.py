@@ -11,12 +11,11 @@ from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 from heapq import heapify, heappop, heappush
 
-NBINS = 100
 THR_STEP = 0.05
 THR_START = 0.05
 
 
-def _clusterDistance(G, x, y, layer):
+def clusterDistance(G, x, y, layer):
     h1 = G.node[x]['histogram']
     h2 = G.node[y]['histogram']
     # if np.any(np.isnan(h1)) or np.any(np.isnan(h2)):
@@ -40,8 +39,8 @@ def _clusterDistance(G, x, y, layer):
     return(D)
 
 
-def _createHist(vals, minVal, maxVal):
-    th, _ = np.histogram(vals, bins=NBINS, range=(minVal, maxVal))
+def createHist(vals, minVal, maxVal, nbins=100):
+    th, _ = np.histogram(vals, bins=nbins, range=(minVal, maxVal))
     return(th)
 
 # @profile
@@ -110,14 +109,14 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 0):
     if NDIMS == 1:
         print('Value range: {0}-{1}'.format(minVal, maxVal))
         for n in G:
-            C.node[n2i[n]]['histogram'] = _createHist(
+            C.node[n2i[n]]['histogram'] = createHist(
                 G.node[n][layer], minVal, maxVal,)
     else:
         for n in G:
             C.node[n2i[n]]['histogram'] = G.node[n][layer][:]
 
     for (x, y) in tqdm(list(G.edges())+extra_edges,desc="computing distances"):
-        dist = _clusterDistance(C, n2i[x], n2i[y], layer=layer)
+        dist = clusterDistance(C, n2i[x], n2i[y], layer=layer)
         C.add_edge(n2i[x], n2i[y], distance=dist)
 
     tempC = C.copy()
@@ -164,7 +163,7 @@ def ComputeClustering(G: nx.Graph, layer: str, k: int = 0):
         H = []
         for e in C.edges():
             if ('distance' not in C[e[0]][e[1]]) or (C[e[0]][e[1]]['distance'] == -1):
-                dist = _clusterDistance(C, e[0], e[1], layer=layer)
+                dist = clusterDistance(C, e[0], e[1], layer=layer)
                 C[e[0]][e[1]]['distance'] = dist
             else:
                 dist = C[e[0]][e[1]]['distance']

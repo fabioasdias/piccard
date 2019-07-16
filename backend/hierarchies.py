@@ -138,8 +138,7 @@ def _mergeAll(ds: dict, aspects: list, level: str = 'level', bbox: list = None) 
     return(F)
 
 
-# @memory.cache(ignore=['ds'])
-# @profile
+@memory.cache(ignore=['ds'])
 def mapHierarchies(ds: dict, aspects: list, level: str = 'level', bbox: list = None) -> dict:
     """
     ds: datastore 

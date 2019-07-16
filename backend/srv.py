@@ -4,7 +4,7 @@ import os
 import pickle
 import sys
 import tempfile
-from itertools import combinations, combinations_with_replacement
+from itertools import combinations
 from os import makedirs
 from os.path import exists, join
 from random import sample
@@ -17,19 +17,21 @@ import numpy as np
 import pandas as pd
 from joblib import Memory
 from networkx.readwrite import json_graph
-from sklearn.cluster import KMeans
+from sklearn.cluster import OPTICS
 from tqdm import tqdm
 
 from dataStore import dataStore
 from hierarchies import compareHierarchies, mapHierarchies
 from upload import gatherInfoJsons, processUploadFolder
+from scipy.spatial.distance import cosine
 
 cachedir = './cache/'
 if not exists(cachedir):
     makedirs(cachedir)
 memory = Memory(cachedir, verbose=0)
 
-NBINS = 50
+# same as in clustering.py! - There is probably a better way...
+NBINS = 100
 
 
 def _mergePaths(p1: dict, p2: dict, id: int):
@@ -82,7 +84,7 @@ def cors():
 
 # @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: int = 10, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = None):
 
     full_info_aspects = [{'name': ds.getAspectName(a),
                           'year': ds.getAspectYear(a),
@@ -92,31 +94,6 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
                           'visible': True,
                           'descr': ds.getDescriptions_AsDict(a)}
                          for a in aspects]
-
-    # a = aspects[1]
-    # g = ds.getGeometry(a)
-    # G = ds.getHierarchy(a)
-    # cl = {}
-    # cl[g] = {}
-
-    # # pos = {}
-    # # for n in G:
-    # #     pos[n]=G.node[n]['pos'][:2]
-    # # nx.draw_networkx_nodes(G,pos, node_size=2)
-    # # E = [e for e in G.edges(data='level') if e[2]<1]
-    # # nx.draw_networkx_edges(G,pos,edgelist=E,edge_color=[e[2] for e in E])
-    # # plt.show()
-
-    # for n in G:
-    #     neig = [e[2] for e in G.edges(n, data='level')]
-    #     if neig:
-    #         cl[g][n[1]] = np.max(neig)
-
-    # return({'clustering': cl,
-    #         'evolution': [],
-    #         'hist': {'aspect': [], 'path': []},
-    #         'aspects': full_info_aspects,
-    #         'nclusters': nx.number_connected_components(G)})
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
     print('got merged')
@@ -137,9 +114,15 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
     # cutting the hierarchy
     cc2n = {}
     for g in geoms:
-        print(g, nx.number_connected_components(Gs[g]))
-        Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level')
-                                 if e[2] >= threshold])
+        base_number_ccs=nx.number_connected_components(Gs[g])
+        Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level') if e[2] >= 1])
+        current_number_ccs=nx.number_connected_components(Gs[g])
+        while (current_number_ccs-base_number_ccs)<nClusters:
+            E = sorted([e for e in Gs[g].edges(data='level')],key=lambda e:e[2],reverse=True)
+            Gs[g].remove_edges_from(E[:nClusters-(base_number_ccs-base_number_ccs)])
+            current_number_ccs=nx.number_connected_components(Gs[g])
+
+
         cc2n[g] = {}
         print(g, nx.number_connected_components(Gs[g]))
         for cc, nodes in enumerate(nx.connected_components(Gs[g])):
@@ -147,14 +130,74 @@ def _mapHiers(ds: dataStore, aspects: list, threshold: float = 0.5, nClusters: i
             for n in nodes:
                 cl[g][n[1]] = cc
 
-    # for i in range(1, len(geoms)):
-    #     g1 = geoms[i-1]
-    #     g2 = geoms[i]
-    #     X = ds.getCrossGeometry(g1, g2)
-    #     for e in Gs[g2]:
+
+        aspects_in_this_geom = [a for a in full_info_aspects if a['geom']==g]
+        nDims=[ds.getDimension(a['id']) for a in aspects_in_this_geom]
+        nDims=[x if x >1 else NBINS for x in nDims] #fixes the histogram size for unitary variables
+        M = np.zeros((len(cc2n[g]),np.sum(nDims)))        
+        H={}
+        for i,aspect in enumerate(aspects_in_this_geom):
+            
+            a=aspect['id']
+            H[a]={}
+
+            if i==0:
+                start=0
+            else:
+                start=sum(nDims[:i])
+            finish=start+nDims[i]
+            for n in tqdm(cl[g], desc=ds.getAspectName(a)):
+                vals = ds.getData(a, n)
+                if (vals is None) or np.any(np.isnan(vals)):
+                    continue
+                if nDims[i] == 1:
+                    tempH, _ = np.histogram(vals, NBINS, 
+                        range=(ds.getMinima(a)[0], ds.getMaxima(a)[0]))
+                else:
+                    tempH = np.array(vals)
+                M[cl[g][n],start:finish]+=tempH        
+
+            for cc in cc2n[g]:
+                H[a][cc]=M[cc,start:finish]                
+
+            M[:,start:finish]=(M[:,start:finish].T/np.sum(M[:,start:finish],axis=1)).T #normalizing each section
+
+        clust = OPTICS()#min_samples=50, xi=.05, min_cluster_size=.05)
+        M=np.nan_to_num(M)
+        clust.fit(M)
+        del(M)
+        labels = clust.labels_[clust.ordering_]
+        print(len(labels),len(set(labels)))
+        new_H={}
+        for i in range(len(labels)):
+            a=aspect['id']
+            new_H[a]={}
+            for a in aspects_in_this_geom:
+                old_cc=i
+                new_cc=labels[i]
+                if new_cc not in new_H[a]:
+                    new_H[a][new_cc]=H[a][old_cc]
+                else:
+                    new_H[a][new_cc]+=H[a][old_cc]
+
+        for n in cl[g]:
+            cl[g][n]=labels[cl[g][n]]
 
 
-    # plt.show()
+
+
+
+
+    all_paths = ds.getPaths([a['id'] for a in full_info_aspects])
+    cluster_sequences = []
+    for path in all_paths:
+        cluster_sequences.append(
+            tuple([cl[n[0]][n[1]] if n[1] in cl[n[0]] else -1 for n in path if n[0] != -1]))
+
+    print(len(cluster_sequences))
+    cluster_sequences = set(cluster_sequences)
+    print(len(cluster_sequences))
+
     return({'clustering': cl,
             'evolution': [],
             'hist': {'aspect': [], 'path': []},
@@ -456,13 +499,14 @@ if __name__ == '__main__':
         # }
     }
 
-    # to_use = ['1a1671a0-c53c-4034-b3ad-6d2db4f29a85',
-    #           '2def2598-f4b8-418b-b716-9c6ecf42d988',
-    #           '40237c4d-56f3-428d-92ab-641f5d24e7d4',
-    #           '89aab2a8-c2c0-4a1c-8d23-e1b915a730a2',
-    #           'a67ed2e7-a095-4d16-95db-c12a756369f1', ]
-    # _mapHiers(ds, sorted(to_use))
-    # exit()
+    to_use = ['44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
+              'a2e83ff8-6962-48aa-8740-3c250e8d3a13',
+              'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
+              # '56158126-6589-4037-b7d3-bc8789d950b4',
+              # 'b0d6c9b9-2935-4760-a394-68b791b12a22',
+              'd36bd0e0-d74d-4355-a967-31c357239646']
+    _mapHiers(ds, sorted(to_use))
+    exit()
 
     # input_json=[{"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST1"]},
     #  {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST2"]},

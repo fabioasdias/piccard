@@ -68,7 +68,6 @@ class dataStore(object):
         self._hiers = {}       # hierarchies
         self._cross = {}       # cross geometry graphs
         self._data = {}        # raw data
-        self._projection = {}         # 1D projection data
         self._geometry_folder = geometry_folder
         self._data_folder = data_folder
 
@@ -105,52 +104,10 @@ class dataStore(object):
 
         return(paths)
 
-    def _do_projection(self, aspectID: str):
-        """
-            Computes and saves a 1D projection of the data for aspectID
-        """
-        self._check_and_read(aspectID, data=True)
-        X = self._data[aspectID].to_numpy()
-
-        if X.shape[1] == 1:
-            Y = minmax_scale(X)
-        else:
-            bins = X.shape[1]
-            step = 1/bins
-            Y = np.argmax(X, axis=1)*step+step/2
-            Y = Y + minmax_scale(skew(X, axis=1),
-                                 feature_range=(-step/2, step/2))
-            # print(bins, step)
-            # plt.hist(Y, 100)
-            # plt.show()
-
-            # return()
-            # # plt.figure()
-            # # plt.hist(Y,100)
-
-            # nSteps = 10000
-
-            # Y = minmax_scale(Y, feature_range=(0, nSteps-1)).astype(np.int32)
-            # h, _ = np.histogram(Y, nSteps)
-            # cS = np.cumsum(h)
-            # cS = nSteps*(cS / max(cS))
-            # Y = cS[Y]
-            # Y = minmax_scale(Y)
-
-            # # plt.figure()
-            # # plt.hist(Y,100)
-            # # plt.show()
-
-        df = pd.DataFrame(
-            data=Y, index=self._data[aspectID].index, columns=['1D'])
-        df.to_csv(join(self._data_folder,
-                       '{0}.proj'.format(aspectID)), sep='\t')
-    # @profile
-
-    def _check_and_read(self, aspectID: str, data: bool = False, proj: bool = False) -> None:
+    def _check_and_read(self, aspectID: str, data: bool = False) -> None:
         """
         Checks if the basic info for given aspect is in memory, reads it from disk otherwise.
-        Set data/proj to do additionally for data/proj reading.
+        Set data to do additionally for data reading.
         """
         if (aspectID not in self._info):
             infoFile = join(self._data_folder,
@@ -170,20 +127,6 @@ class dataStore(object):
             self._data[aspectID] = self._data[aspectID].set_index(
                 [self._info[aspectID]['index'], ]).dropna(how='any')
 
-        if proj and (aspectID not in self._projection):
-            if not exists(join(self._data_folder, '{0}.proj'.format(aspectID))):
-                print('proj', aspectID, self.getAspectName(aspectID))
-                self._do_projection(aspectID)
-
-            if (len(self._projection)) > MAX_CACHE:
-                pick = choice(list(self._projection.keys()))
-                # print('removing from cache',pick,self.getAspectName(pick))
-                del(self._projection[pick])
-
-            tableFile = join(self._data_folder, '{0}.proj'.format(aspectID))
-            self._projection[aspectID] = pd.read_csv(tableFile, sep='\t')
-            self._projection[aspectID] = self._projection[aspectID].set_index(
-                [self._info[aspectID]['index'], ]).to_dict()['1D']
 
     def aspects(self) -> list:
         aspects = glob(join(self._data_folder, '*.info.json'))
@@ -245,14 +188,14 @@ class dataStore(object):
                 VarInfo = {**aspect}
                 dtypes = dict(data.dtypes)
                 dtypes = {k: str(dtypes[k]) for k in dtypes.keys()}
-                # mins = {k:float(data[k].dropna(how='all').min()) for k in dtypes.keys()}
-                # maxs = {k:data[k].dropna(how='all').max() for k in dtypes.keys()}
+                mins = [float(x) for x in data.dropna(how='all').min()]
+                maxs = [float(x) for x in data.dropna(how='all').max()]
 
                 VarInfo.update({'id': str(uuid4()),
                                 'descriptions': {c: info['columns'][c] for c in aspect['columns']},
                                 'dtypes': dtypes,
-                                # 'mins': mins,
-                                # 'maxs': maxs
+                                'minima': mins,
+                                'maxima': maxs
                                 })
                 del(VarInfo['enabled'])
                 with open(join(self._data_folder, VarInfo['id']+'.tsv'), 'w') as fout:
@@ -283,6 +226,15 @@ class dataStore(object):
         nx.write_gpickle(G, join(self._data_folder, aspect+'.gp'))
         # self._update_distances()
 
+    def getMaxima(self, aspectID:str)->list:
+        self._check_and_read(aspectID)
+        return(self._info[aspectID]['maxima'])
+    def getMinima(self, aspectID:str)->list:
+        self._check_and_read(aspectID)
+        return(self._info[aspectID]['minima'])       
+    def getDimension(self, aspectID:str) -> int:
+        self._check_and_read(aspectID)
+        return(len(self._info[aspectID]['minima']))
     def getAspectName(self, aspectID: str) -> str:
         self._check_and_read(aspectID)
         return(self._info[aspectID]['name'])
@@ -314,12 +266,3 @@ class dataStore(object):
         else:
             return(None)
 
-    def getProjection(self, aspectID: str, id: str) -> float:
-        """
-            Returns the pre-computed projection of the 'id' point from aspectID.
-        """
-        self._check_and_read(aspectID, proj=True)
-        if id in self._projection[aspectID]:
-            return(self._projection[aspectID][id])
-        else:
-            return(None)
