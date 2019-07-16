@@ -17,6 +17,9 @@ class Aspects extends Component {
                     onClick={()=>{
                         getData(getURL.GetUploadedData(),(data)=>{
                             console.log('answer',data);
+                            data = data.sort((a,b)=>{
+                                return(a.year-b.year);
+                            });
                             let asp=[];
                             for (let i=0;i<data.length;i++){
                                 console.log('data[i].aspects',data[i].aspects);
