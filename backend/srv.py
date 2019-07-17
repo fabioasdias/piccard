@@ -17,13 +17,14 @@ import numpy as np
 import pandas as pd
 from joblib import Memory
 from networkx.readwrite import json_graph
-from sklearn.cluster import OPTICS
+from sklearn.cluster import OPTICS, KMeans
 from tqdm import tqdm
 
 from dataStore import dataStore
 from hierarchies import compareHierarchies, mapHierarchies
 from upload import gatherInfoJsons, processUploadFolder
 from scipy.spatial.distance import cosine
+from collections import defaultdict
 
 cachedir = './cache/'
 if not exists(cachedir):
@@ -162,17 +163,21 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
 
             M[:,start:finish]=(M[:,start:finish].T/np.sum(M[:,start:finish],axis=1)).T #normalizing each section
 
-        clust = OPTICS()#min_samples=50, xi=.05, min_cluster_size=.05)
         M=np.nan_to_num(M)
-        clust.fit(M)
+
+        # clust = OPTICS(xi=.005, min_cluster_size=.05) #min_samples=50,
+        # clust.fit(M)
+        # labels = clust.labels_[clust.ordering_]
+        km = KMeans(n_clusters=nClusters).fit(M)
+        labels = km.labels_
+
         del(M)
-        labels = clust.labels_[clust.ordering_]
-        print(len(labels),len(set(labels)))
-        new_H={}
+        print(len(labels),len(set(labels)),np.sum(labels==-1))
+
+        new_H=defaultdict(dict)
         for i in range(len(labels)):
-            a=aspect['id']
-            new_H[a]={}
-            for a in aspects_in_this_geom:
+            for aspect in aspects_in_this_geom:
+                a=aspect['id']
                 old_cc=i
                 new_cc=labels[i]
                 if new_cc not in new_H[a]:
@@ -181,22 +186,22 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
                     new_H[a][new_cc]+=H[a][old_cc]
 
         for n in cl[g]:
-            cl[g][n]=labels[cl[g][n]]
+            cl[g][n]=int(labels[cl[g][n]])
 
 
 
 
 
 
-    all_paths = ds.getPaths([a['id'] for a in full_info_aspects])
-    cluster_sequences = []
-    for path in all_paths:
-        cluster_sequences.append(
-            tuple([cl[n[0]][n[1]] if n[1] in cl[n[0]] else -1 for n in path if n[0] != -1]))
+    # all_paths = ds.getPaths([a['id'] for a in full_info_aspects])
+    # cluster_sequences = []
+    # for path in all_paths:
+    #     cluster_sequences.append(
+    #         tuple([cl[n[0]][n[1]] if n[1] in cl[n[0]] else -1 for n in path if n[0] != -1]))
 
-    print(len(cluster_sequences))
-    cluster_sequences = set(cluster_sequences)
-    print(len(cluster_sequences))
+    # print(len(cluster_sequences))
+    # cluster_sequences = set(cluster_sequences)
+    # print(len(cluster_sequences))
 
     return({'clustering': cl,
             'evolution': [],
@@ -499,14 +504,14 @@ if __name__ == '__main__':
         # }
     }
 
-    to_use = ['44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
-              'a2e83ff8-6962-48aa-8740-3c250e8d3a13',
-              'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
-              # '56158126-6589-4037-b7d3-bc8789d950b4',
-              # 'b0d6c9b9-2935-4760-a394-68b791b12a22',
-              'd36bd0e0-d74d-4355-a967-31c357239646']
-    _mapHiers(ds, sorted(to_use))
-    exit()
+    # to_use = ['44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
+    #           'a2e83ff8-6962-48aa-8740-3c250e8d3a13',
+    #           'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
+    #           '56158126-6589-4037-b7d3-bc8789d950b4',
+    #           'b0d6c9b9-2935-4760-a394-68b791b12a22',
+    #           'd36bd0e0-d74d-4355-a967-31c357239646']
+    # _mapHiers(ds, sorted(to_use))
+    # exit()
 
     # input_json=[{"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST1"]},
     #  {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST2"]},
