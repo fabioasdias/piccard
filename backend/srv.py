@@ -4,6 +4,7 @@ import os
 import pickle
 import sys
 import tempfile
+from collections import defaultdict
 from itertools import combinations
 from os import makedirs
 from os.path import exists, join
@@ -17,14 +18,14 @@ import numpy as np
 import pandas as pd
 from joblib import Memory
 from networkx.readwrite import json_graph
-from sklearn.cluster import OPTICS, KMeans
+from scipy.spatial.distance import cosine
+from scipy.stats import wasserstein_distance
+from sklearn.cluster import KMeans
 from tqdm import tqdm
 
 from dataStore import dataStore
 from hierarchies import compareHierarchies, mapHierarchies
 from upload import gatherInfoJsons, processUploadFolder
-from scipy.spatial.distance import cosine
-from collections import defaultdict
 
 cachedir = './cache/'
 if not exists(cachedir):
@@ -84,7 +85,7 @@ def cors():
 
 
 # @memory.cache(ignore=['ds'])
-# @profile
+@profile
 def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = None):
 
     full_info_aspects = [{'name': ds.getAspectName(a),
@@ -113,132 +114,134 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
         full_info_aspects[i]['order'] = i
 
     # cutting the hierarchy
-    cc2n = {}
-    for g in geoms:
-        base_number_ccs=nx.number_connected_components(Gs[g])
-        Gs[g].remove_edges_from([e[:2] for e in Gs[g].edges(data='level') if e[2] >= 1])
-        current_number_ccs=nx.number_connected_components(Gs[g])
-        while (current_number_ccs-base_number_ccs)<nClusters:
-            E = sorted([e for e in Gs[g].edges(data='level')],key=lambda e:e[2],reverse=True)
-            Gs[g].remove_edges_from(E[:nClusters-(base_number_ccs-base_number_ccs)])
-            current_number_ccs=nx.number_connected_components(Gs[g])
+    cc2n = defaultdict(dict)
+    for g in tqdm(geoms, desc=g):
+        base_number_ccs = nx.number_connected_components(Gs[g])
+        Gs[g].remove_edges_from(
+            [e[:2] for e in Gs[g].edges(data='level') if e[2] >= 1])
+        current_number_ccs = nx.number_connected_components(Gs[g])
+        while (current_number_ccs-base_number_ccs) < nClusters:
+            E = sorted([e for e in Gs[g].edges(data='level')],
+                       key=lambda e: e[2], reverse=True)
+            Gs[g].remove_edges_from(
+                E[:nClusters-(base_number_ccs-base_number_ccs)])
+            current_number_ccs = nx.number_connected_components(Gs[g])
 
-
-        cc2n[g] = {}
-        print(g, nx.number_connected_components(Gs[g]))
         for cc, nodes in enumerate(nx.connected_components(Gs[g])):
             cc2n[g][cc] = [n[1] for n in nodes]
             for n in nodes:
                 cl[g][n[1]] = cc
 
+        aspects_in_this_geom = [a for a in full_info_aspects if a['geom'] == g]
+        nDims = [ds.getDimension(a['id']) for a in aspects_in_this_geom]
+        singleVar = [x == 1 for x in nDims]
+        # fixes the histogram size for unitary variables
+        nDims = [x if x > 1 else NBINS for x in nDims]
+        M = np.zeros((len(cc2n[g]), np.sum(nDims)))
+        H = defaultdict(dict)
+        H_each_variable = defaultdict(lambda: defaultdict(dict))
+        for i, aspect in enumerate(aspects_in_this_geom):
+            a = aspect['id']
 
-        aspects_in_this_geom = [a for a in full_info_aspects if a['geom']==g]
-        nDims=[ds.getDimension(a['id']) for a in aspects_in_this_geom]
-        nDims=[x if x >1 else NBINS for x in nDims] #fixes the histogram size for unitary variables
-        M = np.zeros((len(cc2n[g]),np.sum(nDims)))        
-        H={}
-        for i,aspect in enumerate(aspects_in_this_geom):
-            
-            a=aspect['id']
-            H[a]={}
-
-            if i==0:
-                start=0
+            if i == 0:
+                start = 0
             else:
-                start=sum(nDims[:i])
-            finish=start+nDims[i]
+                start = sum(nDims[:i])
+            finish = start+nDims[i]
+
             for n in tqdm(cl[g], desc=ds.getAspectName(a)):
                 vals = ds.getData(a, n)
+                cc = cl[g][n]
                 if (vals is None) or np.any(np.isnan(vals)):
                     continue
-                if nDims[i] == 1:
-                    tempH, _ = np.histogram(vals, NBINS, 
-                        range=(ds.getMinima(a)[0], ds.getMaxima(a)[0]))
+                if singleVar[i]:
+                    tempH, _ = np.histogram(vals, NBINS,
+                                            range=(ds.getMinima(a)[0], ds.getMaxima(a)[0]))
+                    H_each_variable[a][cc][0] = tempH
                 else:
                     tempH = np.array(vals)
-                M[cl[g][n],start:finish]+=tempH        
+                    for j in range(nDims[i]):
+                        H_each_variable[a][cc][j], _ = np.histogram(
+                            [vals[j], ], NBINS, range=(ds.getMinima(a)[j], ds.getMaxima(a)[j]))
+
+                M[cc, start:finish] += tempH
 
             for cc in cc2n[g]:
-                H[a][cc]=M[cc,start:finish]                
+                H[a][cc] = M[cc, start:finish]
 
-            M[:,start:finish]=(M[:,start:finish].T/np.sum(M[:,start:finish],axis=1)).T #normalizing each section
+            # normalizing each section
+            M[:, start:finish] = (M[:, start:finish].T /
+                                  np.sum(M[:, start:finish], axis=1)).T
 
-        M=np.nan_to_num(M)
-
-        # clust = OPTICS(xi=.005, min_cluster_size=.05) #min_samples=50,
-        # clust.fit(M)
-        # labels = clust.labels_[clust.ordering_]
+        M = np.nan_to_num(M)
         km = KMeans(n_clusters=nClusters).fit(M)
         labels = km.labels_
-
         del(M)
-        print(len(labels),len(set(labels)),np.sum(labels==-1))
 
-        new_H=defaultdict(dict)
-        for i in range(len(labels)):
-            for aspect in aspects_in_this_geom:
-                a=aspect['id']
-                old_cc=i
-                new_cc=labels[i]
+        new_H = defaultdict(dict)
+        new_H_each_variable = defaultdict(lambda: defaultdict(dict))
+        relevances = defaultdict(lambda: defaultdict(dict))
+        for aspect in aspects_in_this_geom:
+            a = aspect['id']
+            for i in range(len(labels)):
+                old_cc = i
+                new_cc = labels[i]
                 if new_cc not in new_H[a]:
-                    new_H[a][new_cc]=H[a][old_cc]
+                    new_H[a][new_cc] = H[a][old_cc]
+                    new_H_each_variable[a][new_cc] = H_each_variable[a][old_cc]
                 else:
-                    new_H[a][new_cc]+=H[a][old_cc]
+                    new_H[a][new_cc] += H[a][old_cc]
+                    for j in H_each_variable[a][old_cc]:
+                        new_H_each_variable[a][new_cc][j] += H_each_variable[a][old_cc][j]
 
+            D = defaultdict(lambda: defaultdict(dict))
+            for cc1 in new_H[a]:
+                for cc2 in new_H[a]:
+                    if cc1 == cc2:
+                        continue
+                    c1 = min([cc1, cc2])
+                    c2 = max([cc1, cc2])
+                    if (c1 not in D) or (c2 not in D[c1]):
+                        for j in new_H_each_variable[a][c1]:
+                            h1 = H_each_variable[a][c1][j]
+                            s1 = np.sum(h1)
+                            if s1 > 0:
+                                h1 = h1/s1
+                            h2 = H_each_variable[a][c2][j]
+                            s2 = np.sum(h2)
+                            if s2 > 0:
+                                h2 = h2/s2
+                            D[c1][c2][j] = wasserstein_distance(h1, h2)
+                            # D[c1][c2] = cosine(new_H[a][c1], new_H[a][c2])
+
+                for j in new_H_each_variable[a][cc1]:
+                    relevances[a][cc1][j] = min(
+                        [D[min(cc1, c2)][max(cc1, c2)][j] for c2 in new_H[a] if cc1 != c2])
+
+        cc2n = defaultdict(lambda: defaultdict(list))
         for n in cl[g]:
-            cl[g][n]=int(labels[cl[g][n]])
+            new_cc = int(labels[cl[g][n]])
+            cl[g][n] = new_cc
+            cc2n[g][new_cc].append(n)
 
-
-
-
-
-
-    # all_paths = ds.getPaths([a['id'] for a in full_info_aspects])
-    # cluster_sequences = []
-    # for path in all_paths:
-    #     cluster_sequences.append(
-    #         tuple([cl[n[0]][n[1]] if n[1] in cl[n[0]] else -1 for n in path if n[0] != -1]))
-
-    # print(len(cluster_sequences))
-    # cluster_sequences = set(cluster_sequences)
-    # print(len(cluster_sequences))
-
-    return({'clustering': cl,
-            'evolution': [],
-            'hist': {'aspect': [], 'path': []},
-            'aspects': full_info_aspects,
-            'nclusters': max([nx.number_connected_components(Gs[g]) for g in Gs])})
-    # 'nclusters': nClusters})
-
-    # points = {}
-    # for info in full_info_aspects:
-    #     a = info['id']
-    #     g = info['geom']
-    #     points[a] = {}
-    #     for cc in cc2n[g]:
-    #         vals = [ds.getProjection(a, id) for id in cc2n[g][cc]]
-    #         vals = [x for x in vals if (x is not None)]
-    #         if vals:
-    #             points[a][cc] = np.nanmedian(vals)
-    #         else:
-    #             points[a][cc] = -1
-
-    paths = ds.getPaths([a['id'] for a in full_info_aspects])
-
+    all_paths = ds.getPaths([a['id'] for a in full_info_aspects])
     M = nx.DiGraph()
-    for p in paths:
+    for p in all_paths:
         j = 0
         while (p[j][0] == -1)and(p[j][1] == -1):  # path didn't start yet
             j += 1
 
         for i in range(j+1, len(p)):
             n = p[i-1]
+            m = p[i]
+            if (n[0] not in cl) or (n[1] not in cl[n[0]]) or (m[0] not in cl) or (m[1] not in cl[m[0]]):
+                continue
 
             source = (n[0], cl[n[0]][n[1]])  # (geom, cluster)
             if (source not in M):
                 M.add_node(source)
 
-            m = p[i]
+            
             target = (m[0], cl[m[0]][m[1]])
             if not target in M:
                 M.add_node(target)
@@ -248,13 +251,33 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
             else:
                 M[source][target]['count'] += 1
 
-    # #TODO - keeping only the highest count, for now
-    # for n in M:
-    #     succ=sorted(M.out_edges(n,data='count'),key=lambda x: x[2],reverse=True)
-    #     if len(succ)>1:
-    #         M.remove_edges_from(succ[1:])
+    # finding the 'sucessor' as the most common transition
+    for n in M:
+        succ = sorted(M.out_edges(n, data='count'),
+                      key=lambda x: x[2], reverse=True)
+        if len(succ) > 1:
+            M.remove_edges_from(succ[1:])
 
-    #TODO - HERE
+    for i, cc in nx.connected_components(M):
+        for g in cc2n:
+            for n in cc2n[g]:
+                cl[g][n]=i
+
+
+    cluster_sequences = []
+    for path in all_paths:
+        cluster_sequences.append(
+            tuple([(n[0], cl[n[0]][n[1]]) for n in path if n[0] != -1 and n[1] in cl[n[0]]]))
+
+    print(len(cluster_sequences))
+    cluster_sequences = set(cluster_sequences)
+    print(len(cluster_sequences))
+
+    return({'clustering': cl,
+            'evolution': [],
+            'hist': {'aspect': [], 'path': []},
+            'aspects': full_info_aspects,
+            'nclusters': nClusters})
 
     paths = [[{'geom': m[0],
                'id': m[1],
@@ -504,14 +527,14 @@ if __name__ == '__main__':
         # }
     }
 
-    # to_use = ['44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
-    #           'a2e83ff8-6962-48aa-8740-3c250e8d3a13',
-    #           'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
-    #           '56158126-6589-4037-b7d3-bc8789d950b4',
-    #           'b0d6c9b9-2935-4760-a394-68b791b12a22',
-    #           'd36bd0e0-d74d-4355-a967-31c357239646']
-    # _mapHiers(ds, sorted(to_use))
-    # exit()
+    to_use = ['44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
+              'a2e83ff8-6962-48aa-8740-3c250e8d3a13',
+              'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
+              '56158126-6589-4037-b7d3-bc8789d950b4',
+              'b0d6c9b9-2935-4760-a394-68b791b12a22',
+              'd36bd0e0-d74d-4355-a967-31c357239646']
+    _mapHiers(ds, sorted(to_use))
+    exit()
 
     # input_json=[{"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST1"]},
     #  {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST2"]},
