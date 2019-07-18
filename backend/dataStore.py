@@ -1,3 +1,13 @@
+##
+# THIS WILL CRUMBLE UNDER LOAD! 
+#
+# With more than MAX_CACHE simultaneous users, the cache might erase the entry
+# between _check_read and the actual read/action. 
+#
+# Not fixing it because this whole file needs to be overhauled for GUDR support.
+# Otherwise, move the whole database to a proper DBMS.
+##
+
 import json
 from glob import glob
 from os.path import basename, exists, join
@@ -127,7 +137,6 @@ class dataStore(object):
             self._data[aspectID] = self._data[aspectID].set_index(
                 [self._info[aspectID]['index'], ]).dropna(how='any')
 
-
     def aspects(self) -> list:
         aspects = glob(join(self._data_folder, '*.info.json'))
         return([basename(x)[:-10] for x in aspects])
@@ -226,15 +235,18 @@ class dataStore(object):
         nx.write_gpickle(G, join(self._data_folder, aspect+'.gp'))
         # self._update_distances()
 
-    def getMaxima(self, aspectID:str)->list:
+    def getMaxima(self, aspectID: str) -> list:
         self._check_and_read(aspectID)
         return(self._info[aspectID]['maxima'])
-    def getMinima(self, aspectID:str)->list:
+
+    def getMinima(self, aspectID: str) -> list:
         self._check_and_read(aspectID)
-        return(self._info[aspectID]['minima'])       
-    def getDimension(self, aspectID:str) -> int:
+        return(self._info[aspectID]['minima'])
+
+    def getDimension(self, aspectID: str) -> int:
         self._check_and_read(aspectID)
         return(len(self._info[aspectID]['minima']))
+
     def getAspectName(self, aspectID: str) -> str:
         self._check_and_read(aspectID)
         return(self._info[aspectID]['name'])
@@ -265,4 +277,3 @@ class dataStore(object):
             return(list(self._data[aspectID].loc[id]))
         else:
             return(None)
-
