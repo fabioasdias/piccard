@@ -86,7 +86,7 @@ def cors():
 
 # @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
@@ -223,130 +223,88 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
             labels[n[0]][n[1]] = i
             to_do.extend(list(M.predecessors(n)))
 
-    nCC = 0
+    maxCC = 0
     for g in cl:
         for n in cl[g]:
-            cl[g][n] = labels[g][cl[g][n]]
-            nCC = max([nCC, cl[g][n]])
+            cc = labels[g][cl[g][n]]
+            cl[g][n] = cc
+            maxCC = max([maxCC, cc])
 
     # ----------------------------------------------------------------------------
+    # evolution paths (for the parallel coordinates plot)
 
-    # cluster_sequences = []
+    # computing the relevances for each cluster in each aspect
+    most_relevant_column = defaultdict(dict)
+    for aspect in full_info_aspects:
+        a = aspect['id']
+        g = aspect['geom']
+        data = defaultdict(list)
+        N = len(ds.getMinima(a))
+        for n in cl[g]:
+            vals = ds.getData(a, n)
+            if (vals is None) or np.any(np.isnan(vals)):
+                continue
+            data[cl[g][n]].append(vals)
+
+        # if scalar value, just use the median
+        if N == 1:
+            for cc in data:
+                most_relevant_column[cc][a] = (np.median(data[cc]) - ds.getMinima(a)[0])/(ds.getMaxima(a)[0]-ds.getMinima(a)[0])
+            continue
+
+
+        H = defaultdict(dict)
+        for cc in data:
+            data[cc] = np.array(data[cc])
+            for j in range(data[cc].shape[1]):
+                H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
+                    ds.getMinima(a)[j], ds.getMaxima(a)[j]))
+
+        D = defaultdict(lambda: defaultdict(dict))
+        for j in H:
+            ccs = sorted(H[j].keys())
+            for i, c1 in enumerate(ccs):
+                for c2 in ccs[i+1:]:
+                    D[j][c1][c2] = wasserstein_distance(np.nan_to_num(
+                        H[j][c1]/np.sum(H[j][c1])), np.nan_to_num(H[j][c2]/np.sum(H[j][c2])))
+                    D[j][c2][c1] = D[j][c1][c2]        
+
+        for cc in data:
+            cur_max = 0
+            max_j = -1
+            for j in D:
+                vals = [D[j][cc][c2] for c2 in D[j][cc]]
+                current_relevance = np.min(vals)  
+                if cur_max < current_relevance:
+                    cur_max = current_relevance
+                    max_j = j
+            # the ccs are consistent across geoms now
+            most_relevant_column[cc][a] = (max_j+0.5+(np.random.rand()-0.5)*0.9)/N
+
+    evo = []
+    for cc in most_relevant_column:
+        line = {a: most_relevant_column[cc][a]
+                for a in most_relevant_column[cc]}
+        line['id'] = len(evo)
+        evo.append(line)
+
+    # cluster_sequences = {}
     # for path in all_paths:
+    #     for n in path:
+
     #     cluster_sequences.append(
     #         tuple([(n[0], cl[n[0]][n[1]]) for n in path if n[0] != -1 and n[1] in cl[n[0]]]))
 
+    # print('\n\n')
     # print(len(cluster_sequences))
     # cluster_sequences = set(cluster_sequences)
     # print(len(cluster_sequences))
 
     return({'clustering': cl,
-            'evolution': [],
+            'evolution': evo,
             'hist': {'aspect': [], 'path': []},
             'aspects': full_info_aspects,
-            'nclusters': nCC+1})
-
-    paths = [[{'geom': m[0],
-               'id': m[1],
-               'x': a,
-               'y': points[a][m[1]]}, ]
-             for m in M if m[0] == g
-             if m[1] in points[a]]
-
-    # converts to parallelplots format
-    tempPaths = []
-    clustersByPath = []
-    for i, p in enumerate(paths):
-        newPath = {}
-        newCluster = {}
-        for step in p:
-            newPath[step['x']] = step['y']
-            newCluster[step['x']] = step['id']
-        tempPaths.append(newPath)
-        clustersByPath.append(newCluster)
-
-    if len(tempPaths) > nClusters:
-        a2i = {A['id']: A['order'] for A in full_info_aspects}
-        X = np.zeros((len(tempPaths), len(full_info_aspects)))
-        for i, p in enumerate(tempPaths):
-            for a in p:
-                X[i, a2i[a]] = p[a]
-        Y = KMeans(n_clusters=nClusters).fit_predict(X).tolist()
-    else:
-        Y = [i for i in range(len(tempPaths))]
-
-    for g in cl:
-        for n in cl[g]:
-            cl[g][n] = set()
-
-    retPaths = [{} for _ in range(nClusters)]
-    aspects = [a['id'] for a in full_info_aspects]
-
-    for i, p in enumerate(tempPaths):
-        for a in p:
-            g = ds.getGeometry(a)
-            cc = clustersByPath[i][a]
-            # WRONG!!!
-            # Get the paths following the CrossGeometry, not just the clusters.
-            for n in cc2n[g][cc]:
-                cl[g][n].add(Y[i])
-
-        # TODO better paths
-        retPaths[Y[i]] = _mergePaths(retPaths[Y[i]], p, Y[i])
-
-        for a in aspects:
-            if a not in retPaths[Y[i]]:
-                retPaths[Y[i]][a] = -1
-
-    path_hist = {}
-    aspect_hist = {}
-    # histograms for each aspect/cluster
-    for a in aspects:
-        N = len(ds.getColumns(a))
-        aspect_hist[a] = [np.zeros(NBINS) for _ in range(N)]
-        path_hist[a] = [[np.zeros(NBINS) for _ in range(N)]
-                        for _ in range(nClusters)]
-
-        vMax = np.empty(N)
-        vMax[:] = np.nan
-
-        g = ds.getGeometry(a)
-        allVals = [[] for _ in range(nClusters)]
-        for n in cl[g]:
-            vals = ds.getData(a, n)
-            if vals is not None:
-                for cc in cl[g][n]:
-                    sA = np.sum(vals)
-                    if sA > 0:
-                        vals = vals/sA
-                    allVals[cc].append(vals)
-
-        for cc in range(nClusters):
-            vals = np.array(allVals[cc])
-            if vals.shape[0] == 0:  # nothing in here (?)
-                continue
-            for col in range(N):
-                tH, _ = np.histogram(np.squeeze(
-                    vals[:, col]), bins=NBINS, range=(0, 1))
-                aspect_hist[a][col] = aspect_hist[a][col]+tH
-                path_hist[a][cc][col] = path_hist[a][cc][col]+tH
-
-        minP = 0
-        maxP = 0
-        for col in range(N):
-            aspect_hist[a][col] = aspect_hist[a][col].tolist()
-            for cc in range(nClusters):
-                path_hist[a][cc][col] = path_hist[a][cc][col].tolist()
-                minP = np.min([minP, np.min(path_hist[a][cc][col])])
-                maxP = np.max([maxP, np.max(path_hist[a][cc][col])])
-
-    for g in cl:
-        for n in cl[g]:
-            if len(cl[g][n]) == 0:
-                cl[g][n] = []
-            else:
-                # TODO order and pass the whole thing
-                cl[g][n] = list(cl[g][n])[0]
+            'nclusters': maxCC+1})  # 0....9 ->10
 
     return({'clustering': cl,
             'evolution': retPaths,
