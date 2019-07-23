@@ -118,10 +118,6 @@ class Histograms extends Component {
                         minG=Math.min(minG,...aspect_hist[a][j]);
                         maxG=Math.max(maxG,...aspect_hist[a][j]);
                         if ((curPath!==undefined)&&(path_hist[a].hasOwnProperty(curPath))){
-                            console.log('====');
-                            console.log(curPath);
-                            console.log(path_hist);
-                            console.log(path_hist[a]);
                             minP=Math.min(minP,...path_hist[a][curPath][j]);
                             maxP=Math.max(maxP,...path_hist[a][curPath][j]);    
                         }

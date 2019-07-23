@@ -36,6 +36,9 @@ memory = Memory(cachedir, verbose=0)
 NBINS = 100
 
 
+def _centerMass(V):
+    return(np.mean([(i*V[i])/np.sum(V) for i in range(len(V))]))
+
 def _mergePaths(p1: dict, p2: dict, id: int):
     if len(p1) == 0:
         return({**p2, 'id': id})
@@ -269,27 +272,44 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
                     data[cc]) - ds.getMinima(a)[0])/(ds.getMaxima(a)[0]-ds.getMinima(a)[0])
             continue
         else:
-            D = defaultdict(lambda: defaultdict(dict))
+            D = defaultdict(dict)
             for j in H:
-                ccs = sorted(H[j].keys())
-                for i, c1 in enumerate(ccs):
-                    for c2 in ccs[i+1:]:
-                        D[j][c1][c2] = wasserstein_distance(np.nan_to_num(
-                            H[j][c1]/np.sum(H[j][c1])), np.nan_to_num(H[j][c2]/np.sum(H[j][c2])))
-                        D[j][c2][c1] = D[j][c1][c2]
+                for cc in H[j]:
+                    D[j][cc]=_centerMass(cc_hist[a][cc][j])-_centerMass(aspect_hist[a][j])
 
             for cc in data:
                 cur_max = 0
                 max_j = -1
                 for j in D:
-                    vals = [D[j][cc][c2] for c2 in D[j][cc]]
-                    current_relevance = np.min(vals)
+                    current_relevance = D[j][cc]
                     if cur_max < current_relevance:
                         cur_max = current_relevance
                         max_j = j
                 # the ccs are consistent across geoms now
-                most_relevant_column[cc][a] = (
-                    max_j+0.5+(np.random.rand()-0.5)*0.9)/N
+                most_relevant_column[cc][a] = (max_j+0.5+(np.random.rand()-0.5)*0.9)/N
+
+
+            # #this computes the most different distribution (not necessarily higher concentration - counter intuitive)
+            # D = defaultdict(lambda: defaultdict(dict))
+            # for j in H:
+            #     ccs = sorted(H[j].keys())
+            #     for i, c1 in enumerate(ccs):
+            #         for c2 in ccs[i+1:]:
+            #             D[j][c1][c2] = wasserstein_distance(np.nan_to_num(
+            #                 H[j][c1]/np.sum(H[j][c1])), np.nan_to_num(H[j][c2]/np.sum(H[j][c2])))
+            #             D[j][c2][c1] = D[j][c1][c2]
+
+            # for cc in data:
+            #     cur_max = 0
+            #     max_j = -1
+            #     for j in D:
+            #         vals = [D[j][cc][c2] for c2 in D[j][cc]]
+            #         current_relevance = np.min(vals)
+            #         if cur_max < current_relevance:
+            #             cur_max = current_relevance
+            #             max_j = j
+            #     # the ccs are consistent across geoms now
+            #     most_relevant_column[cc][a] = (max_j+0.5+(np.random.rand()-0.5)*0.9)/N
 
     evo = []
     for cc in most_relevant_column:
