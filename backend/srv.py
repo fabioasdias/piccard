@@ -84,7 +84,7 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-# @memory.cache(ignore=['ds'])
+@memory.cache(ignore=['ds'])
 # @profile
 def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = None):
 
@@ -234,7 +234,11 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
     # evolution paths (for the parallel coordinates plot)
 
     # computing the relevances for each cluster in each aspect
+    # Also computing the histograms for show later
     most_relevant_column = defaultdict(dict)
+    aspect_hist = dict()
+    cc_hist = defaultdict(dict)
+
     for aspect in full_info_aspects:
         a = aspect['id']
         g = aspect['geom']
@@ -246,46 +250,52 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
                 continue
             data[cl[g][n]].append(vals)
 
-        # if scalar value, just use the median
-        if N == 1:
-            for cc in data:
-                most_relevant_column[cc][a] = (np.median(data[cc]) - ds.getMinima(a)[0])/(ds.getMaxima(a)[0]-ds.getMinima(a)[0])
-            continue
-
-
         H = defaultdict(dict)
         for cc in data:
             data[cc] = np.array(data[cc])
             for j in range(data[cc].shape[1]):
                 H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
                     ds.getMinima(a)[j], ds.getMaxima(a)[j]))
+            cc_hist[a][cc]=[H[j][cc] for j in H]
+            
+        aspect_hist[a]=[np.squeeze(np.sum([cc_hist[a][cc][j] for cc in cc_hist[a]], axis=0)).tolist() for j in H]
+        for cc in cc_hist[a]:
+            cc_hist[a][cc]=[np.squeeze(x).tolist() for x in cc_hist[a][cc]]
 
-        D = defaultdict(lambda: defaultdict(dict))
-        for j in H:
-            ccs = sorted(H[j].keys())
-            for i, c1 in enumerate(ccs):
-                for c2 in ccs[i+1:]:
-                    D[j][c1][c2] = wasserstein_distance(np.nan_to_num(
-                        H[j][c1]/np.sum(H[j][c1])), np.nan_to_num(H[j][c2]/np.sum(H[j][c2])))
-                    D[j][c2][c1] = D[j][c1][c2]        
+        # if scalar value, just use the median
+        if N == 1:
+            for cc in data:
+                most_relevant_column[cc][a] = (np.median(
+                    data[cc]) - ds.getMinima(a)[0])/(ds.getMaxima(a)[0]-ds.getMinima(a)[0])
+            continue
+        else:
+            D = defaultdict(lambda: defaultdict(dict))
+            for j in H:
+                ccs = sorted(H[j].keys())
+                for i, c1 in enumerate(ccs):
+                    for c2 in ccs[i+1:]:
+                        D[j][c1][c2] = wasserstein_distance(np.nan_to_num(
+                            H[j][c1]/np.sum(H[j][c1])), np.nan_to_num(H[j][c2]/np.sum(H[j][c2])))
+                        D[j][c2][c1] = D[j][c1][c2]
 
-        for cc in data:
-            cur_max = 0
-            max_j = -1
-            for j in D:
-                vals = [D[j][cc][c2] for c2 in D[j][cc]]
-                current_relevance = np.min(vals)  
-                if cur_max < current_relevance:
-                    cur_max = current_relevance
-                    max_j = j
-            # the ccs are consistent across geoms now
-            most_relevant_column[cc][a] = (max_j+0.5+(np.random.rand()-0.5)*0.9)/N
+            for cc in data:
+                cur_max = 0
+                max_j = -1
+                for j in D:
+                    vals = [D[j][cc][c2] for c2 in D[j][cc]]
+                    current_relevance = np.min(vals)
+                    if cur_max < current_relevance:
+                        cur_max = current_relevance
+                        max_j = j
+                # the ccs are consistent across geoms now
+                most_relevant_column[cc][a] = (
+                    max_j+0.5+(np.random.rand()-0.5)*0.9)/N
 
     evo = []
     for cc in most_relevant_column:
         line = {a: most_relevant_column[cc][a]
                 for a in most_relevant_column[cc]}
-        line['id'] = len(evo)
+        line['id'] = cc
         evo.append(line)
 
     # cluster_sequences = {}
@@ -302,15 +312,9 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
 
     return({'clustering': cl,
             'evolution': evo,
-            'hist': {'aspect': [], 'path': []},
+            'hist': {'aspect': aspect_hist, 'cc': cc_hist},
             'aspects': full_info_aspects,
             'nclusters': maxCC+1})  # 0....9 ->10
-
-    return({'clustering': cl,
-            'evolution': retPaths,
-            'hist': {'aspect': aspect_hist, 'path': path_hist},
-            'aspects': full_info_aspects,
-            'nclusters': nClusters})
 
 
 @cherrypy.expose

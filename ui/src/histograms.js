@@ -16,7 +16,6 @@ class OnePlot extends Component{
             maxP=maxG;
         }
         let N=dataDetail.length;
-        console.log(minP,maxP)
         return(
             <div className="onePlot">
                 <p className='titles'>{title}</p>
@@ -93,14 +92,13 @@ class Histograms extends Component {
 
         if ((this.props.data!==undefined)&&(aspects!==undefined)&&(colours!==undefined)){
             let aspect_hist=this.props.data.aspect;
-            let path_hist=this.props.data.path;
+            let path_hist=this.props.data.cc;
 
 
             //TODO match tempEvo's order
             aspects=aspects.sort((a,b)=>{
                 return(a.order-b.order);
             });
-            console.log(aspects)
             let curPath=undefined;
             if (selectedPaths.length>0){
                 curPath=selectedPaths[0]
@@ -110,26 +108,31 @@ class Histograms extends Component {
                 let a=aspects[i].id;
                 let AspectExtended=(this.state.ext.hasOwnProperty(a)&&(this.state.ext[a]));
                 if (AspectExtended){
-                    let minG=Math.min(...aspect_hist[a][0])
-                    let maxG=Math.max(...aspect_hist[a][0])
-                    let minP=0;
-                    let maxP=0;
-                    console.log(minP,maxP,minG,maxG);
-                    for (let j=1;j<aspect_hist[a].length;j++){
+                    let minG=Infinity;
+                    let maxG=-Infinity;
+                    let minP=Infinity;
+                    let maxP=-Infinity;
+                    console.log(typeof(aspect_hist[a]));
+                    for (let j=0;j<aspect_hist[a].length;j++){
+                        console.log('----->',aspect_hist[a])
                         minG=Math.min(minG,...aspect_hist[a][j]);
                         maxG=Math.max(maxG,...aspect_hist[a][j]);
-                        if (curPath!==undefined){
+                        if ((curPath!==undefined)&&(path_hist[a].hasOwnProperty(curPath))){
+                            console.log('====');
+                            console.log(curPath);
+                            console.log(path_hist);
+                            console.log(path_hist[a]);
                             minP=Math.min(minP,...path_hist[a][curPath][j]);
                             maxP=Math.max(maxP,...path_hist[a][curPath][j]);    
                         }
                     }
-                    console.log('+',minP,maxP,minG,maxG);
+                    console.log('+',this.props);
                     for (let j=0;j<aspect_hist[a].length;j++){
                         aspJSX.push(<OnePlot
                                         title={aspects[i].descr[aspects[i].cols[j]]}
-                                        dataDetail={(curPath!==undefined)?path_hist[a][curPath][j]:null} //TODO show all paths
+                                        dataDetail={((curPath!==undefined)&&(path_hist[a].hasOwnProperty(curPath)))?path_hist[a][curPath][j]:null} //TODO show all paths
                                         limits={{minG:minG,maxG:maxG,minP:minP,maxP:maxP}}
-                                        colourDetail={(curPath!==undefined)?colours[curPath]:''} //TODO show all paths
+                                        colourDetail={((curPath!==undefined)&&(path_hist[a].hasOwnProperty(curPath)))?colours[curPath]:''} //TODO show all paths
                                         dataGlobal={aspect_hist[a][j]}
                                         colourGlobal={'darkblue'}
                                     />)   
