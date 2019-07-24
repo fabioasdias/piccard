@@ -20,7 +20,7 @@ class OnePlot extends Component{
             <div className="onePlot">
                 <p className='titles'>{title}</p>
                 <XYPlot
-                    width={400}
+                    width={300}
                     height={400}
                     margin={{left:40,right:20,top:50,bottom:50}}
                     xDomain={[0,1]}
@@ -55,8 +55,20 @@ class OnePlot extends Component{
                             return({y:i,x:(v-minP)/(maxP-minP)})
                         })}
                     />
+                    {(doGlobal)?
+                    <LineSeries
+                    colorType="literal"
+                    stroke={'white'}
+                    strokeWidth={3}
+                    curve={'curveBasis'}
+                    data={dataGlobal.map((v,i)=>{
+                        return({y:i,x:(v-minG)/(maxG-minG)})
+                    })}
+                    />:null}
                     {(doGlobal)?<LineSeries
                         colorType="literal"
+                        strokeWidth={2}
+                        strokeDasharray={'2,3'}
                         stroke={colourGlobal}
                         curve={'curveBasis'}
                         data={dataGlobal.map((v,i)=>{

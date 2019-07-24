@@ -4,7 +4,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './glmap.css';
 import chroma from 'chroma-js';
 import { connect } from 'react-redux';
-import {requestClustering } from './reducers';
+import {requestClustering, requestData } from './reducers';
+
 
 const mapStateToProps = (state) => ({  
   aspects: state.aspects,  
@@ -90,7 +91,8 @@ let MapboxMap = class MapboxMap extends React.Component {
     let {geometries}=this.props;
     let cmaps = this.props.cmap;
     let {selected}=this.state;
-
+    let {dispatch}=this.props;
+    
     if ((cmaps!==undefined)&&(geometries!==undefined)&&(geometries.length>0)){
       
       if (this.state.selected===undefined){
@@ -117,36 +119,40 @@ let MapboxMap = class MapboxMap extends React.Component {
             if (this.state.loaded){
               for (let layer of geometries){
                 if (selected===layer.name){
-                  if (this.map.getSource('s_'+layer.year)===undefined){
-                    this.map.addSource('s_'+layer.year, {
+                  if (this.map.getSource('s_'+layer.name)===undefined){
+                    this.map.addSource('s_'+layer.name, {
                       type: 'vector',
                       url: 'mapbox://'+layer.url,
                       });  
                   }
-                  if (this.map.getLayer('l_'+layer.year)===undefined){
+                  if (this.map.getLayer('l_'+layer.name)===undefined){
                     this.map.addLayer({
-                      id: 'l_'+layer.year,
+                      id: 'l_'+layer.name,
                       type: 'fill',
-                      source: 's_'+layer.year,
+                      source: 's_'+layer.name,
                       "source-layer" : layer.source,
                       'paint':{
                         'fill-opacity': 0.9,
                       }
                     }, 'bridge-motorway-2'); //'country-label-lg');   
+                    this.map.on('click','l_'+layer.name,(d)=>{
+                      dispatch(requestData(this.props.aspects, d.features[0].sourceLayer,d.features[0].properties));
+                      console.log('mapclick',this.props.aspects, d.features[0].sourceLayer,d.features[0].properties);
+                    });
                   }
                 }
                 else{
-                  if (this.map.getLayer('l_'+layer.year)!==undefined){
-                    this.map.removeLayer('l_'+layer.year);
+                  if (this.map.getLayer('l_'+layer.name)!==undefined){
+                    this.map.removeLayer('l_'+layer.name);
                   }
-                  if (this.map.getSource('s_'+layer.year)!==undefined){
-                    this.map.removeSource('s_'+layer.year);
+                  if (this.map.getSource('s_'+layer.name)!==undefined){
+                    this.map.removeSource('s_'+layer.name);
                   }
                 }
               }
               if (this.props.highlight.length>0){
                 let newColours=this.props.colours.slice().map((c)=>{
-                  return(chroma(c).brighten().desaturate(2).hex());
+                  return(chroma(c).brighten(2).desaturate(2).hex());
                 });
                 //copies back the normal colours for the selected
                 for (let i=0; i< this.props.highlight.length;i++){
@@ -228,12 +234,12 @@ let MapboxMap = class MapboxMap extends React.Component {
 
     if (colours!==undefined){
       for (let layer of this.props.geometries){
-        if (this.map.getLayer('l_'+layer.year)!==undefined){
-          this.map.setPaintProperty('l_'+layer.year, 
+        if (this.map.getLayer('l_'+layer.name)!==undefined){
+          this.map.setPaintProperty('l_'+layer.name, 
           'fill-color', exp
           );
           // This may work or not, but runs out of memory...
-          // this.map.setPaintProperty('l_'+layer.year, 
+          // this.map.setPaintProperty('l_'+layer.name, 
           // 'fill-color', 
           //   ["step",
           //     ["zoom"],

@@ -1,8 +1,8 @@
 [ 
-    {"name":"US_CT_1970", "url":"diasf.4m9fyjd2", "source":"US_tract_1970", "year": 1970},
-    {"name":"US_CT_1980", "url":"diasf.baibl6yl", "source":"US_tract_1980", "year": 1980},
-    {"name":"US_CT_1990", "url":"diasf.a0uslqjp", "source":"US_tract_1990", "year": 1990},
-    {"name":"US_CT_2000", "url":"diasf.2wjzv8lv", "source":"US_tract_2000", "year": 2000},
-    {"name":"US_CT_2010", "url":"diasf.1bfzza4z", "source":"US_tract_2010", "year": 2010}
+    {"name":"US_CT_1970", "url":"diasf.4m9fyjd2", "source":"US_tract_1970", "year": 1970, "id_field":"GISJOIN"},
+    {"name":"US_CT_1980", "url":"diasf.baibl6yl", "source":"US_tract_1980", "year": 1980, "id_field":"GISJOIN"},
+    {"name":"US_CT_1990", "url":"diasf.a0uslqjp", "source":"US_tract_1990", "year": 1990, "id_field":"GISJOIN"},
+    {"name":"US_CT_2000", "url":"diasf.2wjzv8lv", "source":"US_tract_2000", "year": 2000, "id_field":"GISJOIN"},
+    {"name":"US_CT_2010", "url":"diasf.1bfzza4z", "source":"US_tract_2010", "year": 2010, "id_field":"GISJOIN"}
 ]
 

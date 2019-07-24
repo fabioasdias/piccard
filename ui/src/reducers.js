@@ -96,3 +96,35 @@ export function requestClustering(aspects,bbox) {
         );
     }
 }
+
+export function requestData(aspects,geom, regionProps) {
+    let args={aspects:aspects,geom:geom,props:regionProps};
+    console.log('requesting data', getURL.GetRawData(),args)
+    
+    return function (dispatch) {
+        // dispatch(actionCreators.StartLoading());
+        return fetch(getURL.GetRawData(),  {
+            // must match 'Content-Type' header
+            body: JSON.stringify(args), 
+            cache: 'no-cache', // *default, cache, reload, force-cache, only-if-cached
+            credentials: 'same-origin', // include, *omit
+            headers: {
+            'user-agent': 'Mozilla/4.0 MDN Example',
+            'content-type': 'application/json'
+            },
+            method: 'POST', // *GET, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *same-origin
+            redirect: 'follow', // *manual, error
+            referrer: 'no-referrer', // *client
+          }).then(
+            data => {
+                data.json().then((d)=> {//promise of a promise. really.
+                    console.log('raw data',d);
+                    // dispatch(actionCreators.SelectAspects(aspects));
+                    // dispatch(actionCreators.UpdateClustering(d));
+                })
+            },
+            error => console.log('ERRORRRRR')
+        );
+    }
+}

@@ -39,6 +39,7 @@ NBINS = 100
 def _centerMass(V):
     return(np.mean([(i*V[i])/np.sum(V) for i in range(len(V))]))
 
+
 def _mergePaths(p1: dict, p2: dict, id: int):
     if len(p1) == 0:
         return({**p2, 'id': id})
@@ -246,7 +247,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
         a = aspect['id']
         g = aspect['geom']
         data = defaultdict(list)
-        N = len(ds.getMinima(a))
+        N = ds.getDimension(a)
         for n in cl[g]:
             vals = ds.getData(a, n)
             if (vals is None) or np.any(np.isnan(vals)):
@@ -259,11 +260,12 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
             for j in range(data[cc].shape[1]):
                 H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
                     ds.getMinima(a)[j], ds.getMaxima(a)[j]))
-            cc_hist[a][cc]=[H[j][cc] for j in H]
-            
-        aspect_hist[a]=[np.squeeze(np.sum([cc_hist[a][cc][j] for cc in cc_hist[a]], axis=0)).tolist() for j in H]
+            cc_hist[a][cc] = [H[j][cc] for j in H]
+
+        aspect_hist[a] = [np.squeeze(
+            np.sum([cc_hist[a][cc][j] for cc in cc_hist[a]], axis=0)).tolist() for j in H]
         for cc in cc_hist[a]:
-            cc_hist[a][cc]=[np.squeeze(x).tolist() for x in cc_hist[a][cc]]
+            cc_hist[a][cc] = [np.squeeze(x).tolist() for x in cc_hist[a][cc]]
 
         # if scalar value, just use the median
         if N == 1:
@@ -275,7 +277,8 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
             D = defaultdict(dict)
             for j in H:
                 for cc in H[j]:
-                    D[j][cc]=_centerMass(cc_hist[a][cc][j])-_centerMass(aspect_hist[a][j])
+                    D[j][cc] = _centerMass(
+                        cc_hist[a][cc][j])-_centerMass(aspect_hist[a][j])
 
             for cc in data:
                 cur_max = 0
@@ -286,8 +289,8 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
                         cur_max = current_relevance
                         max_j = j
                 # the ccs are consistent across geoms now
-                most_relevant_column[cc][a] = (max_j+0.5+(np.random.rand()-0.5)*0.9)/N
-
+                most_relevant_column[cc][a] = (
+                    max_j+0.5+(np.random.rand()-0.5)*0.9)/N
 
             # #this computes the most different distribution (not necessarily higher concentration - counter intuitive)
             # D = defaultdict(lambda: defaultdict(dict))
@@ -352,6 +355,32 @@ class server(object):
                         'year': g['year']
                         })
         return(ret)
+
+    @cherrypy.expose
+    @cherrypy.config(**{'tools.cors.on': True})
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.gzip()
+    def getRawData(self):
+        ret=[]
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        input_json = cherrypy.request.json
+        sourceGeom = input_json['geom']
+        g = geom_by_source[sourceGeom]['name']
+        rid = input_json['props'][geom_by_source[sourceGeom]['id_field']]
+        used_aspects = input_json['aspects']
+        useful_aspects = [a for a in used_aspects if ds.getGeometry(a) == g]
+        print(useful_aspects,rid,g)
+        for a in useful_aspects:
+            entry={'id':a,
+                   'name':ds.getAspectName(a),
+                   'vals':{}}
+            vals = ds.getData(a,rid)
+            for i,c in enumerate(ds.getDescriptions_AsList(a)):
+                entry['vals'][c]=vals[i]
+            ret.append(entry)
+        return(ret)
+            
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -458,6 +487,8 @@ if __name__ == '__main__':
 
     with open(confFile, 'r') as fin:
         available_geometries = json.load(fin)
+
+    geom_by_source={g['source']:g for g in available_geometries}
 
     for g in available_geometries:
         g['graph'] = nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))

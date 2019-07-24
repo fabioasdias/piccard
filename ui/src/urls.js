@@ -35,6 +35,7 @@ export const requestType ={
     CREATE_ASPECTS : 'CreateAspects',
     GET_ASPECTS : 'GetAspects',
     GET_DATA : 'GetUploadedData',
+    GET_RAW_DATA : 'GetRawData',
     MAP_HIERARCHIES: 'MapHierarchies',
     UPLOAD :'Upload'
 };
@@ -68,6 +69,9 @@ export const getURL  = {
     },
     createAspects: () => {
         return(baseURL()+'createAspects');
+    },
+    GetRawData: () => {
+        return(baseURL()+'getRawData')
     }
 };
 
