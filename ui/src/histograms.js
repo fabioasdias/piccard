@@ -124,9 +124,9 @@ class Histograms extends Component {
                     let maxG=-Infinity;
                     let minP=Infinity;
                     let maxP=-Infinity;
-                    console.log(typeof(aspect_hist[a]));
+                    //console.log(typeof(aspect_hist[a]));
                     for (let j=0;j<aspect_hist[a].length;j++){
-                        console.log('----->',aspect_hist[a])
+                        //console.log('----->',aspect_hist[a])
                         minG=Math.min(minG,...aspect_hist[a][j]);
                         maxG=Math.max(maxG,...aspect_hist[a][j]);
                         if ((curPath!==undefined)&&(path_hist[a].hasOwnProperty(curPath))){
@@ -134,7 +134,7 @@ class Histograms extends Component {
                             maxP=Math.max(maxP,...path_hist[a][curPath][j]);    
                         }
                     }
-                    console.log('+',this.props);
+                    //console.log('+',this.props);
                     for (let j=0;j<aspect_hist[a].length;j++){
                         aspJSX.push(<OnePlot
                                         title={aspects[i].descr[aspects[i].cols[j]]}
