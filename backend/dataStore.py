@@ -271,9 +271,15 @@ class dataStore(object):
         self._check_and_read(aspectID)
         return([self._info[aspectID]['descriptions'][x] for x in self._info[aspectID]['columns']])
 
-    def getData(self, aspectID: str, id: str) -> list:
+    def getData(self, aspectID: str, id: str, normalized=False) -> list:
         self._check_and_read(aspectID, data=True)
         if id in self._data[aspectID].index:
-            return(list(self._data[aspectID].loc[id]))
+            vals = list(self._data[aspectID].loc[id])
+            if normalized:
+                if len(vals)>1:
+                    vals=np.nan_to_num(np.array(vals)/np.sum(vals)).tolist()
+                else:
+                    vals=[(vals[0]-self.getMinima(aspectID)[0])/(self.getMaxima(aspectID)[0]-self.getMinima(aspectID)[0]),]    
+            return(vals)
         else:
             return(None)
