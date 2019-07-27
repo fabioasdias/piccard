@@ -18,8 +18,8 @@ import numpy as np
 import pandas as pd
 from joblib import Memory
 from networkx.readwrite import json_graph
-from scipy.spatial.distance import cosine
-from scipy.stats import wasserstein_distance
+from scipy.spatial.distance import cosine, euclidean
+# from scipy.stats import wasserstein_distance,
 from sklearn.cluster import KMeans
 from tqdm import tqdm
 
@@ -88,7 +88,7 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-@memory.cache(ignore=['ds'])
+# @memory.cache(ignore=['ds'])
 # @profile
 def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = None):
 
@@ -200,6 +200,9 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
             else:
                 M[source][target]['count'] += 1
 
+    # this is the structure that will form the forest, but we need all the edges
+    forest = M.copy()
+
     # matching the clusters using the major previous contributor
     for n in M:
         predecessors = sorted(M.in_edges(n, data='count'),
@@ -213,7 +216,6 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
         if len(sucessors) > 1:
             M.remove_edges_from(sucessors[1:])
 
-    # Not using sucessors/in_degree because of "what if x -> x' and y->x'??"
     labels = defaultdict(dict)
     sinks = [n for n in M if len(list(M.out_edges(n))) == 0]
     used = {n: False for n in M}
@@ -233,23 +235,23 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
             cc = labels[g][cl[g][n]]
             cl[g][n] = cc
             maxCC = max([maxCC, cc])
-
     # ----------------------------------------------------------------------------
     # evolution paths (for the parallel coordinates plot)
 
     # computing the relevances for each cluster in each aspect
-    # Also computing the histograms for show later
+    # Also computing (so we don't have to request the data again):
+    # - the histograms for show later and
     most_relevant_column = defaultdict(dict)
     aspect_hist = dict()
     cc_hist = defaultdict(dict)
 
-    for aspect in full_info_aspects:
+    for aspect in tqdm(full_info_aspects, desc='aspects'):
         a = aspect['id']
         g = aspect['geom']
         data = defaultdict(list)
         N = ds.getDimension(a)
         for n in cl[g]:
-            vals = ds.getData(a, n)
+            vals = ds.getData(a, n, normalized=True)
             if (vals is None) or np.any(np.isnan(vals)):
                 continue
             data[cl[g][n]].append(vals)
@@ -258,8 +260,9 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
         for cc in data:
             data[cc] = np.array(data[cc])
             for j in range(data[cc].shape[1]):
-                H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
-                    ds.getMinima(a)[j], ds.getMaxima(a)[j]))
+                # H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
+                #     ds.getMinima(a)[j], ds.getMaxima(a)[j]))
+                H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(0,1))
             cc_hist[a][cc] = [H[j][cc] for j in H]
 
         aspect_hist[a] = [np.squeeze(
@@ -289,30 +292,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
                         cur_max = current_relevance
                         max_j = j
                 # the ccs are consistent across geoms now
-                most_relevant_column[cc][a] = (
-                    max_j+0.5+(np.random.rand()-0.5)*0.9)/N
-
-            # #this computes the most different distribution (not necessarily higher concentration - counter intuitive)
-            # D = defaultdict(lambda: defaultdict(dict))
-            # for j in H:
-            #     ccs = sorted(H[j].keys())
-            #     for i, c1 in enumerate(ccs):
-            #         for c2 in ccs[i+1:]:
-            #             D[j][c1][c2] = wasserstein_distance(np.nan_to_num(
-            #                 H[j][c1]/np.sum(H[j][c1])), np.nan_to_num(H[j][c2]/np.sum(H[j][c2])))
-            #             D[j][c2][c1] = D[j][c1][c2]
-
-            # for cc in data:
-            #     cur_max = 0
-            #     max_j = -1
-            #     for j in D:
-            #         vals = [D[j][cc][c2] for c2 in D[j][cc]]
-            #         current_relevance = np.min(vals)
-            #         if cur_max < current_relevance:
-            #             cur_max = current_relevance
-            #             max_j = j
-            #     # the ccs are consistent across geoms now
-            #     most_relevant_column[cc][a] = (max_j+0.5+(np.random.rand()-0.5)*0.9)/N
+                most_relevant_column[cc][a] = max_j
 
     evo = []
     for cc in most_relevant_column:
@@ -337,6 +317,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
             'evolution': evo,
             'hist': {'aspect': aspect_hist, 'cc': cc_hist},
             'aspects': full_info_aspects,
+            # 'forest':  json_graph.node_link_data(forest),
             'nclusters': maxCC+1})  # 0....9 ->10
 
 
@@ -349,7 +330,7 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         ret = []
         for g in available_geometries:
-            ret.append({'name':  g['name'],
+            ret.append({'name': g['name'],
                         'url': g['url'],
                         'source': g['source'],
                         'year': g['year']
@@ -362,7 +343,7 @@ class server(object):
     @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
     def getRawData(self):
-        ret=[]
+        ret = []
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         input_json = cherrypy.request.json
         sourceGeom = input_json['geom']
@@ -370,17 +351,16 @@ class server(object):
         rid = input_json['props'][geom_by_source[sourceGeom]['id_field']]
         used_aspects = input_json['aspects']
         useful_aspects = [a for a in used_aspects if ds.getGeometry(a) == g]
-        print(useful_aspects,rid,g)
+        print(useful_aspects, rid, g)
         for a in useful_aspects:
-            entry={'id':a,
-                   'name':ds.getAspectName(a),
-                   'vals':{}}
-            vals = ds.getData(a,rid)
-            for i,c in enumerate(ds.getDescriptions_AsList(a)):
-                entry['vals'][c]=vals[i]
+            entry = {'id': a,
+                     'name': ds.getAspectName(a),
+                     'vals': {}}
+            vals = ds.getData(a, rid)
+            for i, c in enumerate(ds.getDescriptions_AsList(a)):
+                entry['vals'][c] = vals[i]
             ret.append(entry)
         return(ret)
-            
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -488,7 +468,7 @@ if __name__ == '__main__':
     with open(confFile, 'r') as fin:
         available_geometries = json.load(fin)
 
-    geom_by_source={g['source']:g for g in available_geometries}
+    geom_by_source = {g['source']: g for g in available_geometries}
 
     for g in available_geometries:
         g['graph'] = nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))

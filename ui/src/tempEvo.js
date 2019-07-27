@@ -55,7 +55,15 @@ class TempEvo extends Component {
             let highcb=(sel)=>{
                 dispatch(actionCreators.SelectPaths(sel));
             }
-            console.log('tempEvo',evolution);
+            for (let i=0; i < aspects.length;i++){
+                let a=aspects[i].id;
+                for (let j=0; j < evolution.length;j++){
+                    if (evolution[j].hasOwnProperty(a)){
+                        evolution[j][a]=(evolution[j][a]+0.5)/aspects[i].cols.length;
+                    }
+                }
+            }
+            console.log('====-=-=-',aspects,evolution)
             let W=this.state.width;
             retJSX.push(<div>
                 <ParallelCoordinates
