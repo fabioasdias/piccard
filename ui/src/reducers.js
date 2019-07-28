@@ -52,6 +52,7 @@ export const reducer = (state={aspects:[], selectedPaths:[], loading:true}, acti
                     colours: makeColours(payload.nclusters),
                     temporal:{aspects:payload.aspects,evolution:payload.evolution}, 
                     aspect_info: payload.aspects,
+                    forest: payload.forest,
                     hist: payload.hist,
                     clustering:payload.clustering,
                     loading:false})

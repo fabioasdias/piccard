@@ -88,7 +88,7 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-# @memory.cache(ignore=['ds'])
+@memory.cache(ignore=['ds'])
 # @profile
 def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = None):
 
@@ -262,7 +262,8 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
             for j in range(data[cc].shape[1]):
                 # H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
                 #     ds.getMinima(a)[j], ds.getMaxima(a)[j]))
-                H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(0,1))
+                H[j][cc], _ = np.histogram(np.squeeze(
+                    data[cc][:, j]), NBINS, range=(0, 1))
             cc_hist[a][cc] = [H[j][cc] for j in H]
 
         aspect_hist[a] = [np.squeeze(
@@ -273,8 +274,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
         # if scalar value, just use the median
         if N == 1:
             for cc in data:
-                most_relevant_column[cc][a] = (np.median(
-                    data[cc]) - ds.getMinima(a)[0])/(ds.getMaxima(a)[0]-ds.getMinima(a)[0])
+                most_relevant_column[cc][a] = np.median(data[cc])
             continue
         else:
             D = defaultdict(dict)
@@ -301,23 +301,52 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
         line['id'] = cc
         evo.append(line)
 
-    # cluster_sequences = {}
-    # for path in all_paths:
-    #     for n in path:
+    # ----------------------------------------------------------
+    # filling up the forest - weight == similarity
+    for n in forest:
+        forest.node[n]['ideal_y']=1-geoms.index(n[0])/len(geoms)
+    for n1, n2 in forest.edges():
+        vals = [e[2] for e in forest.in_edges(n1, data='count')]+[e[2] for e in forest.out_edges(n1, data='count')]
+        if vals:
+            maxVal = max(vals)
+            if maxVal>0:
+                forest[n1][n2]['weight'] = forest[n1][n2]['count']/maxVal
+                continue
+        forest[n1][n2]['weight'] = 0
 
-    #     cluster_sequences.append(
-    #         tuple([(n[0], cl[n[0]][n[1]]) for n in path if n[0] != -1 and n[1] in cl[n[0]]]))
+    for g in tqdm(geoms, desc='forest'):
+        edges_to_use = list(combinations(
+            [n for n in forest if (n[0] == g)], 2))
 
-    # print('\n\n')
-    # print(len(cluster_sequences))
-    # cluster_sequences = set(cluster_sequences)
-    # print(len(cluster_sequences))
+        for n1, n2 in edges_to_use:
+            cc1 = n1[1]
+            cc2 = n2[1]
+            useful_aspects = [a['id'] for a in full_info_aspects
+                              if (a['geom'] == g) and
+                              (a['id'] in most_relevant_column[cc1]) and
+                              (a['id'] in most_relevant_column[cc2])]
+            if not useful_aspects: #this cc might not be present in this geometry
+                continue
+            if (not forest.has_edge(n1, n2)) or ('weight' not in forest[n1][n2]):
+                forest.add_edge(n1,
+                                n2,
+                                weight=np.sum([1 for a in useful_aspects if (most_relevant_column[cc1][a] == most_relevant_column[cc2][a])])/len(useful_aspects))
+
+    to_remove=[]
+    for e in forest.edges():
+        if np.isclose(forest[e[0]][e[1]]['weight'],0):
+            to_remove.append(e)
+    forest.remove_edges_from(to_remove)
+
+    forest_json = json_graph.node_link_data(forest)
+    with open('forest.json', 'w') as fout:
+        json.dump(forest_json, fout, indent=4,sort_keys=True)
 
     return({'clustering': cl,
             'evolution': evo,
             'hist': {'aspect': aspect_hist, 'cc': cc_hist},
             'aspects': full_info_aspects,
-            # 'forest':  json_graph.node_link_data(forest),
+            'forest':  forest_json,
             'nclusters': maxCC+1})  # 0....9 ->10
 
 

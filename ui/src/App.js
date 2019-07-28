@@ -8,6 +8,7 @@ import Upload from './upload';
 import Aspects from './aspects';
 import Histograms from './histograms';
 import { actionCreators, requestClustering } from './reducers';
+import ForceDirectedGraph from './force-directed-graph';
 // import {arrayEQ} from './util';
 
 const mapStateToProps = (state) => ({  
@@ -19,6 +20,7 @@ const mapStateToProps = (state) => ({
   colours: state.colours,
   loading: state.loading,
   hist: state.hist,
+  forest: state.forest,
   selectedPaths: state.selectedPaths
 });
 
@@ -64,18 +66,25 @@ class App extends Component {
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }
 
-    retJSX.push(<MapboxMap 
-                    geometries={availableGeometries}
-                    paintProp={'GISJOIN'}
-                    cmap={this.props.clustering}
-                    colours={this.props.colours}
-                    highlight={this.props.selectedPaths}
-                  />);
+    // retJSX.push(<MapboxMap 
+    //                 geometries={availableGeometries}
+    //                 paintProp={'GISJOIN'}
+    //                 cmap={this.props.clustering}
+    //                 colours={this.props.colours}
+    //                 highlight={this.props.selectedPaths}
+    //               />);
     retJSX.push(<TempEvo 
                     data={this.props.temporal}
                     colours={this.props.colours}
                     key='tp'
                   />);
+    if (this.props.forest!==undefined){
+      retJSX.push(<div><ForceDirectedGraph
+                    width={800}
+                    height={400}
+                    data={this.props.forest}
+                  /></div>)
+    }
     retJSX.push(<Histograms 
                     aspects={this.props.aspect_info}
                     data={this.props.hist}
