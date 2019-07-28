@@ -83,6 +83,7 @@ class App extends Component {
                     width={800}
                     height={400}
                     data={this.props.forest}
+                    colours={this.props.colours}
                   /></div>)
     }
     retJSX.push(<Histograms 

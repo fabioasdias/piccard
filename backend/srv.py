@@ -90,7 +90,7 @@ def cors():
 
 @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 3, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
@@ -105,7 +105,11 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
 
     geoms = []
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
-    geoms = list(set([a['geom'] for a in full_info_aspects]))
+    for a in full_info_aspects:
+        g = a['geom']
+        if g not in geoms:
+            geoms.append(g)
+
     # preparations for the domains in ParallelCoordinates (react-vis)
     for i in range(len(full_info_aspects)):
         full_info_aspects[i]['order'] = i
@@ -303,16 +307,23 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
 
     # ----------------------------------------------------------
     # filling up the forest - weight == similarity
+    print('geoms', geoms)
     for n in forest:
-        forest.node[n]['ideal_y']=1-geoms.index(n[0])/len(geoms)
+        forest.node[n]['ideal_x'] = n[1]/(maxCC+1)
+        forest.node[n]['ideal_y'] = geoms.index(n[0])/len(geoms)
+
     for n1, n2 in forest.edges():
-        vals = [e[2] for e in forest.in_edges(n1, data='count')]+[e[2] for e in forest.out_edges(n1, data='count')]
+        if n1[1] == n2[1]:
+            forest[n1][n2]['weight'] = 0.5
+        else:
+            forest[n1][n2]['weight'] = 0
+        vals = [e[2] for e in forest.in_edges(
+            n1, data='count')]+[e[2] for e in forest.out_edges(n1, data='count')]
         if vals:
             maxVal = max(vals)
-            if maxVal>0:
-                forest[n1][n2]['weight'] = forest[n1][n2]['count']/maxVal
+            if maxVal > 0:
+                forest[n1][n2]['weight'] += forest[n1][n2]['count']/(2*maxVal)
                 continue
-        forest[n1][n2]['weight'] = 0
 
     for g in tqdm(geoms, desc='forest'):
         edges_to_use = list(combinations(
@@ -325,22 +336,46 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
                               if (a['geom'] == g) and
                               (a['id'] in most_relevant_column[cc1]) and
                               (a['id'] in most_relevant_column[cc2])]
-            if not useful_aspects: #this cc might not be present in this geometry
+            if not useful_aspects:  # this cc might not be present in this geometry
                 continue
             if (not forest.has_edge(n1, n2)) or ('weight' not in forest[n1][n2]):
                 forest.add_edge(n1,
                                 n2,
                                 weight=np.sum([1 for a in useful_aspects if (most_relevant_column[cc1][a] == most_relevant_column[cc2][a])])/len(useful_aspects))
 
-    to_remove=[]
+    to_remove = []
     for e in forest.edges():
-        if np.isclose(forest[e[0]][e[1]]['weight'],0):
+        # or (geoms[geoms.index(e[0][0])]!=e[1][0]):#non-yearly consecutive geoms #TODO
+        if np.isclose(forest[e[0]][e[1]]['weight'], 0):
             to_remove.append(e)
     forest.remove_edges_from(to_remove)
 
-    forest_json = json_graph.node_link_data(forest)
-    with open('forest.json', 'w') as fout:
-        json.dump(forest_json, fout, indent=4,sort_keys=True)
+    forest_out = nx.DiGraph()
+    n2i = {n: i for i, n in enumerate(forest.nodes())}
+    for n in forest:
+        i = n2i[n]
+        forest_out.add_node(i)
+        forest_out.node[i]['geom'] = n[0]
+        forest_out.node[i]['cc'] = n[1]
+        forest_out.node[i]['ideal_x'] = forest.node[n]['ideal_x']
+        forest_out.node[i]['ideal_y'] = forest.node[n]['ideal_y']
+    for n1, n2, w in forest.edges(data='weight'):
+        forest_out.add_edge(n2i[n1], n2i[n2], weight=w)
+
+    forest_json = json_graph.node_link_data(forest_out)
+
+    # pos = nx.spring_layout(forest_out)
+    # nx.draw_networkx_nodes(forest_out, pos)
+    # nx.draw_networkx_labels(forest_out, pos, labels={n: '{0}-{1}'.format(
+    #     forest_out.node[n]['geom'], forest_out.node[n]['cc']) for n in forest_out})
+    # # if forest_out[e[0]][e[1]]['weight']>0.5]
+    # E = [e for e in forest_out.edges()]
+    # nx.draw_networkx_edges(forest_out, pos, edgelist=E, width=[
+    #                        5*forest_out[e[0]][e[1]]['weight'] for e in E])
+    # plt.show()
+
+    # with open('forest.json', 'w') as fout:
+    #     json.dump(forest_json, fout, indent=4, sort_keys=True)
 
     return({'clustering': cl,
             'evolution': evo,

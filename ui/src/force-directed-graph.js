@@ -24,7 +24,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {forceSimulation, forceLink, forceManyBody, forceCenter, forceY} from 'd3-force';
+import {forceSimulation, forceLink, forceManyBody, forceCenter, forceY, forceX} from 'd3-force';
 
 import {XYPlot, MarkSeries, LineSeries} from 'react-vis';
 
@@ -39,25 +39,41 @@ function generateSimulation(props) {
     return {nodes: [], links: []};
   }
   // copy the data
-  const nodes = data.nodes.map(d => ({...d}));
-  const links = data.links.map(d => ({...d}));
+  let nodes = data.nodes.map(d => ({...d}));//, 'x':d.ideal_x*width, 'y':d.ideal_y*height}));
+  let links = data.links.map(d => ({...d})).filter(({source,target})=>{
+    return((nodes[source].cc===nodes[target].cc)||(nodes[source].geom===nodes[target].geom));
+  });
+  let all_links = data.links.slice();
+  console.log('copy links',links);
+  let ticked= () => {
+    for (let i=0;i<nodes.length;i++){
+      nodes[i].y=nodes[i].ideal_y;
+    }
+  }
+
   // build the simulation
-  console.log('str',strength)
-  const simulation = forceSimulation(nodes).links(links)
-    .force('link', forceLink().id(d => d.id).distance(d=> (1.0/d.weight)))
-    .force('charge', forceManyBody().strength(strength))
-    .force('yAxis', forceY(d=>(+d.ideal_y)*height).strength(strength/2))
+  const simulation = forceSimulation(nodes)
+    .force('link', forceLink())
+    .force('charge', forceManyBody())
+    .force('yAxis', forceY(d=>(+d.ideal_y)*height))
+    // .force('xAxis', forceX(d=>(+d.ideal_x)*width).strength(0.1))
     .force('center', forceCenter(width / 2, height / 2))
+    .on('tick',ticked)
     .stop();
+
 
   const upperBound = Math.ceil(
     Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay())
   );
   
-  // simulation.force('link');
+  simulation.force('link').links(links);
   simulation.tick(upperBound);
+  ticked();
+  all_links=all_links.sort((a,b)=>{
+    return(a.weight-b.weight);
+  });
 
-  return({nodes, links});
+  return({nodes, links, all_links});
 }
 
 class ForceDirectedGraph extends React.Component {
@@ -65,7 +81,7 @@ class ForceDirectedGraph extends React.Component {
     return {
       className: '',
       data: {nodes: [], links: []},
-      strength:0.2
+      strength:0.05
     };
   }
 
@@ -75,7 +91,6 @@ class ForceDirectedGraph extends React.Component {
       data: PropTypes.object.isRequired,
       height: PropTypes.number.isRequired,
       width: PropTypes.number.isRequired,
-      steps: PropTypes.number
     };
   }
 
@@ -94,26 +109,32 @@ class ForceDirectedGraph extends React.Component {
 
   render() {
     const {className, height, width} = this.props;
-    const {nodes, links} = this.state.data;
+    let {nodes, links, all_links} = this.state.data;
     return (
       <XYPlot width={width} height={height} className={className}>
-        {links.sort((a,b)=>{
-          return(a.weight-b.weight);
-        }).map(({source, target}, index) => {
-          console.log(source,target)
-          return (
-            <LineSeries
-              colorType={'literal'}
-              key={`link-${index}`}
-              opacity={0.75}
-              // color={links[index].color}
-              strokeWidth={Math.log(links[index].weight)+1}
-              data={[{...source, color: null}, {...target, color: null}]}
-            />
-          );
+        {all_links.map(({source, target}, index) => {
+          let linkData=[{'x':nodes[source].x, 'y':nodes[source].y}, 
+                        {'x':nodes[target].x, 'y':nodes[target].y}];
+          if (nodes[source].geom!==nodes[target].geom){
+            return (
+              <LineSeries
+                colorType={'literal'}
+                key={`link-${index}`}
+                opacity={0.75}
+                color={(nodes[source].cc===nodes[target].cc)?this.props.colours[nodes[source].cc]:'lightgray'}
+                strokeWidth={5*all_links[index].weight}
+                data={linkData}
+              />
+            );  
+          }else{
+            console.log(source,target)
+          }
+
         })}
         <MarkSeries
-          data={nodes}
+          data={nodes.map((d)=>{
+            return({...d,color:this.props.colours[d.cc]});
+          })}
           colorType={'literal'}
           stroke={'#ddd'}
           strokeWidth={2}
