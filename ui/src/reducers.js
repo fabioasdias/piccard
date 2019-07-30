@@ -1,15 +1,5 @@
 import {getURL} from './urls';
-import randomColor from 'randomcolor';
-
-
-function makeColours(n){
-    let colours=['#1b9e77','#d95f02','#7570b3','#e7298a','#66a61e','#e6ab02','#a6761d','#666666'];
-    for (let i = colours.length; i<n;i++){
-      colours.push(randomColor());
-    }
-    return(colours);
-
-}
+import {makeColours} from './util';
 
 export const types={
     SELECT_GEOMETRY: 'SelectGeometry',

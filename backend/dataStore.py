@@ -87,6 +87,7 @@ class dataStore(object):
         """
         geoms = [self.getGeometry(a) for a in aspects]
         paths = []
+        paths = []
         for i in range(len(geoms)):
             g = geoms[i]
             if i == 0:
@@ -99,19 +100,17 @@ class dataStore(object):
             while paths:
                 current = paths.pop(0)
                 last = current[-1]
-                if last[0] == g:  # same geometry:
-                    to_add.append(current+[last, ])
-                else:
+                if last in X:
                     options = [n for n in X.neighbors(last) if n[0] == g]
-                    if not options:
-                        to_add.append(current)
-                    for op in options:
-                        unused.discard(op)
-                        to_add.append((current+[op, ]))
+                    if options:
+                        for op in options:
+                            unused.discard(op)
+                            to_add.append((current+[op, ]))
+                        continue
+                paths.append(current) #if this line runs, (last \not\in X) or (options=\emptyset)
 
             # puts in the paths that start in this aspect
             paths = to_add+[[(-1, -1), ]*i+[n, ] for n in unused]
-
         return(paths)
 
     def _check_and_read(self, aspectID: str, data: bool = False) -> None:

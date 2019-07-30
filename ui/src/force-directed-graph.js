@@ -41,7 +41,7 @@ function generateSimulation(props) {
   // copy the data
   let nodes = data.nodes.map(d => ({...d}));//, 'x':d.ideal_x*width, 'y':d.ideal_y*height}));
   let links = data.links.map(d => ({...d})).filter(({source,target})=>{
-    return((nodes[source].cc===nodes[target].cc)||(nodes[source].geom===nodes[target].geom));
+    return((nodes[source].cc===nodes[target].cc)||(nodes[source].year===nodes[target].year));
   });
   let all_links = data.links.slice();
   console.log('copy links',links);
@@ -115,7 +115,7 @@ class ForceDirectedGraph extends React.Component {
         {all_links.map(({source, target}, index) => {
           let linkData=[{'x':nodes[source].x, 'y':nodes[source].y}, 
                         {'x':nodes[target].x, 'y':nodes[target].y}];
-          if (nodes[source].geom!==nodes[target].geom){
+          if (nodes[source].year!==nodes[target].year){
             return (
               <LineSeries
                 colorType={'literal'}
@@ -125,9 +125,10 @@ class ForceDirectedGraph extends React.Component {
                 strokeWidth={5*all_links[index].weight}
                 data={linkData}
               />
-            );  
+            );
           }else{
-            console.log(source,target)
+            console.log(source,target);
+            return(null);
           }
 
         })}
