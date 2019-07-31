@@ -90,7 +90,7 @@ def cors():
 
 @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
@@ -177,24 +177,27 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
 
     # all_paths = ds.getPaths([a['id'] for a in full_info_aspects])
 
-
-    M = nx.DiGraph()
+    
     for i in tqdm(range(1, len(full_info_aspects)), 'paths'):
-        paths = ds.getPaths([full_info_aspects[i-1]['id'],
-                             full_info_aspects[i]['id']])
-        for p in tqdm(paths, desc='p'):
-            if len(p)<=1:
-                continue
+        a1=full_info_aspects[i-1]
+        a2=full_info_aspects[i]
+        g_from=a1['geom']
+        g_to=a2['geom']
+        if g_from==g_to:
+            continue
 
-            g_from, id_from = p[0]
-            g_to, id_to = p[1]
+        X = ds.getCrossGeometry(a1['geom'],a2['geom'])
+        M = nx.DiGraph()
+        for n in tqdm(X):
+            if n[0]!=a1['geom']:
+                continue    
+            id_from=n[1]
+            for _,id_to in X.neighbors(n):
 
-            if ((g_from not in cl) or (id_from not in cl[g_from]) or  # from not used
-                (g_to not in cl) or (id_to not in cl[g_to])) :
-                continue
-
-            if ((g_from!=g_to) or (id_from!=id_to)):
-                #transition graph to find out 'heritage'
+                if ((g_from not in cl) or (id_from not in cl[g_from]) or  
+                    (g_to not in cl) or (id_to not in cl[g_to])):
+                    continue
+                # transition graph to find out 'heritage'
                 source = (g_from, cl[g_from][id_from])  # (geom, cluster)
                 if (source not in M):
                     M.add_node(source)
@@ -204,164 +207,168 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
                     M.add_node(target)
 
                 if not M.has_edge(source, target):
-                    M.add_edge(source, target, count=0)
+                    M.add_edge(source, target, count=1)
                 else:
-                    M[source][target]['count'] += 1            
-
-    pos = nx.spring_layout(M)
-    nx.draw_networkx_nodes(M, pos)
-    E=M.edges()
-    maxWidth=np.log(max([e[2] for e in M.edges(data='count')]))
-    nx.draw_networkx_edges(M, pos, edgelist=E, width=[5*(np.log(M[e[0]][e[1]]['count'])/maxWidth)+0.2 for e in E])
-    nx.draw_networkx_labels(M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M},font_color='green') #+'  '+'-'.join(['{0}'.format(g) for g in M.node[n]['geoms']])
+                    M[source][target]['count'] += 1
 
 
-    # matching the clusters using the major previous contributor
-    changed = True
-    while changed:
-        changed=False
-        to_remove=[]
-        for n in M:
-            predecessors = sorted(M.in_edges(n, data='count'),
-                                key=lambda x: x[2], reverse=True)
-            if len(predecessors) > 1:
-                M.remove_edges_from(predecessors[1:])
-                #removes the link back, if it exists, for the edge we are keeping (avoiding loops)
-                if M.has_edge(predecessors[0][1],predecessors[0][0]):
-                    M.remove_edge(predecessors[0][1],predecessors[0][0])
-                changed = True
+
+        pos = nx.spring_layout(M)
+        nx.draw_networkx_nodes(M, pos)
+        E = M.edges()
+        maxWidth = np.log(max([e[2] for e in M.edges(data='count')]))
+        nx.draw_networkx_edges(M, pos, edgelist=E, width=[
+                            5*(np.log(M[e[0]][e[1]]['count'])/maxWidth)+0.2 for e in E])
+        # +'  '+'-'.join(['{0}'.format(g) for g in M.node[n]['geoms']])
+        nx.draw_networkx_labels(
+            M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M}, font_color='green')
+
+        # matching the clusters temporally based on how strongly connected they are
+        # the temporal part comes from the aspect order used to extract the paths
+        to_look = [n for n in M if M.in_degree(n)>1 or M.out_degree(n)>1]
+        used = {e:False for e in M.edges()}
+        while to_look:
+            print(len(to_look),set([M.in_degree(n) for n in M]),set([M.out_degree(n) for n in M]))
+            E = sorted([e for e in M.edges(data='count') if not used[e[:2]]], 
+                    key=lambda e: e[2]/max([ee[2] for ee in M.out_edges(e[0], data='count')]+
+                                            [ee[2] for ee in M.in_edges (e[1], data='count')]), reverse=True)
+            if not E:
                 break
-
-    # The sources can still be multi-linked
-    changed = True
-    while changed:
-        changed=False
-        to_remove=[]
-        for n in M:
-            sucessors = sorted(M.out_edges(n, data='count'),
-                                key=lambda x: x[2], reverse=True)
-            if len(sucessors) > 1:
-                M.remove_edges_from(sucessors[1:])
-                changed = True
-                break
-
-    plt.figure()
-    nx.draw(M, pos)
-    nx.draw_networkx_labels(M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M},font_color='green')
-    plt.show()
+            
+            m=E[0][0]
+            n=E[0][1]
+            used[(m,n)]=True
+            to_remove=[[n,m],] #removes the link back, if it exists
+            for p in M.predecessors(n):
+                if p!=m:
+                    to_remove.append([p,n])
+            for s in M.successors(m):
+                if s!=n:
+                    to_remove.append([m,s])
+            M.remove_edges_from(to_remove)
+            to_look = [n for n in M if M.in_degree(n)>1 or M.out_degree(n)>1]
 
 
-    labels = defaultdict(dict)
-    sinks = [n for n in M if len(list(M.out_edges(n))) == 0]
-    used = {n: False for n in M}
+        plt.figure()
+        nx.draw(M, pos)
+        nx.draw_networkx_labels(
+            M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M}, font_color='green')
+        plt.show()
+
+    #TODO
+
+    labels=defaultdict(dict)
+    sinks=[n for n in M if len(list(M.out_edges(n))) == 0]
+    used={n: False for n in M}
     for i, s in enumerate(sinks):
-        to_do = [s, ]
+        to_do=[s, ]
         while to_do:
-            n = to_do.pop(0)
+            n=to_do.pop(0)
             if used[n]:
                 continue
-            used[n] = True
+            used[n]=True
             # for g in M.node[n]['geoms']:
             #     labels[g][n[1]] = i #n[i] -> cc
-            labels[n[0]][n[1]] = i #n[i] -> cc
+            labels[n[0]][n[1]]=i  # n[i] -> cc
             to_do.extend(list(M.predecessors(n)))
 
-    maxCC = len(sinks)
+    maxCC=len(sinks)
     for g in cl:
         for n in cl[g]:
-            cc = labels[g][cl[g][n]]
-            cl[g][n] = cc
+            cc=labels[g][cl[g][n]]
+            cl[g][n]=cc
             # maxCC = max([maxCC, cl[g][n]])
     # ----------------------------------------------------------------------------
     # computing the relevances for each cluster in each aspect and the histograms
-    most_relevant_column = defaultdict(dict)
-    aspect_hist = dict()
-    cc_hist = defaultdict(dict)
+    most_relevant_column=defaultdict(dict)
+    aspect_hist=dict()
+    cc_hist=defaultdict(dict)
 
     for aspect in tqdm(full_info_aspects, desc='aspects'):
-        a = aspect['id']
-        g = aspect['geom']
-        data = defaultdict(list)
-        N = ds.getDimension(a)
+        a=aspect['id']
+        g=aspect['geom']
+        data=defaultdict(list)
+        N=ds.getDimension(a)
         for n in cl[g]:
-            vals = ds.getData(a, n, normalized=True)
+            vals=ds.getData(a, n, normalized=True)
             if (vals is None) or np.any(np.isnan(vals)):
                 continue
             data[cl[g][n]].append(vals)
 
-        H = defaultdict(dict)
+        H=defaultdict(dict)
         for cc in data:
-            data[cc] = np.array(data[cc])
+            data[cc]=np.array(data[cc])
             for j in range(data[cc].shape[1]):
                 # H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
                 #     ds.getMinima(a)[j], ds.getMaxima(a)[j]))
-                H[j][cc], _ = np.histogram(np.squeeze(
+                H[j][cc], _=np.histogram(np.squeeze(
                     data[cc][:, j]), NBINS, range=(0, 1))
-            cc_hist[a][cc] = [H[j][cc] for j in H]
+            cc_hist[a][cc]=[H[j][cc] for j in H]
 
-        aspect_hist[a] = [np.squeeze(
+        aspect_hist[a]=[np.squeeze(
             np.sum([cc_hist[a][cc][j] for cc in cc_hist[a]], axis=0)).tolist() for j in H]
         for cc in cc_hist[a]:
-            cc_hist[a][cc] = [np.squeeze(x).tolist() for x in cc_hist[a][cc]]
+            cc_hist[a][cc]=[np.squeeze(x).tolist() for x in cc_hist[a][cc]]
 
         # if scalar value, just use the median
         if N == 1:
             for cc in data:
-                most_relevant_column[cc][a] = np.median(data[cc])
+                most_relevant_column[cc][a]=np.median(data[cc])
             continue
         else:
-            D = defaultdict(dict)
+            D=defaultdict(dict)
             for j in H:
                 for cc in H[j]:
-                    D[j][cc] = _centerMass(cc_hist[a][cc][j])-_centerMass(aspect_hist[a][j])
+                    D[j][cc]=_centerMass(cc_hist[a][cc][j]) - \
+                                         _centerMass(aspect_hist[a][j])
 
             for cc in data:
-                cur_max = 0
-                max_j = -1
+                cur_max=0
+                max_j=-1
                 for j in D:
-                    current_relevance = D[j][cc]
+                    current_relevance=D[j][cc]
                     if cur_max < current_relevance:
-                        cur_max = current_relevance
-                        max_j = j
+                        cur_max=current_relevance
+                        max_j=j
                 # the ccs are consistent across geoms now
-                most_relevant_column[cc][a] = max_j
+                most_relevant_column[cc][a]=max_j
 
     print('exporting evolution lines')
-    evo = []
+    evo=[]
     for cc in tqdm(most_relevant_column, desc='cc'):
-        line = {a: most_relevant_column[cc][a]
+        line={a: most_relevant_column[cc][a]
                 for a in most_relevant_column[cc]}
-        line['id'] = cc
+        line['id']=cc
         evo.append(line)
 
     # ----------------------------------------------------------
     # filling up the forest - weight == similarity
-    years = sorted(set([a['year'] for a in full_info_aspects]))
+    years=sorted(set([a['year'] for a in full_info_aspects]))
     for n in forest:
-        forest.node[n]['ideal_x'] = n[1]/(maxCC+1)
-        forest.node[n]['ideal_y'] = years.index(n[0])/len(years)
+        forest.node[n]['ideal_x']=n[1]/(maxCC+1)
+        forest.node[n]['ideal_y']=years.index(n[0])/len(years)
 
     for n1, n2 in forest.edges():
         if n1[1] == n2[1]:
-            forest[n1][n2]['weight'] = 0.5
+            forest[n1][n2]['weight']=0.5
         else:
-            forest[n1][n2]['weight'] = 0
-        vals = [e[2] for e in forest.in_edges(
+            forest[n1][n2]['weight']=0
+        vals=[e[2] for e in forest.in_edges(
             n1, data='count')]+[e[2] for e in forest.out_edges(n1, data='count')]
         if vals:
-            maxVal = max(vals)
+            maxVal=max(vals)
             if maxVal > 0:
                 forest[n1][n2]['weight'] += forest[n1][n2]['count']/(2*maxVal)
                 continue
 
     for y in tqdm(years, desc='forest'):
-        edges_to_use = list(combinations(
+        edges_to_use=list(combinations(
             [n for n in forest if (n[0] == y)], 2))
 
         for n1, n2 in edges_to_use:
-            cc1 = n1[1]
-            cc2 = n2[1]
-            useful_aspects = [a['id']
+            cc1=n1[1]
+            cc2=n2[1]
+            useful_aspects=[a['id']
                               for a in full_info_aspects
                               if (a['year'] == y) and
                               (a['id'] in most_relevant_column[cc1]) and
@@ -374,27 +381,27 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = Non
                                 weight=np.sum([1 for a in useful_aspects
                                                if (most_relevant_column[cc1][a] == most_relevant_column[cc2][a])]) / len(useful_aspects))
 
-    to_remove = []
+    to_remove=[]
     for e in forest.edges():
         # or (geoms[geoms.index(e[0][0])]!=e[1][0]):#non-yearly consecutive geoms #TODO
         if np.isclose(forest[e[0]][e[1]]['weight'], 0):
             to_remove.append(e)
     forest.remove_edges_from(to_remove)
 
-    forest_out = nx.DiGraph()
-    n2i = {n: i for i, n in enumerate(forest.nodes())}
+    forest_out=nx.DiGraph()
+    n2i={n: i for i, n in enumerate(forest.nodes())}
     for n in forest:
-        i = n2i[n]
+        i=n2i[n]
         forest_out.add_node(i)
-        forest_out.node[i]['year'] = n[0]
-        forest_out.node[i]['cc'] = n[1]
-        forest_out.node[i]['geoms'] = list(forest.node[n]['geoms'])
-        forest_out.node[i]['ideal_x'] = forest.node[n]['ideal_x']
-        forest_out.node[i]['ideal_y'] = forest.node[n]['ideal_y']
+        forest_out.node[i]['year']=n[0]
+        forest_out.node[i]['cc']=n[1]
+        forest_out.node[i]['geoms']=list(forest.node[n]['geoms'])
+        forest_out.node[i]['ideal_x']=forest.node[n]['ideal_x']
+        forest_out.node[i]['ideal_y']=forest.node[n]['ideal_y']
     for n1, n2, w in forest.edges(data='weight'):
         forest_out.add_edge(n2i[n1], n2i[n2], weight=w)
 
-    forest_json = json_graph.node_link_data(forest_out)
+    forest_json=json_graph.node_link_data(forest_out)
 
     # pos = nx.spring_layout(forest_out)
     # nx.draw_networkx_nodes(forest_out, pos)
@@ -423,8 +430,8 @@ class server(object):
     @cherrypy.tools.json_out()
     @cherrypy.tools.gzip()
     def availableGeometries(self):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        ret = []
+        cherrypy.response.headers["Access-Control-Allow-Origin"]="*"
+        ret=[]
         for g in available_geometries:
             ret.append({'name': g['name'],
                         'url': g['url'],
@@ -439,22 +446,22 @@ class server(object):
     @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
     def getRawData(self):
-        ret = []
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        input_json = cherrypy.request.json
-        sourceGeom = input_json['geom']
-        g = geom_by_source[sourceGeom]['name']
-        rid = input_json['props'][geom_by_source[sourceGeom]['id_field']]
-        used_aspects = input_json['aspects']
-        useful_aspects = [a for a in used_aspects if ds.getGeometry(a) == g]
+        ret=[]
+        cherrypy.response.headers["Access-Control-Allow-Origin"]="*"
+        input_json=cherrypy.request.json
+        sourceGeom=input_json['geom']
+        g=geom_by_source[sourceGeom]['name']
+        rid=input_json['props'][geom_by_source[sourceGeom]['id_field']]
+        used_aspects=input_json['aspects']
+        useful_aspects=[a for a in used_aspects if ds.getGeometry(a) == g]
         print(useful_aspects, rid, g)
         for a in useful_aspects:
-            entry = {'id': a,
+            entry={'id': a,
                      'name': ds.getAspectName(a),
                      'vals': {}}
-            vals = ds.getData(a, rid)
+            vals=ds.getData(a, rid)
             for i, c in enumerate(ds.getDescriptions_AsList(a)):
-                entry['vals'][c] = vals[i]
+                entry['vals'][c]=vals[i]
             ret.append(entry)
         return(ret)
 
@@ -462,7 +469,7 @@ class server(object):
     @cherrypy.tools.json_out()
     @cherrypy.tools.gzip()
     def availableAspects(self):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        cherrypy.response.headers["Access-Control-Allow-Origin"]="*"
         return(ds.aspects())
 
     @cherrypy.expose
@@ -471,8 +478,8 @@ class server(object):
     @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
     def createAspects(self):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        input_json = cherrypy.request.json
+        cherrypy.response.headers["Access-Control-Allow-Origin"]="*"
+        input_json=cherrypy.request.json
         return(ds.createAspect(input_json, dirconf['upload']))
 
     @cherrypy.expose
@@ -481,23 +488,23 @@ class server(object):
     @cherrypy.tools.json_in()
     @cherrypy.tools.gzip()
     def mapHierarchies(self):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        input_json = cherrypy.request.json
+        cherrypy.response.headers["Access-Control-Allow-Origin"]="*"
+        input_json=cherrypy.request.json
         if ('aspects' not in input_json) or (not input_json['aspects']):
-            to_use = ds.aspects()
+            to_use=ds.aspects()
         else:
-            to_use = input_json['aspects']
+            to_use=input_json['aspects']
 
         if ('bbox' not in input_json):
-            bbox = None
+            bbox=None
         else:
-            #{'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
-            bbox = _bbox_create_buffer(input_json['bbox'])
+            # {'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
+            bbox=_bbox_create_buffer(input_json['bbox'])
 
         if ('nc' not in input_json):
-            nc = 10
+            nc=10
         else:
-            nc = int(input_json['nc'])
+            nc=int(input_json['nc'])
 
         return(_mapHiers(ds, sorted(to_use), nClusters=nc, bbox=bbox))
 
@@ -510,7 +517,7 @@ class server(object):
     @cherrypy.tools.gzip()
     @cherrypy.tools.json_out()
     def getUploadedData(self):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        cherrypy.response.headers["Access-Control-Allow-Origin"]="*"
         return(gatherInfoJsons(dirconf['upload']))
 
     @cherrypy.expose
@@ -518,14 +525,14 @@ class server(object):
     @cherrypy.tools.gzip()
     @cherrypy.tools.json_out()
     def upload(self, file):
-        myFile = file
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        res = {'name': myFile.filename, 'ok': True}
+        myFile=file
+        cherrypy.response.headers["Access-Control-Allow-Origin"]="*"
+        res={'name': myFile.filename, 'ok': True}
         with tempfile.TemporaryDirectory() as tempDir:
-            fname = join(tempDir, myFile.filename)
+            fname=join(tempDir, myFile.filename)
             with open(fname, 'wb') as outFile:
                 while True:
-                    data = myFile.file.read(8192)
+                    data=myFile.file.read(8192)
                     if not data:
                         break
                     outFile.write(data)
@@ -534,7 +541,7 @@ class server(object):
                     tempDir, dirconf['upload'], cherrypy.request.remote.ip))
             except:
                 # raise
-                res['ok'] = False
+                res['ok']=False
         return(res)
 
 
@@ -543,15 +550,15 @@ if __name__ == '__main__':
         print(".py [conf.json]")
         exit(-1)
     if len(sys.argv) == 1:
-        confFile = 'conf.json'
+        confFile='conf.json'
     else:
-        confFile = sys.argv[1]
+        confFile=sys.argv[1]
 
     if not exists(confFile):
         print('configuration file not found')
         exit(-1)
 
-    dirconf = {'upload': './upload',  # unconfigured data
+    dirconf={'upload': './upload',  # unconfigured data
                'db': './db',  # geometries/graphs
                'data': './db/data'}  # configured aspects/hierarchies
 
@@ -559,18 +566,18 @@ if __name__ == '__main__':
         if (not exists(dirconf[k])):
             makedirs(dirconf[k])
 
-    ds = dataStore(dirconf['db'], dirconf['data'])
+    ds=dataStore(dirconf['db'], dirconf['data'])
 
     with open(confFile, 'r') as fin:
-        available_geometries = json.load(fin)
+        available_geometries=json.load(fin)
 
-    geom_by_source = {g['source']: g for g in available_geometries}
+    geom_by_source={g['source']: g for g in available_geometries}
 
     for g in available_geometries:
-        g['graph'] = nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))
+        g['graph']=nx.read_gpickle(join(dirconf['db'], g['name']+'.gp'))
 
-    webapp = server()
-    conf = {
+    webapp=server()
+    conf={
         '/': {
             'tools.sessions.on': True,
             'tools.staticdir.root': os.path.abspath(os.getcwd()),
@@ -600,9 +607,10 @@ if __name__ == '__main__':
     # #             'b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a',
     # #             'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
     # #           'd36bd0e0-d74d-4355-a967-31c357239646']
-    # to_use=['a67ec8c4-0794-4862-a2a4-b5ba9b5401df', '2876df13-ed66-4361-81c6-1337320b4e22', '56158126-6589-4037-b7d3-bc8789d950b4','b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a' ]
-    # _mapHiers(ds, sorted(to_use))
-    # exit()
+
+    to_use=['a67ec8c4-0794-4862-a2a4-b5ba9b5401df', '2876df13-ed66-4361-81c6-1337320b4e22', '56158126-6589-4037-b7d3-bc8789d950b4','b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a' ]
+    _mapHiers(ds, sorted(to_use))
+    exit()
 
     # input_json=[{"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST1"]},
     #  {"enabled":False,"year":1990,"geometry":"US_CT_1990","name":"TES","fileID":"f044aef5-6f59-47f5-8832-f6afbcbe2c8f","index":"GISJOIN","columns":["TEST2"]},
@@ -619,8 +627,8 @@ if __name__ == '__main__':
     # ds.createAspect(input_json, dirconf['upload'])
     # exit()
 
-    cherrypy.tools.cors = cherrypy._cptools.HandlerTool(cors)
-    cherrypy.server.max_request_body_size = 0  # for upload
-    cherrypy.server.socket_host = '0.0.0.0'
-    cherrypy.server.socket_port = 8080
+    cherrypy.tools.cors=cherrypy._cptools.HandlerTool(cors)
+    cherrypy.server.max_request_body_size=0  # for upload
+    cherrypy.server.socket_host='0.0.0.0'
+    cherrypy.server.socket_port=8080
     cherrypy.quickstart(webapp, '/', conf)
