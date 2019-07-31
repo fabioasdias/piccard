@@ -127,7 +127,6 @@ class ForceDirectedGraph extends React.Component {
               />
             );
           }else{
-            console.log(source,target);
             return(null);
           }
 

@@ -87,7 +87,6 @@ class dataStore(object):
         """
         geoms = [self.getGeometry(a) for a in aspects]
         paths = []
-        paths = []
         for i in range(len(geoms)):
             g = geoms[i]
             if i == 0:
@@ -97,6 +96,7 @@ class dataStore(object):
 
             unused = set([n for n in X if n[0] == g])
             to_add = []
+            done_paths = []
             while paths:
                 current = paths.pop(0)
                 last = current[-1]
@@ -107,10 +107,10 @@ class dataStore(object):
                             unused.discard(op)
                             to_add.append((current+[op, ]))
                         continue
-                paths.append(current) #if this line runs, (last \not\in X) or (options=\emptyset)
+                done_paths.append(current) #if this line runs, (last \not\in X) or (options=\emptyset)
 
             # puts in the paths that start in this aspect
-            paths = to_add+[[(-1, -1), ]*i+[n, ] for n in unused]
+            paths = to_add+[[(-1, -1), ]*i+[n, ] for n in unused]+done_paths
         return(paths)
 
     def _check_and_read(self, aspectID: str, data: bool = False) -> None:
@@ -276,7 +276,8 @@ class dataStore(object):
             vals = list(self._data[aspectID].loc[id])
             if normalized:
                 if len(vals)>1:
-                    vals=np.nan_to_num(np.array(vals)/np.sum(vals)).tolist()
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        vals=np.nan_to_num(np.array(vals)/np.sum(vals)).tolist()
                 else:
                     vals=[(vals[0]-self.getMinima(aspectID)[0])/(self.getMaxima(aspectID)[0]-self.getMinima(aspectID)[0]),]    
             return(vals)

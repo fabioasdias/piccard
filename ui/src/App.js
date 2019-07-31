@@ -66,33 +66,33 @@ class App extends Component {
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }
 
-    // retJSX.push(<MapboxMap 
-    //                 geometries={availableGeometries}
-    //                 paintProp={'GISJOIN'}
-    //                 cmap={this.props.clustering}
-    //                 colours={this.props.colours}
-    //                 highlight={this.props.selectedPaths}
-    //               />);
+    retJSX.push(<MapboxMap 
+                    geometries={availableGeometries}
+                    paintProp={'GISJOIN'}
+                    cmap={this.props.clustering}
+                    colours={this.props.colours}
+                    highlight={this.props.selectedPaths}
+                  />);
     retJSX.push(<TempEvo 
                     data={this.props.temporal}
                     colours={this.props.colours}
                     key='tp'
                   />);
     if (this.props.forest!==undefined){
-      retJSX.push(<div><ForceDirectedGraph
+      retJSX.push(<div style={{width:'800px',height:'400px', display:'flex'}}><ForceDirectedGraph
                     width={800}
                     height={400}
                     data={this.props.forest}
                     colours={this.props.colours}
                   /></div>)
-    }
-    retJSX.push(<Histograms 
+    }         
+    retJSX.push(<div><Histograms 
                     aspects={this.props.aspect_info}
                     data={this.props.hist}
                     colours={this.props.colours}
                     selectedPaths={this.props.selectedPaths}
                     key='hists'
-                  />);
+                  /></div>);
 
     retJSX.push(<div><button 
                     className="button" 
