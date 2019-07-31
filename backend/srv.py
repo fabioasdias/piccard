@@ -90,7 +90,7 @@ def cors():
 
 @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 3, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 6, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
@@ -176,57 +176,80 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 3, bbox: list = Non
     # Match the clusters across the geometries
 
     # all_paths = ds.getPaths([a['id'] for a in full_info_aspects])
-    years = [a['year'] for a in full_info_aspects]
+
 
     M = nx.DiGraph()
     for i in tqdm(range(1, len(full_info_aspects)), 'paths'):
         paths = ds.getPaths([full_info_aspects[i-1]['id'],
                              full_info_aspects[i]['id']])
         for p in tqdm(paths, desc='p'):
-            if len(p)==1:
+            if len(p)<=1:
                 continue
+
             g_from, id_from = p[0]
-            y_from = full_info_aspects[i-1]['year']
-
             g_to, id_to = p[1]
-            y_to = full_info_aspects[i]['year']
+
             if ((g_from not in cl) or (id_from not in cl[g_from]) or  # from not used
-                (g_to not in cl) or (id_to not in cl[g_to]) or  # to not used
-                    ((g_from == g_to) and (id_from == id_to))):  # avoiding self loops - we don't care about trivial transitions
+                (g_to not in cl) or (id_to not in cl[g_to])) :
                 continue
 
-            source = (y_from, cl[g_from][id_from])  # (geom, cluster)
-            if (source not in M):
-                M.add_node(source)
-                M.node[source]['geoms'] = set()
-            M.node[source]['geoms'].add(g_from)
+            if ((g_from!=g_to) or (id_from!=id_to)):
+                #transition graph to find out 'heritage'
+                source = (g_from, cl[g_from][id_from])  # (geom, cluster)
+                if (source not in M):
+                    M.add_node(source)
 
-            target = (y_to, cl[g_to][id_to])
-            if not target in M:
-                M.add_node(target)
-                M.node[target]['geoms'] = set()
-            M.node[target]['geoms'].add(g_to)
+                target = (g_to, cl[g_to][id_to])
+                if not target in M:
+                    M.add_node(target)
 
-            if not M.has_edge(source, target):
-                M.add_edge(source, target, count=0)
-            else:
-                M[source][target]['count'] += 1
+                if not M.has_edge(source, target):
+                    M.add_edge(source, target, count=0)
+                else:
+                    M[source][target]['count'] += 1            
 
-    # this is the structure that will form the forest, but we need all the edges
-    forest = M.copy()
-    print('cutting')
+    pos = nx.spring_layout(M)
+    nx.draw_networkx_nodes(M, pos)
+    E=M.edges()
+    maxWidth=np.log(max([e[2] for e in M.edges(data='count')]))
+    nx.draw_networkx_edges(M, pos, edgelist=E, width=[5*(np.log(M[e[0]][e[1]]['count'])/maxWidth)+0.2 for e in E])
+    nx.draw_networkx_labels(M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M},font_color='green') #+'  '+'-'.join(['{0}'.format(g) for g in M.node[n]['geoms']])
+
+
     # matching the clusters using the major previous contributor
-    for n in M:
-        predecessors = sorted(M.in_edges(n, data='count'),
-                              key=lambda x: x[2], reverse=True)
-        if len(predecessors) > 1:
-            M.remove_edges_from(predecessors[1:])
+    changed = True
+    while changed:
+        changed=False
+        to_remove=[]
+        for n in M:
+            predecessors = sorted(M.in_edges(n, data='count'),
+                                key=lambda x: x[2], reverse=True)
+            if len(predecessors) > 1:
+                M.remove_edges_from(predecessors[1:])
+                #removes the link back, if it exists, for the edge we are keeping (avoiding loops)
+                if M.has_edge(predecessors[0][1],predecessors[0][0]):
+                    M.remove_edge(predecessors[0][1],predecessors[0][0])
+                changed = True
+                break
+
     # The sources can still be multi-linked
-    for n in M:
-        sucessors = sorted(M.out_edges(n, data='count'),
-                           key=lambda x: x[2], reverse=True)
-        if len(sucessors) > 1:
-            M.remove_edges_from(sucessors[1:])
+    changed = True
+    while changed:
+        changed=False
+        to_remove=[]
+        for n in M:
+            sucessors = sorted(M.out_edges(n, data='count'),
+                                key=lambda x: x[2], reverse=True)
+            if len(sucessors) > 1:
+                M.remove_edges_from(sucessors[1:])
+                changed = True
+                break
+
+    plt.figure()
+    nx.draw(M, pos)
+    nx.draw_networkx_labels(M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M},font_color='green')
+    plt.show()
+
 
     labels = defaultdict(dict)
     sinks = [n for n in M if len(list(M.out_edges(n))) == 0]
@@ -238,16 +261,17 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 3, bbox: list = Non
             if used[n]:
                 continue
             used[n] = True
-            for g in M.node[n]['geoms']:
-                labels[g][n[1]] = i
+            # for g in M.node[n]['geoms']:
+            #     labels[g][n[1]] = i #n[i] -> cc
+            labels[n[0]][n[1]] = i #n[i] -> cc
             to_do.extend(list(M.predecessors(n)))
 
-    maxCC = 0
+    maxCC = len(sinks)
     for g in cl:
         for n in cl[g]:
             cc = labels[g][cl[g][n]]
-            # cl[g][n] = cc
-            maxCC = max([maxCC, cl[g][n]])
+            cl[g][n] = cc
+            # maxCC = max([maxCC, cl[g][n]])
     # ----------------------------------------------------------------------------
     # computing the relevances for each cluster in each aspect and the histograms
     most_relevant_column = defaultdict(dict)
@@ -289,8 +313,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 3, bbox: list = Non
             D = defaultdict(dict)
             for j in H:
                 for cc in H[j]:
-                    D[j][cc] = _centerMass(
-                        cc_hist[a][cc][j])-_centerMass(aspect_hist[a][j])
+                    D[j][cc] = _centerMass(cc_hist[a][cc][j])-_centerMass(aspect_hist[a][j])
 
             for cc in data:
                 cur_max = 0
@@ -313,8 +336,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 3, bbox: list = Non
 
     # ----------------------------------------------------------
     # filling up the forest - weight == similarity
-    print('years', years)
-    years = sorted(set(years))
+    years = sorted(set([a['year'] for a in full_info_aspects]))
     for n in forest:
         forest.node[n]['ideal_x'] = n[1]/(maxCC+1)
         forest.node[n]['ideal_y'] = years.index(n[0])/len(years)
@@ -377,7 +399,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 3, bbox: list = Non
     # pos = nx.spring_layout(forest_out)
     # nx.draw_networkx_nodes(forest_out, pos)
     # nx.draw_networkx_labels(forest_out, pos, labels={n: '{0}-{1}'.format(
-    #     forest_out.node[n]['geom'], forest_out.node[n]['cc']) for n in forest_out})
+    #     forest_out.node[n]['year'], forest_out.node[n]['cc']) for n in forest_out})
     # # if forest_out[e[0]][e[1]]['weight']>0.5]
     # E = [e for e in forest_out.edges()]
     # nx.draw_networkx_edges(forest_out, pos, edgelist=E, width=[
@@ -561,23 +583,24 @@ if __name__ == '__main__':
         # }
     }
 
-    # to_use = ['01484bfd-d853-4bc4-b5d4-7724102491f0',
-    #           '23c57e64-e4d9-4fa8-8511-bf5541290eed',
-    #                        '2876df13-ed66-4361-81c6-1337320b4e22',
-    #                        '289c96f4-6463-4202-86c4-60f257eacdc6',
-    #                        '44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
-    #                        '5412991b-e899-467a-b2eb-cd45ba91d5df',
-    #           '54279024-99f7-4db0-b6ed-c6f7d919ce76',
-    #                        '56158126-6589-4037-b7d3-bc8789d950b4',
-    #                        '597d682f-79ef-4781-b3b1-4ab025b0eb4f',
-    #                        '860eb9d4-260a-4824-b3af-f6b0a37c7168',
-    #                        '9089406c-61d4-40b6-9f72-101767f1e0dd',
-    #           'a2e83ff8-6962-48aa-8740-3c250e8d3a13',
-    #             'a67ec8c4-0794-4862-a2a4-b5ba9b5401df',
-    #             'b0d6c9b9-2935-4760-a394-68b791b12a22',
-    #             'b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a',
-    #             'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
-    #           'd36bd0e0-d74d-4355-a967-31c357239646']
+    # # to_use = ['01484bfd-d853-4bc4-b5d4-7724102491f0',
+    # #           '23c57e64-e4d9-4fa8-8511-bf5541290eed',
+    # #                        '2876df13-ed66-4361-81c6-1337320b4e22',
+    # #                        '289c96f4-6463-4202-86c4-60f257eacdc6',
+    # #                        '44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
+    # #                        '5412991b-e899-467a-b2eb-cd45ba91d5df',
+    # #           '54279024-99f7-4db0-b6ed-c6f7d919ce76',
+    # #                        '56158126-6589-4037-b7d3-bc8789d950b4',
+    # #                        '597d682f-79ef-4781-b3b1-4ab025b0eb4f',
+    # #                        '860eb9d4-260a-4824-b3af-f6b0a37c7168',
+    # #                        '9089406c-61d4-40b6-9f72-101767f1e0dd',
+    # #           'a2e83ff8-6962-48aa-8740-3c250e8d3a13',
+    # #             'a67ec8c4-0794-4862-a2a4-b5ba9b5401df',
+    # #             'b0d6c9b9-2935-4760-a394-68b791b12a22',
+    # #             'b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a',
+    # #             'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
+    # #           'd36bd0e0-d74d-4355-a967-31c357239646']
+    # to_use=['a67ec8c4-0794-4862-a2a4-b5ba9b5401df', '2876df13-ed66-4361-81c6-1337320b4e22', '56158126-6589-4037-b7d3-bc8789d950b4','b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a' ]
     # _mapHiers(ds, sorted(to_use))
     # exit()
 

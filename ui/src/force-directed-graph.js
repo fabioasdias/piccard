@@ -44,7 +44,7 @@ function generateSimulation(props) {
     return((nodes[source].cc===nodes[target].cc)||(nodes[source].year===nodes[target].year));
   });
   let all_links = data.links.slice();
-  console.log('copy links',links);
+  console.log(nodes);
   let ticked= () => {
     for (let i=0;i<nodes.length;i++){
       nodes[i].y=nodes[i].ideal_y;

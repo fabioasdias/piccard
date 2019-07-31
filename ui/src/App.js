@@ -66,13 +66,13 @@ class App extends Component {
       retJSX.push(<div key="loading" className="loading">Loading, please wait...</div>);
     }
 
-    retJSX.push(<MapboxMap 
-                    geometries={availableGeometries}
-                    paintProp={'GISJOIN'}
-                    cmap={this.props.clustering}
-                    colours={this.props.colours}
-                    highlight={this.props.selectedPaths}
-                  />);
+    // retJSX.push(<MapboxMap 
+    //                 geometries={availableGeometries}
+    //                 paintProp={'GISJOIN'}
+    //                 cmap={this.props.clustering}
+    //                 colours={this.props.colours}
+    //                 highlight={this.props.selectedPaths}
+    //               />);
     retJSX.push(<TempEvo 
                     data={this.props.temporal}
                     colours={this.props.colours}
