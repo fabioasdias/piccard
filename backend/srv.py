@@ -130,47 +130,47 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
             for n in nodes:
                 cl[g][n[1]] = cc
 
-        # -------------------------------------------
-        # Merging disconnected similar clusters
+        # # -------------------------------------------
+        # # Merging disconnected similar clusters
 
-        aspects_in_this_geom = [a for a in full_info_aspects if a['geom'] == g]
-        nDims = [ds.getDimension(a['id']) for a in aspects_in_this_geom]
-        singleVar = [x == 1 for x in nDims]
-        # fixes the histogram size for scalar variables
-        nDims = [x if x > 1 else NBINS for x in nDims]
-        M = np.zeros((current_number_ccs, np.sum(nDims)))
-        for i, aspect in enumerate(aspects_in_this_geom):
-            a = aspect['id']
+        # aspects_in_this_geom = [a for a in full_info_aspects if a['geom'] == g]
+        # nDims = [ds.getDimension(a['id']) for a in aspects_in_this_geom]
+        # singleVar = [x == 1 for x in nDims]
+        # # fixes the histogram size for scalar variables
+        # nDims = [x if x > 1 else NBINS for x in nDims]
+        # M = np.zeros((current_number_ccs, np.sum(nDims)))
+        # for i, aspect in enumerate(aspects_in_this_geom):
+        #     a = aspect['id']
 
-            if i == 0:
-                start = 0
-            else:
-                start = sum(nDims[:i])
-            finish = start+nDims[i]
+        #     if i == 0:
+        #         start = 0
+        #     else:
+        #         start = sum(nDims[:i])
+        #     finish = start+nDims[i]
 
-            for n in tqdm(cl[g], desc=ds.getAspectName(a)):
-                vals = ds.getData(a, n)
-                cc = cl[g][n]
-                if (vals is None) or np.any(np.isnan(vals)):
-                    continue
-                if singleVar[i]:
-                    tempH, _ = np.histogram(vals, NBINS, range=(
-                        ds.getMinima(a)[0], ds.getMaxima(a)[0]))
-                else:
-                    tempH = np.array(vals)
+        #     for n in tqdm(cl[g], desc=ds.getAspectName(a)):
+        #         vals = ds.getData(a, n)
+        #         cc = cl[g][n]
+        #         if (vals is None) or np.any(np.isnan(vals)):
+        #             continue
+        #         if singleVar[i]:
+        #             tempH, _ = np.histogram(vals, NBINS, range=(
+        #                 ds.getMinima(a)[0], ds.getMaxima(a)[0]))
+        #         else:
+        #             tempH = np.array(vals)
 
-                M[cc, start:finish] += tempH
+        #         M[cc, start:finish] += tempH
 
-            # normalizing each section
-            with np.errstate(divide='ignore', invalid='ignore'):
-                M[:, start:finish] = (
-                    M[:, start:finish].T / np.sum(M[:, start:finish], axis=1)).T
+        #     # normalizing each section
+        #     with np.errstate(divide='ignore', invalid='ignore'):
+        #         M[:, start:finish] = (
+        #             M[:, start:finish].T / np.sum(M[:, start:finish], axis=1)).T
 
-        M = np.nan_to_num(M)
-        km = KMeans(n_clusters=nClusters).fit(M)
-        del(M)
-        for n in cl[g]:
-            cl[g][n] = int(km.labels_[cl[g][n]])
+        # M = np.nan_to_num(M)
+        # km = KMeans(n_clusters=nClusters).fit(M)
+        # del(M)
+        # for n in cl[g]:
+        #     cl[g][n] = int(km.labels_[cl[g][n]])
 
     # ----------------------------------------------------------
     # Match the clusters across the geometries
