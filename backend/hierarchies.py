@@ -1,15 +1,14 @@
-from upload import gatherInfoJsons_AsDict
-from os.path import join
-import networkx as nx
+from collections import defaultdict
 from itertools import combinations
+from os.path import join
 
 import matplotlib.pylab as plt
-from numpy import median
+import networkx as nx
 from joblib import Memory
-
-from itertools import combinations
+from numpy import median
 from tqdm import tqdm
 
+from upload import gatherInfoJsons_AsDict
 
 cachedir = './cache/'
 memory = Memory(cachedir, verbose=0)
@@ -89,7 +88,7 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph, level: str = 'level') ->
         return(G1.copy())
 
     H = G1.copy()
-    for e in H.edges():
+    for e in tqdm(H.edges(),desc='edges hier'):
         otherside = []
         for n in e:
             if n in X:
@@ -98,27 +97,6 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph, level: str = 'level') ->
             H[e[0]][e[1]][level] = max(
                 [H[e[0]][e[1]][level], ]+[x[2] for x in G2.subgraph(otherside).edges(data=level)])
 
-
-    # print(list(G1.nodes())[0])
-    # print(list(G2.nodes())[0])
-    for lvl in [0.1, 0.25, 0.5,0.75, 0.8, 0.9]:
-        C = G2.copy()
-        C.remove_edges_from([e[:2]
-                             for e in C.edges(data=level) if e[2] >= lvl])
-        for cc, nodes in enumerate(nx.connected_components(C)):
-            for n in nodes:
-                C.node[n]['cc'] = cc
-
-        R = H.copy()
-        R.remove_edges_from([e[:2]
-                             for e in R.edges(data=level) if e[2] >= lvl])
-
-        for cc, nodes in enumerate(nx.connected_components(R)):
-            for n in nodes:
-                R.node[n]['cc'] = cc
-
-        for e in R:
-            pass
     return(H)
 
 # @profile
@@ -146,46 +124,44 @@ def mapHierarchies(ds: dict, aspects: list, level: str = 'level', bbox: list = N
     level: key for the data
     bbox: limiting bounding box to consider only regions inside it. (integers == better caching)
 
-    Returns the resulting hierarchy represented in all involved geometries
+    Returns the resulting hierarchy represented in all involved geometries/years
     """
     print('=-=', aspects)
 
-    aspectsByGeometry = {}
+    aspectsByYearGeometry = defaultdict(list)
     for aspect in aspects:
-        g = ds.getGeometry(aspect)
-        if g not in aspectsByGeometry:
-            aspectsByGeometry[g] = []
-        aspectsByGeometry[g].append(aspect)
+        aspectsByYearGeometry[(ds.getAspectYear(aspect), ds.getGeometry(aspect))].append(aspect)
 
-    geoms = sorted(aspectsByGeometry.keys())
     merged = []
-    for g in geoms:
-        merged.append(
-            _mergeAll(ds, aspectsByGeometry[g], level=level, bbox=bbox))
+    years_geoms=sorted(aspectsByYearGeometry.keys())
+    for yg in years_geoms:
+        merged.append(_mergeAll(ds, aspectsByYearGeometry[yg], level=level, bbox=bbox))
+
+    
 
     # holds the resulting hierarchy on each original geometry
     # - This could be faster if the partial merges were reused
     final = {}
-    if len(geoms) > 1:
-        for i in range(len(geoms)):
+    if len(years_geoms) > 1:
+        for i in range(len(years_geoms)):
             backwards = None
             forwards = None
 
-            if i != (len(geoms)-1):
+            if i != (len(years_geoms)-1):
                 backwards = merged[-1]
-                for j in range(len(geoms)-2, i-1, -1):
+                for j in range(len(years_geoms)-2, i-1, -1):
                     backwards = _hierMerge(merged[j], backwards, ds.getCrossGeometry(
-                        geoms[j], geoms[j+1]), level=level)
+                        years_geoms[j][1], years_geoms[j+1][1]), level=level)
 
             if i != 0:
                 forwards = merged[0]
                 for j in range(1, i+1):
                     forwards = _hierMerge(merged[j], forwards, ds.getCrossGeometry(
-                        geoms[j], geoms[j-1]), level=level)
+                        years_geoms[j][1], years_geoms[j-1][1]), level=level)
 
-            final[geoms[i]] = _hierMerge(
-                backwards, forwards, ds.getCrossGeometry(geoms[i], geoms[i]), level=level)
+            final[years_geoms[i]] = _hierMerge(
+                backwards, forwards, ds.getCrossGeometry(years_geoms[i][1], years_geoms[i][1]), level=level)
     else:
-        final[geoms[0]] = merged[0]
+        final[years_geoms[0]] = merged[0]
 
     return(final)
