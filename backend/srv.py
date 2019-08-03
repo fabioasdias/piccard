@@ -92,7 +92,7 @@ def cors():
 
 @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: float = 0.65, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: float = 0.75, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
