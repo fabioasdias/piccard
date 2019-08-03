@@ -35,7 +35,7 @@ memory = Memory(cachedir, verbose=0)
 # same as in clustering.py! - There is probably a better way...
 NBINS = 100
 
-DEBUG = True
+DEBUG = False
 
 
 def _centerMass(V):
@@ -92,7 +92,7 @@ def cors():
 
 @memory.cache(ignore=['ds'])
 # @profile
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = None):
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: float = 0.65, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
 
@@ -116,11 +116,12 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
     # cutting the hierarchies
 
     for yg in tqdm(Gs):
-        y,g=yg
+        y, g = yg
 
         base_number_ccs = nx.number_connected_components(Gs[yg])
-        Gs[yg].remove_edges_from(
-            [e[:2] for e in Gs[yg].edges(data='level') if e[2] >= 1])
+        Gs[yg].remove_edges_from([e[:2]
+                                  for e in Gs[yg].edges(data='level')
+                                  if e[2] >= threshold])
         current_number_ccs = nx.number_connected_components(Gs[yg])
         while (current_number_ccs-base_number_ccs) < nClusters:
             E = sorted([e for e in Gs[yg].edges(data='level')],
@@ -133,16 +134,18 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
             for n in nodes:
                 cl[y][g][n[1]] = cc
 
-        # # -------------------------------------------
-        # # Merging disconnected similar clusters
+        # # # -------------------------------------------
+        # # # Merging disconnected similar clusters
 
-        aspects_in_this_geom = [a for a in full_info_aspects if a['geom'] == g]
-        nDims = [ds.getDimension(a['id']) for a in aspects_in_this_geom]
+        aspects_in_this_year_geom = [a 
+                                for a in full_info_aspects 
+                                if (a['geom'] == g) and (a['year'] == y)]
+        nDims = [ds.getDimension(a['id']) for a in aspects_in_this_year_geom]
         singleVar = [x == 1 for x in nDims]
         # fixes the histogram size for scalar variables
         nDims = [x if x > 1 else NBINS for x in nDims]
         M = np.zeros((current_number_ccs, np.sum(nDims)))
-        for i, aspect in enumerate(aspects_in_this_geom):
+        for i, aspect in enumerate(aspects_in_this_year_geom):
             a = aspect['id']
             y = aspect['year']
 
@@ -188,7 +191,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
         y_to = a_to['year']
 
         M = nx.DiGraph()
-        #let's make sure all clusters are represented
+        # let's make sure all clusters are represented
         for cc in set(cl[y_from][g_from].values()):
             M.add_node((g_from, cc))
         for cc in set(cl[y_to][g_to].values()):
@@ -201,15 +204,15 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
             g1 = e[1][0]
             id1 = e[1][1]
             if g0 == g_from:
-                if ((y_from not in cl) or (g0 not in cl[y_from]) or (id0 not in cl[y_from][g0]) or 
-                    (y_to   not in cl) or (g1 not in cl[y_to]  ) or (id1 not in cl[y_to]  [g1])):
+                if ((y_from not in cl) or (g0 not in cl[y_from]) or (id0 not in cl[y_from][g0]) or
+                        (y_to not in cl) or (g1 not in cl[y_to]) or (id1 not in cl[y_to][g1])):
                     continue
 
                 source = (g0, cl[y_from][g_from][id0])
                 target = (g1, cl[y_to][g_to][id1])
             else:
-                if ((y_from not in cl) or (g1 not in cl[y_from]) or (id1 not in cl[y_from][g1]) or 
-                    (y_to   not in cl) or (g0 not in cl[y_to]  ) or (id0 not in cl[y_to]  [g0])):
+                if ((y_from not in cl) or (g1 not in cl[y_from]) or (id1 not in cl[y_from][g1]) or
+                        (y_to not in cl) or (g0 not in cl[y_to]) or (id0 not in cl[y_to][g0])):
                     continue
 
                 source = (g1, cl[y_from][g_from][id1])
@@ -258,9 +261,9 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
                 if s != n:
                     to_remove.append([m, s])
             M.remove_edges_from(to_remove)
-            to_look = [n 
-                        for n in M 
-                        if M.in_degree(n) > 1 or M.out_degree(n) > 1]
+            to_look = [n
+                       for n in M
+                       if M.in_degree(n) > 1 or M.out_degree(n) > 1]
 
         if DEBUG:
             plt.figure()
@@ -269,19 +272,15 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
                 M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M}, font_color='green')
             plt.show()
 
-        new_clusters = []
+        labels = {}
+        maxCC = max(cl[y_from][g_from].values())+1
+        for n_from, n_to in M.edges():
+            labels[n_to[1]] = n_from[1]
+        for i, cc in enumerate(set(cl[y_to][g_to].values())-set(labels.keys())):
+            labels[cc] = i+maxCC
+
         for id_to in cl[y_to][g_to]:
-            pred = list(M.predecessors(n))
-            if pred:
-                cl[y_to][g_to][id_to] = pred[0][1]
-            else:
-                new_clusters.append(id_to)
-
-        maxCC=max(cl[y_from][g_from].values())+1
-        for i, id_to in enumerate(new_clusters):
-            cl[y_to][g_to][id_to]=i+maxCC
-
-
+            cl[y_to][g_to][id_to] = labels[cl[y_to][g_to][id_to]]
 
         # labels = defaultdict(dict)
         # sinks = [n for n in M if len(list(M.out_edges(n))) == 0]
@@ -314,7 +313,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
         y = aspect['year']
         data = defaultdict(list)
         N = ds.getDimension(a)
-        for n in tqdm(cl[y][g],desc='reading'):
+        for n in tqdm(cl[y][g], desc='reading'):
             vals = ds.getData(a, n, normalized=True)
             if (vals is None) or np.any(np.isnan(vals)):
                 continue
@@ -344,7 +343,8 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
             D = defaultdict(dict)
             for j in H:
                 for cc in H[j]:
-                    D[j][cc] = _centerMass(cc_hist[a][cc][j]) - _centerMass(aspect_hist[a][j])
+                    D[j][cc] = _centerMass(
+                        cc_hist[a][cc][j]) - _centerMass(aspect_hist[a][j])
 
             for cc in data:
                 cur_max = 0
@@ -440,11 +440,16 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
     # with open('forest.json', 'w') as fout:
     #     json.dump(forest_json, fout, indent=4, sort_keys=True)
 
-    return({'clustering': cl,
+    maxCC = 0
+    for y in cl:
+        for g in cl[y]:
+            maxCC = max([maxCC, max(cl[y][g].values())])
+
+    return({'clustering': {**(cl[1970]), **(cl[2010]), **(cl[2015])},
             'evolution': evo,
             'hist': {'aspect': aspect_hist, 'cc': cc_hist},
             'aspects': full_info_aspects,
-            'forest':  {'nodes':[],'links':[]},  # forest_json,
+            'forest':  {'nodes': [], 'links': []},  # forest_json,
             'nclusters': maxCC+1})  # 0....9 ->10
 
 
@@ -632,8 +637,8 @@ if __name__ == '__main__':
     # #             'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
     # #           'd36bd0e0-d74d-4355-a967-31c357239646']
 
-    # to_use = ['a67ec8c4-0794-4862-a_toa4-b5ba9b5401df', '2876df13-ed66-4361-81c6-1337320b4e22',
-    #           '56158126-6589-4037-b7d3-bc8789d950b4', 'b0f43c86-8bf7-4cdb-a_fromf4-0796f6e7b80a']
+    # to_use = ['a67ec8c4-0794-4862-a2a4-b5ba9b5401df', '2876df13-ed66-4361-81c6-1337320b4e22',
+    #           '56158126-6589-4037-b7d3-bc8789d950b4', 'b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a']
     # _mapHiers(ds, sorted(to_use))
     # exit()
 
