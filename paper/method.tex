@@ -33,11 +33,16 @@ different total population.
 Each area of each census year is represented as a node, and edges are placed
 between nodes if the corresponding regions share geographic borders in the same
 year. Further, edges are placed between nodes if the corresponding regions
-belong to sequential years and there is geographical overlap between them. This
-approach leads to a single network representing the whole spatio-temporal space
-of the data. Our objective then becomes to identify partitions of this network
-such that the nodes of each partition are more similar between themselves than
-to the other nodes. 
+belong to sequential years and \revision{their geometries intersect. To avoid
+spurious connections caused by geometry fluctuations, one of the geometries is
+slightly shrunk before the intersection, using a buffer of -1e6. More
+importantly, while weights will be associated with these edges before they are
+processed, they are not derived from the geometry, but from the data. The actual
+intersection area is not considered in this representation. } This approach
+leads to a single network representing the whole spatio-temporal space of the
+data. Our objective then becomes to identify partitions of this network such
+that the nodes of each partition are more similar between themselves than to the
+other nodes. 
 
 
 \subsection{Geographic content clustering}
@@ -75,7 +80,10 @@ clustering and reduce the running time of the SMM. We introduced one new
 parameter to this method: a maximum distance threshold for the merges, to avoid
 the early merging of outliers. We refer the reader to the original
 paper~\citep{markus2017} for more details, including a complete performance
-evaluation using several metrics.
+evaluation using several metrics. \revision{We chose this algorithm because it
+is simple and easily customisable, and while different algorithms will lead to
+different results, our methodology should work with any hierarchical clustering
+algorithm.}
 
 
 Each resulting cluster is contiguous in the network. This means that two
@@ -85,6 +93,16 @@ clusters, which can be counter-intuitive. To overcome this issue, we
 graph~\citep{scikit-learn} using only the distances between the histograms.
 These edges connect nodes with similar content, if they are not already
 connected, providing a path for the algorithm to group similar nodes.
+\revision{The regions connected by those edges will be merged on the first
+stages of the clustering, since they are very similar, leaving the remaining
+steps of the hierarchy to be determined only by the geographical edges. We
+explored with different numbers of augmentation edges, but the results were not
+consistent, since the distribution of the edges is data dependent. Adding two
+edges per node was the least number of edges that led to stable and consistent
+results in the scenarios available in our prototype. Since the problem of
+balancing the data space with the geographical space is relevant for
+geographical data analysis, this methodology potentially warrants further
+exploration, beyond the scope of this work.}
 
 
 \subsection{Cluster characterisation and variable relevance}
@@ -101,7 +119,7 @@ information about the underlying distribution.
 We also use these statistical measurements to discover what characterises each
 cluster, that is, what makes it different from the others.  We define the
 \emph{relevance} of a variable of an aspect based on the distance between the
-interquantile ranges (IQR) of the clusters in the same hierarchical level. If
+interquartile ranges (IQR) of the clusters in the same hierarchical level. If
 the IQRs overlap for all clusters, that variable is not relevant to the
 characterisation of the cluster, but if the IQRs are distant, it means that this
 specific range of values is something that only occurs in this cluster.
@@ -113,12 +131,32 @@ determining what variables most clearly define a given cluster.
 While the partition of the data into different clusters helps the user to
 understand what groups exist and where they are, we are also interested in the
 evolution of these groups. To examine this process of evolution directly, we
-introduce the concept of \emph{trajectories}. Trajectories are composed by
-regions classified into the same sequence of clusters over the considered
-period. This enables direct access to regions that evolved in the same manner.
-While individual census tracts remain interesting, these trajectories are the
-main unit of exploration in this work.
+introduce the concepts\revision{of \emph{temporal paths} and \emph{trajectories}. 
 
+We call a temporal path any sequence of nodes in our representation network such
+that the temporal information associated with the nodes only increases. For
+instance, in Figure~\ref{fig:intuition}, the sequences ACF, ADF, ADG, and BEH
+are temporal paths. With harmonised data, the time-series of to each region
+would form a temporal path, each node would be connected only to its older and
+newer versions, belonging to only one temporal path, as illustrated by the path
+BEF. Since our data is not harmonised, more connections are allowed and each
+node can belong to an arbitrary number of paths.
+
+Semantically, this is a generalisation of the idea of geographical time-series,
+because each temporal path is one possible option for the data to change over
+time. Returning to Figure~\ref{fig:intuition}, the paths ACF, ADF, and ADG all
+start on the same homogeneous region, but evolve differently over time. In other
+words, this network encodes the information that portions of the region A
+changed to form regions C and D, but we do not know specifically which parts,
+nor we need to, since the same region can belong to several temporal paths.
+Interestingly, when interpreted in this framework, geographical harmonisation is
+a method to split and/or merge nodes so each belongs to a single temporal path.
+
+Since each node in the sequence that forms the temporal paths has an associated
+cluster, we can classify the paths based on the sequence of clusters. We call
+each unique sequence of clusters present in this result a \emph{trajectory}.
+Regions on the same trajectory had the same sequence of clusters, therefore had
+similar temporal evolution.}
 
 \subsection{User interface}
 \label{sec:ui}

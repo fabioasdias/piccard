@@ -1,10 +1,23 @@
 \section{Illustrative scenarios}
 \label{sec:study}
 
-In this section we present three illustrative scenarios, using decennial census
+In this section we present two illustrative scenarios, using decennial census
 data from the United States~\citep{nhgis} and
 Canada\footnote{\url{http://datacentre.chass.utoronto.ca/census/}}, tabulated by
-CTs,  from 1970 to 2010. The prototype interface allows access to 41 regions, 29
+CTs,  from 1970 to 2010. \revision{Accidentaly, the US data for 2010 is actually
+not from the decennial census, but from the ACS 2006-2010. Further, the regions
+selected do not correspond to any pre-defined regions (metros, cities, census
+areas), but to arbitrary regions defined around a location of interest. We
+selected a minimal set of aspects for each country, and they are not similar to
+each other, out of convenience, since the variable matching was a manual
+process. These caveats would likely compromise any serious attempt on a
+comprehensive demographic study, but this is not the objective of this
+experiment. We aim only to test and validate our methodology, comparing our
+results to pre-existing literature insights. Indeed, our results were perfectly
+aligned to several other studies, despite these methodological missteps, which
+could arguably be an indicator of the robustness of our method.}
+
+The prototype interface allows access to 41 regions, 29
 in the US and 12 in Canada. New York City was split into its boroughs to avoid
 memory crashes on the client browser due to the high number of CTs.  We used
 five aspects for the USA: Education level, Family income, Marital status,
@@ -80,8 +93,10 @@ We consider a region that is approximately the administrative border of the
 current city of Toronto, using all seven available aspects with equal weights.
 While Chicago was fairly stable, Toronto is known to be a more dynamic and
 diverse city, with significant and increasing immigrant
-population~\citep{hulchanski2007three,Fong2011}, especially Asian~\citep{Fong2003}. 
-Toronto is also known for a stable and well defined Jewish community~\citep{Harold2018, Fong2011}. Therefore, we expect the combination of stable and dynamic regions on the results, with Place of Birth,
+population~\citep{hulchanski2007three,Fong2011}, especially
+Asian~\citep{Fong2003}. Toronto is also known for a stable and well defined
+Jewish community~\citep{Harold2018, Fong2011}. Therefore, we expect a
+combination of stable and dynamic regions on the results, with Place of Birth,
 Home Language, and Religion identified as relevant aspects. The results are
 summarised in Figure~\ref{fig:to}, considering eight clusters.
 
@@ -158,136 +173,136 @@ Average Income, which appears to be a good proxy variable nonetheless. This
 scenario showcases the ability of our method and interface to capture and
 understand the sources of urban volatility.
 
-\subsection{Los Angeles}
+% \subsection{Los Angeles}
 
-We selected for this scenario a region around the metropolitan area of Los
-Angeles (LA), following urban density. While Chicago and Toronto demonstrated
-the abilities of our method to examine stable and dynamic cities, LA is considerably
-larger, both in population and area. Since our method identifies only the eight
-most distinct groups, we expect that some groups will not be identified,
-especially if their characterisation is similar to another groups. Further, our
-system does not include the census variables related to Hispanic heritage, which
-were only included in the newer censuses. However, from the literature, we
-expect to see some clusters where Race is an important aspect, including White,
-Black, and Asian~\citep{Reibel2003}.
-
-
+% We selected for this scenario a region around the metropolitan area of Los
+% Angeles (LA), following urban density. While Chicago and Toronto demonstrated
+% the abilities of our method to examine stable and dynamic cities, LA is considerably
+% larger, both in population and area. Since our method identifies only the eight
+% most distinct groups, we expect that some groups will not be identified,
+% especially if their characterisation is similar to another groups. Further, our
+% system does not include the census variables related to Hispanic heritage, which
+% were only included in the newer censuses. However, from the literature, we
+% expect to see some clusters where Race is an important aspect, including White,
+% Black, and Asian~\citep{Reibel2003}.
 
 
-The summary of the results using all aspects with equal weights and eight
-clusters is illustrated in Figure~\ref{fig:la}. The full statistical description
-of the clusters is illustrated in Figure~\ref{fig:laAll}, where the most
-relevant aspect of each cluster is highlighted. From the trajectories plot, we
-can see that there is a large but shrinking cluster, depicted in green, one
-increasing cluster in purple, an almost constant orange cluster, a smaller but
-increasing pink cluster, and three other small clusters. The corresponding map
-illustrates where these clusters are located, and that they are somewhat
-geographically stable, with some movement between the green, orange, and purple
-clusters.
-
-\begin{figure}
-    \centering 
-    \includegraphics[width=0.975\linewidth]{LA.pdf}
-    \caption{Result for Los Angeles with 8 clusters, including three small and
-        ephemeral clusters. Cluster characterisation is displayed
-        in Figure~\ref{fig:laAll}.\label{fig:la}}
-\end{figure}
-
-From Figure~\ref{fig:laAll}, we can see that the green cluster is characterised
-by a high percentage of White population, low percentage of population in the
-lowest income bracket, mostly administrative occupations, and about 30\% of the
-population with four or more years of college. The orange cluster is
-characterised by a high percentage of Black population, with few people in the
-highest range of income and education. The purple cluster corresponds to a high
-concentration of "Other" in race, which includes Hispanic for this dataset, high
-concentration of Labourers, and low education and income. The pink cluster
-contains a high percentage of Asian population and about 30\% of the population
-with four or more years of college. The light green cluster contains very few
-people in the lower income bracket, mostly White population, with the highest
-percentage of population with four or more years of college, working
-administrative jobs, and a high concentration of singles. The yellow cluster
-represents Black population, with higher level of education and income, mostly
-working administrative jobs. The brown cluster represent a majority of single
-population, working administrative jobs with mostly low income. The dark grey
-cluster is characterised by all its population in the lowest income bracket, low
-education level, with a majority of White population. Since the extremes in the
-boxplots of the grey cluster are not significantly different, we can also
-surmise that this cluster is either small or homogeneous.
-
-\begin{figure*}
-    \centering 
-    \includegraphics[width=0.95\linewidth]{laAll.pdf}
-    \caption{Full characterisation of the eight clusters found for LA. The red
-     rectangles indicate the most relevant aspects for each
-     cluster.\label{fig:laAll}}
-\end{figure*}
-
-The  green, orange, and purple clusters present a significant intra-cluster
-variance in most variables, as indicated by extreme whiskers of the boxplots.
-While fifty percent of the CTs in the green cluster have between 20\% and 40\%
-of people in the lowest income bracket, that cluster also includes CTs where
-none and all the population belongs to that bracket. This might indicate that
-this cluster represents different groups of people that are not different enough
-to be separated at this level of the hierarchy. Conversely, the light green,
-brown, and dark grey clusters are different enough to be separated into their
-own clusters at this level, despite being small and ephemeral, including only a
-few CTs. 
-
-The orange area in the map in Figure~\ref{fig:la} presents movement, indicated by
-the presence of green and purple tones mixed with the orange, which may warrant
-further exploration. By clicking on the orange bar above the boxplot, we select
-all trajectories that contain the orange cluster. The corresponding details are
-illustrated in Figure~\ref{fig:labh}. This shows a location change, where the
-orange cluster is progressively replaced by the purple cluster on its east side,
-and in turn expanding to the west. Interestingly, the population increased, the
-racial profile changed, but the distribution of income was reasonably stable,
-with a higher amount of the population in the lowest income range and very few
-people in the highest income range. Indeed, the income  difference is
-significant when compared to the city-wide distribution.
-
-\begin{figure}
-    \centering 
-    \includegraphics[width=0.75\linewidth]{laBH.pdf}
-    \caption{Top: Geographic changes in the majority Black population cluster
-    (orange) and Labourers cluster (green). Bottom: Income evolution for this
-    region (black) and the whole city (grey).\label{fig:labh}}
-\end{figure}
 
 
-A portion of this region is classified into the green cluster in 2010,
-indicating a majority white population. To further understand that change, we
-clear the current selection, and select all regions that changed from orange in
-1970 to green in 2010, using the transition matrix. A portion of the resulting
-region, near the Florence-Graham region, is depicted in Figure~\ref{fig:laVol},
-along with the temporal evolution of Race. Despite this difference, the other
-aspects are similar to the ones from the region in Figure~\ref{fig:labh}, with
-slightly lower income and education profiles. While the racial aspect changed
-considerably, the economic and educational aspects stayed the same.
+% The summary of the results using all aspects with equal weights and eight
+% clusters is illustrated in Figure~\ref{fig:la}. The full statistical description
+% of the clusters is illustrated in Figure~\ref{fig:laAll}, where the most
+% relevant aspect of each cluster is highlighted. From the trajectories plot, we
+% can see that there is a large but shrinking cluster, depicted in green, one
+% increasing cluster in purple, an almost constant orange cluster, a smaller but
+% increasing pink cluster, and three other small clusters. The corresponding map
+% illustrates where these clusters are located, and that they are somewhat
+% geographically stable, with some movement between the green, orange, and purple
+% clusters.
 
-\begin{figure}
-    \centering 
-    \includegraphics[width=0.75\linewidth]{laVol.pdf}
-    \caption{Details for a volatile region contained in the area of
-         Figure~\ref{fig:labh}. This region went from Black to Hispanic to
-        White.\label{fig:laVol}}
-\end{figure}
+% \begin{figure}
+%     \centering 
+%     \includegraphics[width=0.975\linewidth]{LA.pdf}
+%     \caption{Result for Los Angeles with 8 clusters, including three small and
+%         ephemeral clusters. Cluster characterisation is displayed
+%         in Figure~\ref{fig:laAll}.\label{fig:la}}
+% \end{figure}
+
+% From Figure~\ref{fig:laAll}, we can see that the green cluster is characterised
+% by a high percentage of White population, low percentage of population in the
+% lowest income bracket, mostly administrative occupations, and about 30\% of the
+% population with four or more years of college. The orange cluster is
+% characterised by a high percentage of Black population, with few people in the
+% highest range of income and education. The purple cluster corresponds to a high
+% concentration of "Other" in race, which includes Hispanic for this dataset, high
+% concentration of Labourers, and low education and income. The pink cluster
+% contains a high percentage of Asian population and about 30\% of the population
+% with four or more years of college. The light green cluster contains very few
+% people in the lower income bracket, mostly White population, with the highest
+% percentage of population with four or more years of college, working
+% administrative jobs, and a high concentration of singles. The yellow cluster
+% represents Black population, with higher level of education and income, mostly
+% working administrative jobs. The brown cluster represent a majority of single
+% population, working administrative jobs with mostly low income. The dark grey
+% cluster is characterised by all its population in the lowest income bracket, low
+% education level, with a majority of White population. Since the extremes in the
+% boxplots of the grey cluster are not significantly different, we can also
+% surmise that this cluster is either small or homogeneous.
+
+% \begin{figure*}
+%     \centering 
+%     \includegraphics[width=0.95\linewidth]{laAll.pdf}
+%     \caption{Full characterisation of the eight clusters found for LA. The red
+%      rectangles indicate the most relevant aspects for each
+%      cluster.\label{fig:laAll}}
+% \end{figure*}
+
+% The  green, orange, and purple clusters present a significant intra-cluster
+% variance in most variables, as indicated by extreme whiskers of the boxplots.
+% While fifty percent of the CTs in the green cluster have between 20\% and 40\%
+% of people in the lowest income bracket, that cluster also includes CTs where
+% none and all the population belongs to that bracket. This might indicate that
+% this cluster represents different groups of people that are not different enough
+% to be separated at this level of the hierarchy. Conversely, the light green,
+% brown, and dark grey clusters are different enough to be separated into their
+% own clusters at this level, despite being small and ephemeral, including only a
+% few CTs. 
+
+% The orange area in the map in Figure~\ref{fig:la} presents movement, indicated by
+% the presence of green and purple tones mixed with the orange, which may warrant
+% further exploration. By clicking on the orange bar above the boxplot, we select
+% all trajectories that contain the orange cluster. The corresponding details are
+% illustrated in Figure~\ref{fig:labh}. This shows a location change, where the
+% orange cluster is progressively replaced by the purple cluster on its east side,
+% and in turn expanding to the west. Interestingly, the population increased, the
+% racial profile changed, but the distribution of income was reasonably stable,
+% with a higher amount of the population in the lowest income range and very few
+% people in the highest income range. Indeed, the income  difference is
+% significant when compared to the city-wide distribution.
+
+% \begin{figure}
+%     \centering 
+%     \includegraphics[width=0.75\linewidth]{laBH.pdf}
+%     \caption{Top: Geographic changes in the majority Black population cluster
+%     (orange) and Labourers cluster (green). Bottom: Income evolution for this
+%     region (black) and the whole city (grey).\label{fig:labh}}
+% \end{figure}
 
 
-These results are visually similar to the analysis presented by
-Dellmelle~\citep{Delmelle2016}.  What was there identified as 'persistently
-struggling' corresponds to the purple cluster in Figure~\ref{fig:la}; some
-portions of the 'stable elite' cluster, near Inglewood, correspond to the high
-income, high education yellow cluster. The other groups identified by that study
-were clumped by our system into the green cluster, which would be further
-divided if more than eight clusters were to be used. 
+% A portion of this region is classified into the green cluster in 2010,
+% indicating a majority white population. To further understand that change, we
+% clear the current selection, and select all regions that changed from orange in
+% 1970 to green in 2010, using the transition matrix. A portion of the resulting
+% region, near the Florence-Graham region, is depicted in Figure~\ref{fig:laVol},
+% along with the temporal evolution of Race. Despite this difference, the other
+% aspects are similar to the ones from the region in Figure~\ref{fig:labh}, with
+% slightly lower income and education profiles. While the racial aspect changed
+% considerably, the economic and educational aspects stayed the same.
 
-If Toronto illustrates a relatively smooth process of whole-sale
-diversification, Los Angeles shows the ability of our system and method to
-uncover more intensive smaller-scale processes of neighbourhood change. This
-capacity to examine and classify different types of change operating at
-different scales demonstrates the flexibility of the method and tool for
-advancing the more open-ended notion of "neighbourhood" envisioned by recent
-neighbourhood research. 
+% \begin{figure}
+%     \centering 
+%     \includegraphics[width=0.75\linewidth]{laVol.pdf}
+%     \caption{Details for a volatile region contained in the area of
+%          Figure~\ref{fig:labh}. This region went from Black to Hispanic to
+%         White.\label{fig:laVol}}
+% \end{figure}
+
+
+% These results are visually similar to the analysis presented by
+% Dellmelle~\citep{Delmelle2016}.  What was there identified as 'persistently
+% struggling' corresponds to the purple cluster in Figure~\ref{fig:la}; some
+% portions of the 'stable elite' cluster, near Inglewood, correspond to the high
+% income, high education yellow cluster. The other groups identified by that study
+% were clumped by our system into the green cluster, which would be further
+% divided if more than eight clusters were to be used. 
+
+% If Toronto illustrates a relatively smooth process of whole-sale
+% diversification, Los Angeles shows the ability of our system and method to
+% uncover more intensive smaller-scale processes of neighbourhood change. This
+% capacity to examine and classify different types of change operating at
+% different scales demonstrates the flexibility of the method and tool for
+% advancing the more open-ended notion of "neighbourhood" envisioned by recent
+% neighbourhood research. 
 
 
 
@@ -375,7 +390,4 @@ data, plots, and maps to be used in reports and publications (C, D, E). More
 importantly, while these experts were aware that our method does not perform
 geographic harmonisation, none of them mention it. We did not specifically ask
 if this difference led to unexpected results, but rather if they found
-interesting insights. Most experts found phenomena corroborated by the
-specialised literature, indicating that our methodology produces equivalent
-results, with a fraction of the effort. We interpret the fact that most of them
-were interested in the next steps as confirmation of the accuracy of the method.
+interesting insights. 
