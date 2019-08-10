@@ -67,34 +67,40 @@ properties, but we adopted networks to allow the use of the vast existing
 literature and methods.
 
 
-\subsection{Data clustering}
+\subsection{Data clustering and regionalisation}
 
 Data clustering is one of the elementary processes for data analysis,
 simplifying the data into a smaller number of homogeneous sets that can be
 interpreted in the same way. There is no shortage of contributions for this
-problem~\citep{Fahad2014}, but most neighbourhood related applications still
-rely on k-means~\citep{jain2010data,Delmelle2016} and, to a lesser extent, Self
-Organising Maps~\citep{Delmelle2017,Ling2016}.
+problem~\citep{Fahad2014}\revision{, since variations of it appear in almost all
+scientific fields. Most neighbourhood related applications still rely on
+k-means~\citep{jain2010data,Delmelle2016}, the Louvain method for community
+detection~\citep{blondel2008Louvain,Thomas2012}, or, to a lesser extent, Self
+Organising Maps~\citep{Delmelle2017,Ling2016,Dani2013_som_maxp}.}
 
-However, a method for geographic data analysis should not ignore the geographic
-component of the data, and we extend research exploring ways to incorporate it.
-One straightforward option for agglomerative methods~\citep{han2001spatial} is
-to consider only nearby clusters for merging~\citep{Chavent2017}, which can also
-be done for k-means~\citep{soor2018extending}. Alternatively, the spatial
-distance could be directly added to the inter-cluster metric~\citep{Chavent2017}
-via a mixing parameter, which adds flexibility to the method, but introduces the
-problem of finding the correct application-dependent values.
 
-Indeed, one crucial step in most clustering algorithms is the definition of the
-number of clusters. We avoid this problem by considering hierarchical
-methods~\citep{soille2012morphological}, where the result is not a partition of
-the data, but a tree of partitions, similar to a dendogram. This approach is
-interesting for interactive methods, because it allows the user to change the
-number of clusters on the fly. Since our data is represented as a network, we
-opted for an heuristic variation of the maximum weighted matching algorithm
-called \emph{sorted maximal matching}~\citep{markus2017}, which merges clusters
-based on the weights of the edges between pairs of clusters. 
+\revision{In geography, this problem is known as
+\emph{regionalisation}~\citep{montello2003regions}, a rather old problem that
+has been throughly explored, leveraging different mathematical tools, including
+discrete topology~\citep{brantingham1978topological} and discrete
+geometry~\citep{assunccao2006efficient}. Indeed, network-based methods are among
+the current state-of-the-art~\citep{Guo2008Redcap,maxp}. However,
+\emph{temporal} regionalisation is significantly less explored, especially in a
+demographic context, arguably due to the difficulties in dealing with
+unharmonised longitudinal data.
 
+
+Since we adopted a network-based data representation and our objectives include
+an interactive interface, we opted for an heuristic variation of the maximum
+weighted matching algorithm called \emph{sorted maximal
+matching}~\citep{markus2017}, because of its simplicity, customisability, and
+fast computation times. This algorithm merges clusters based on the weights of
+the edges between pairs of clusters, creating an hierarchy over the data,
+allowing the user to change the number of clusters without reprocessing the
+data. Changing the clustering algorithm would lead to different results, but any
+hierarchical network clustering method can be used in our framework. Indeed, our
+core contribution is a different interpretation of the data representation, not
+a new clustering or regionalisation method.}
 
 
 \subsection{Cluster characterisation}
@@ -119,7 +125,7 @@ variables at the same time.
 
 Using data clustering, we can represent the region's cluster instead of all the
 its variables~\citep{Alce2018,Valdivia2015,VonLandesberger2016}. While this
-simplifies the geographic portion of the visualization, it introduces the
+simplifies the geographic portion of the visualisation, it introduces the
 problem of how to summarise the contents of each cluster. One traditional
 approach is to use parallel coordinates plot~\citep{ferreira2015urbane}, but
 these they can get cluttered representing similar clusters over several

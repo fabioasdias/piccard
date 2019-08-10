@@ -35,7 +35,7 @@
 %TODO macros
 \usepackage{xargs}
 \usepackage[pdftex,dvipsnames]{xcolor} 
-\newcommand{\revision}[1]{\protect{\color{blue}{#1}}}
+\newcommand{\revision}[1]{\marginpar{\quad ---}\protect{\color{blue}{#1}}}
 \usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
 \newcommandx{\unsure}[2][1=]{\todo[linecolor=red,backgroundcolor=red!25,bordercolor=red,#1]{#2}}
 \newcommandx{\change}[2][1=]{\todo[linecolor=blue,backgroundcolor=blue!25,bordercolor=blue,#1]{#2}}
@@ -75,7 +75,7 @@
 
 
 \doublespacing
-\title{Unharmonised longitudinal data processing using networks}
+\title{Temporal regionalisation of unharmonised data using networks}
 %\author{Fabio Dias, Daniel Silver\\University of Toronto}
 \author{}
 
@@ -131,13 +131,13 @@
 
 
 \begin{abstract}
-	This paper proposes a novel method for processing spatio-temporal information
-	for data-driven identification of neighbourhoods and their dynamics.  Using a
-	simple network representation, the method enables longitudinal analysis of
-	regions \emph{without the need for geographical harmonisation}. The proposed
-	method therefore sidesteps a laborious and error-prone process that is
-	nevertheless currently used in virtually all longitudinal analysis of
-	region-based data.
+  \revision{
+	This paper proposes a novel method for data-driven identification of
+	spatio-temporal neighbourhoods and their dynamics.  Using a simple network
+	representation, the method enables temporal regionalisation \emph{without the
+	need for geographical harmonisation}. The proposed method therefore sidesteps
+	an error-prone process that is nevertheless currently used in virtually all
+	longitudinal analysis of region-based data.
     
   To allow for a transparent corroboration of our method, we use it as a basis
   for an interactive and intuitive interface for the progressive exploration of
@@ -146,15 +146,15 @@
   stability and change and identify detailed local processes.
 
   
-  We validate our method with illustrative scenarios from Chicago, Toronto, and
-  Los Angeles, with results that match recent literature. The system is publicly
-  available, with data from the decennial censuses for over forty regions in the
-  USA and Canada between 1970 and 2010, but the methodology is suitable for any
-  region-based data.
+  We validate our method with illustrative scenarios from Chicago and Toronto,
+  with results that match the established literature. The system is publicly
+  available, with demographic data for over forty regions in the USA and Canada
+  between 1970 and 2010, but the methodology is suitable for any region-based
+  data.}
 \end{abstract}
 
 \section{Introduction}\label{sec:introduction}
-% These are separate files, you can open them on the menu on the left
+
 \input{intro}
 
 \input{related}
@@ -167,8 +167,8 @@
 
 
 \section{Conclusion}
-The objective of this work was to demonstrate that longitudinal studies of
-evolving regions can be performed without geographical harmonisation. We
+The objective of this work was to demonstrate that\revision{ temporal
+regionalisation can be performed without geographical harmonisation}. We
 proposed an alternative methodology that robustly considers the data in its
 original geography, without the creation of arbitrary artificial data points.
 
@@ -180,18 +180,16 @@ well.
 
 The feedback from experts was positive and most of them were able to extract
 insight from the prototype while indicating interest in using it for their
-research efforts. Indeed, the experts also demonstrated further interest in
-similar tools, indicating that visual analytics methods that leverage user
-interaction can be valuable in this field.  Since our interface can be used by
-non-experts as well, we also contributed to scientific dissemination and
-stakeholder transparency in urban sciences.
+research efforts.  Since our interface can be used by non-experts as well, we
+also contributed to scientific dissemination and stakeholder transparency in
+urban sciences.
 
 
 More importantly, we introduced a new idea that, apparently, was never
 considered in the literature. While significant resources have been invested to
-improve geographical harmonisation, rarely if at all has anybody doubted that it
-was really necessary in the first place. We proved that it is not necessary, at
-least for the vast majority of demographic studies, especially for
+improve geographical harmonisation, rarely, if at all, has anybody doubted that
+it was really necessary in the first place. We proved that it is not necessary,
+at least for the vast majority of demographic studies, especially for
 neighbourhood effects and neighbourhood dynamics.
 
 \censure{
@@ -200,9 +198,9 @@ This research was supported by a University of Toronto Connaught Global
 Challenge grant and is part of the Urban Genome Project. The authors thank Cary
 Wu, Ethan Fosse, Fernando Calderón Figueroa, Patrick Adler, and James Murdoch
 for their expert opinions; Mark S. Fox, Robert M. Wright, Ultan Byrne, Matti
-Siemiatycki, Shauna Brail, and Richard Florida for general guidance and support;
-and the anonymous reviewers for their constructive comments.
-}
+Siemiatycki, Shauna Brail, Jeff Allen, Steven Farber, and Richard Florida for
+general guidance and support; and the anonymous reviewers for their constructive
+comments.}
 
 \bibliographystyle{chicago}
 \bibliography{rev}

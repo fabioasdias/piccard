@@ -10,11 +10,13 @@ datasets~\citep{Logan2014,nhgis}, convenient computational
 tools~\citep{rey2018spatio}, and new sources of data~\citep{Poorthuis2018}.
 
 
-These advances have made neighbourhood constructs more tractable to quantitative
-analysis. Yet new challenges have also emerged, especially at the convergence of
-research on neighbourhood effects and neighbourhood dynamics. Neighbourhood
-effects research assumes knowledge about the nature and scope of "the
-neighbourhood" that presumably shapes individual
+\revision{In this work, we consider neighbourhoods as \emph{formal
+regions}~\citep{montello2003regions}, geographically continous areas with
+similar data characteristics.} These advances have made neighbourhood constructs
+more tractable to quantitative analysis. Yet new challenges have also emerged,
+especially at the convergence of research on neighbourhood effects and
+neighbourhood dynamics. Neighbourhood effects research assumes knowledge about
+the nature and scope of "the neighbourhood" that presumably shapes individual
 outcomes~\citep{Kwan2018,Shelton2019}. Concurrently, researchers note that
 neighbourhoods are not necessarily fixed containers in which other processes
 occur, but themselves dynamically
@@ -158,19 +160,20 @@ increases the distance between measurement and reality.
         \label{fig:intuition}}
 \end{figure}
 
-Instead, we propose a network representation. Intuitively, a \emph{network}
-(also called a \emph{graph}) is a collection of entities (nodes) that are
-related to each other (edges). In this case, each different aggregation area is
-represented as a node and we connect nodes that have overlapping geographical
-areas, leading to the network illustrated on the right of
-Figure~\ref{fig:intuition}. By partitioning the network into connected nodes
-that are similar, we are effectively identifying clusters in the spatio-temporal
-data, as illustrated by the colours of the nodes on the right side of
-Figure~\ref{fig:intuition}. Further, all the possible paths of change can be
-obtained by computing sequences of nodes over time, in this case: (A, C, F), (A,
-D, F), (A, D, G), and (B, E, H). This representation is also suited for
-geographically consistent regions, as illustrated by the stable park in this
-example, and is therefore a generalisation of the traditional paradigm.
+Instead, we propose a network-based representation. A \emph{network} (also
+called a \emph{graph}) is a collection of entities (nodes) that are related to
+each other (edges). In this case, each different aggregation area is represented
+as a node and we connect nodes that have overlapping geographical areas\revision{ in
+different times or are neighbours in the same time}, leading to the network
+illustrated on the right of Figure~\ref{fig:intuition}. By partitioning the
+network into connected nodes that are similar, we are effectively identifying
+clusters in the spatio-temporal data, as illustrated by the colours of the nodes
+on the right side of Figure~\ref{fig:intuition}. Further, all the possible paths
+of change can be obtained by computing sequences of nodes over time, in this
+case: (A, C, F), (A, D, F), (A, D, G), and (B, E, H). This representation is
+also suited for geographically consistent regions, as illustrated by the stable
+park in this example, and is therefore a generalisation of the traditional
+paradigm.
 
 %I'm adding this because Jeff Allen (Farber's guy) struggled with this.
 Note that the edges of this network merely encode that two regions are related.
