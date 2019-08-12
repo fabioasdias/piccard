@@ -118,7 +118,7 @@ class dataStore(object):
             for n in nodes:
                 res[-1][outIbyN[n],:]=f(self._tabdata[self._IDbyN[n],ind[v]])
         return(res,outNbyInd)
-    def getValue(self, n, dsconf=None):
+    def getValue(self, n, dsconf=None, normalized=True):
         """If dsconf==None, returns all variables, original data, in the avVars order"""
         if (dsconf):
             ivars=dsconf['ivars']
@@ -126,11 +126,14 @@ class dataStore(object):
         else:
             ivars=[v['id'] for v in self._avVars]
             fs=[0,]*len(ivars)
-
         ret=[]
-        for i in range(len(ivars)):
-            r=self._rowByVarID[ivars[i]]
-            ret.append(self._avFilters[fs[i]]['func'](self._tabdata[self._IDbyN[n],r[0]:r[1]]))
+        if normalized:
+            for i in range(len(ivars)):
+                r=self._rowByVarID[ivars[i]]
+                ret.append(self._tabdata[self._IDbyN[n],r[0]:r[1]])
+        else:
+            for v in [self._avVars[i]['name'] for i in ivars]:
+                ret.append(np.array(self._rawdata[n][v]['values']))
         return(ret)
     def distance(self, node1, node2, dsconf):
         ivars=dsconf['ivars']

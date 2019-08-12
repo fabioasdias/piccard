@@ -3,23 +3,24 @@ import json
 import os
 import pickle
 import sys
+from collections import defaultdict
 from itertools import combinations, combinations_with_replacement
 from os import makedirs
 from os.path import exists
 from time import time
 
-import numpy as np
-from numpy import nan
-
 import cherrypy
 import networkx as nx
-from dataStore import dataStore
-from hierMWW import hierMWW
-from mmg import segmentation
+import numpy as np
 from networkx.readwrite import json_graph
+from numpy import nan
 from scipy.spatial.distance import pdist, sqeuclidean, squareform
 from sklearn.manifold import TSNE
 from sklearn.neighbors import NearestNeighbors
+
+from dataStore import dataStore
+from hierMWW import hierMWW
+from mmg import segmentation
 
 # import matplotlib.pylab as plt
 
@@ -146,42 +147,34 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
     
     years = curCity['years']
 
-    states = dict()
-    pop = dict()
+    states = defaultdict(lambda : defaultdict(list))
+    raw = defaultdict(lambda : defaultdict(list)) #year, aspect
+    pop = defaultdict(int)
 
     indVars={v:i for i,v in enumerate(dsconf['ivars'])}
 
     for n in G.nodes():
         V=ds.getValue(n,dsconf)
-        if (n[0] not in states):
-            states[n[0]]=dict()
-            pop[n[0]]=0
-            
-        pop[n[0]]+=ds.getPopulation(n)
-
-
+        y=n[0]
+        pop[y]+=ds.getPopulation(n)
+        rawVals = ds.getValue(n,dsconf,normalized=False)
+        
         for i in dsconf['ivars']:
-            if (i not in states[n[0]]):
-                states[n[0]][i]=[]
-            states[n[0]][i].append(V[indVars[i]])
+            raw[y][i].append(rawVals[indVars[i]])
+            states[y][i].append(V[indVars[i]])
             
-    smin=dict()
-    smax=dict()
-    smed=dict()
-    sq1=dict()
-    sq3=dict()
+    smin=defaultdict(dict)
+    smax=defaultdict(dict)
+    smed=defaultdict(dict)
+    sq1=defaultdict(dict)
+    sq3=defaultdict(dict)
+    rawPercentages=defaultdict(dict)
 
     for y in states:
-        smin[y]=dict()
-        smax[y]=dict()
-        smed[y]=dict()
-        sq1[y]=dict()
-        sq3[y]=dict()
         for i in states[y]:
             states[y][i]=np.array(states[y][i])
             smed[y][i], smin[y][i], smax[y][i], sq1[y][i], sq3[y][i]=_doStats(states[y][i])
-
-
+            rawPercentages[y][i]=np.sum(np.array(raw[y][i]),axis=0)/pop[y]
 
     ret=[]
 
@@ -197,9 +190,10 @@ def _TemporalDifferences(curCity, dsconf, H, nodes=None):
                                    'max':smax[y][i][j],
                                    'Q1' : sq1[y][i][j],
                                    'Q3' : sq3[y][i][j],
-                                   'med':smed[y][i][j],
-                                   'y' :0,
-                                   'x': (sq1[y][i][j]+sq3[y][i][j])/2.0
+                                #    'med':smed[y][i][j],
+                                   'med': rawPercentages[y][i][j],
+                                #    'y' :0,
+                                #    'x': (sq1[y][i][j]+sq3[y][i][j])/2.0
                                 }]
             ranges.append(row)
         ret.append({'name':ds.getVarName(i),'ranges':ranges})
@@ -705,7 +699,7 @@ if __name__ == '__main__':
             baseFolder + '/normGeoJsons.zip', cData['basegraph'])
 
         cities.append(cData)
-        webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
+        # webapp.getSegmentation(cityID=i)#,variables='1,3,5,6,7')
         # break
 
     conf = {
