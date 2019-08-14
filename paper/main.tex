@@ -75,7 +75,7 @@
 
 
 \doublespacing
-\title{Temporal regionalisation of unharmonised data using networks}
+\title{Keep it real! \\Handling evolving regions without artificial data points}
 %\author{Fabio Dias, Daniel Silver\\University of Toronto}
 \author{}
 
@@ -131,26 +131,26 @@
 
 
 \begin{abstract}
-  \revision{
-	This paper proposes a novel method for data-driven identification of
+  \revision{This paper proposes a novel method for data-driven identification of
 	spatio-temporal neighbourhoods and their dynamics.  Using a simple network
 	representation, the method enables temporal regionalisation \emph{without the
-	need for geographical harmonisation}. The proposed method therefore sidesteps
-	an error-prone process that is nevertheless currently used in virtually all
-	longitudinal analysis of region-based data.
+	need for geographical harmonisation}. Our proposal removes the technical
+	limitations that required the creation of artificial data points that is
+	currently used in virtually all longitudinal analysis of evolving region-based
+	data.
     
   To allow for a transparent corroboration of our method, we use it as a basis
   for an interactive and intuitive interface for the progressive exploration of
-  the results. The interface gives direct access to the original data to both
-  experts and non-experts, allowing users to characterize broad patterns of
-  stability and change and identify detailed local processes.
+  the results. The interface guides the user through the original data, enabling
+  both experts and non-experts to characterize broad patterns of stability and
+  change and identify detailed local processes.
 
   
-  We validate our method with illustrative scenarios from Chicago and Toronto,
-  with results that match the established literature. The system is publicly
+  The proposed methodology is suitable for any region-based data, and we
+  validate our method with illustrative scenarios from Chicago and Toronto, with
+  results that match the established literature. The system is publicly
   available, with demographic data for over forty regions in the USA and Canada
-  between 1970 and 2010, but the methodology is suitable for any region-based
-  data.}
+  between 1970 and 2010.}
 \end{abstract}
 
 \section{Introduction}\label{sec:introduction}
@@ -188,9 +188,9 @@ urban sciences.
 More importantly, we introduced a new idea that, apparently, was never
 considered in the literature. While significant resources have been invested to
 improve geographical harmonisation, rarely, if at all, has anybody doubted that
-it was really necessary in the first place. We proved that it is not necessary,
-at least for the vast majority of demographic studies, especially for
-neighbourhood effects and neighbourhood dynamics.
+it was really necessary in the first place. \revision{We proved that it is not
+necessary for regionalisation, especially for neighbourhood effects and
+neighbourhood dynamics.}
 
 \censure{
 \section*{Acknowledgement}

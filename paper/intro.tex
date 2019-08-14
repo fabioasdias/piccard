@@ -10,21 +10,20 @@ datasets~\citep{Logan2014,nhgis}, convenient computational
 tools~\citep{rey2018spatio}, and new sources of data~\citep{Poorthuis2018}.
 
 
-\revision{In this work, we consider neighbourhoods as \emph{formal
-regions}~\citep{montello2003regions}, geographically continous areas with
-similar data characteristics, which these advances made more tractable to
-approach in a data-driven fashion.} Yet new challenges have also emerged,
-especially at the convergence of research on neighbourhood effects and
-neighbourhood dynamics. Neighbourhood effects research assumes knowledge about
-the nature and scope of "the neighbourhood" that presumably shapes individual
-outcomes~\citep{Kwan2018,Shelton2019}. Concurrently, researchers note that
-neighbourhoods are not necessarily fixed containers in which other processes
-occur, but themselves dynamically
-evolve~\citep{Delmelle2017,Reades2019,li2018new}. The result is to open up key
-assumptions about neighbourhoods for theoretical and empirical examination: how
-do we appropriately define and compare neighbourhoods at a given time?; how do
-we appropriately define and compare the temporal trajectories of
-neighbourhoods?; and can we do both at once, "fully
+Yet new challenges have also emerged, especially at the convergence of research
+on neighbourhood effects and neighbourhood dynamics. Neighbourhood effects
+research assumes knowledge about the nature and scope of "the neighbourhood"
+that presumably shapes individual outcomes~\citep{Kwan2018,Shelton2019}.
+Concurrently, researchers note that neighbourhoods are not necessarily fixed
+containers in which other processes occur, but themselves dynamically
+evolve~\citep{Delmelle2017,Reades2019,li2018new}. \revision{In this work, we
+consider neighbourhoods as \emph{formal regions}~\citep{montello2003regions},
+geographically continous areas with similar data characteristics, which these
+advances made more tractable to approach in a data-driven fashion.} The result
+is to open up key assumptions about neighbourhoods for theoretical and empirical
+examination: how do we appropriately define and compare neighbourhoods at a
+given time?; how do we appropriately define and compare the temporal
+trajectories of neighbourhoods?; and can we do both at once, "fully
 interactionally"~\citep{Abbott1997}: classify neighbourhoods now based on where
 they came from and where they are going?
 
@@ -36,7 +35,7 @@ requirement is difficult to satisfy, as most longitudinal datasets are based on
 pre-defined tabulation areas that are routinely modified by data collection
 agencies, usually to follow population changes. 
 
-The standard approach then is to \emph{geographically harmonise} data. This
+The standard approach then is to \emph{geographically harmonise} the data. This
 involves interpolating existing measurements into a common set of
 regions~\citep{Logan2014,Hallisey2017,Allen2018}. Recent computational tools
 have somewhat simplified this process~\citep{rey2018spatio}, but it still
@@ -46,11 +45,11 @@ these question do not necessarily have optimal answers. Indeed, regardless of
 how well this process is performed, it still introduces
 errors~\citep{Logan2016}, even when additional data is
 provided~\citep{eicher2001dasymetric}. Essentially, harmonisation generates
-artificial data points that can potentially lead to inaccurate results, even
-though they are seldom interpreted as such. Nevertheless, because there has been
-no viable alternative, and the results often appear plausible, these concerns
-are generally overlooked. The result is that the harmonisation approach is
-virtually mandatory in the current literature: \emph{"(...) tract-by-tract
+\emph{artificial data points} that can potentially lead to inaccurate results,
+even though they are seldom interpreted as such. Nevertheless, because there has
+been no viable alternative, and the results often appear plausible, these
+concerns are generally overlooked. The result is that the harmonisation approach
+is virtually mandatory in the current literature: \emph{"(...) tract-by-tract
 comparison is not possible unless data from 2000 is interpolated to 2010
 boundaries (...)"}~\citep{Dmowska2017}, \emph{"(...) This limits cross-year
 comparison since data are not representative of the same spatial units. (...)"}
@@ -77,10 +76,10 @@ communication.
 
 We start by presenting an intuitive example of our representation in
 Section~\ref{sec:introduction}, then we review the relevant literature on
-longitudinal studies, data representation, clustering, and spatio-temporal
-visualisation in Section~\ref{sec:related}. Our methodology is introduced in
-detail in Section~\ref{sec:method}, along with the included interface.
-Illustrative scenarios for Chicago, Toronto, and Los Angeles are presented in
+longitudinal studies, data representation, clustering and regionalisation, and
+spatio-temporal visualisation in Section~\ref{sec:related}. Our methodology is
+introduced in detail in Section~\ref{sec:method}, along with the included
+interface. Illustrative scenarios for Chicago and Toronto are presented in
 Section~\ref{sec:study} and the feedback of five field experts are summarised in
 Section~\ref{sec:expert}. Our prototype system is available at
 \censure{\url{http://uoft.me/piccard}}, including more than forty regions in the
@@ -100,7 +99,7 @@ properties that evolve over time -- rows in a table with temporal values as
 columns. By contrast, our method represents each measurement as a separate
 entity and encodes the evolution of these entities over time.
 
-To ease the cognitive transition to a new paradigm, we start with an intuitive
+To ease the cognitive transition to this paradigm, we start with an intuitive
 example of how the method works, using a small portion of a fictitious urban
 region illustrated on the left part of Figure~\ref{fig:intuition}. This example
 includes three different times ($t_0,t_1,t_2$), with different aggregation areas
@@ -108,9 +107,8 @@ identified as letters from A to H. For $t_0$, the initial time, we have areas A
 and B, with small houses and a park, respectively. The park remains stable (B,
 E, and H), but the houses are partially replaced by larger buildings (C and F). 
 
-This example illustrates some of the challenges of harmonisation. None of these
-aggregation areas is clearly suitable as an interpolation target. In fact,
-adopting any of these areas as a target would require merging heterogeneous
+The aggregation areas of none of these years is clearly suitable as an
+interpolation target. Adopting any of them would require merging heterogeneous
 regions and/or dividing homogeneous regions. For instance, by choosing the
 regions of $t_1$, A would be split to match regions C and D, which appears to be
 a rather reasonable approximation in this homogeneous artificial example (even
@@ -177,10 +175,10 @@ paradigm.
 
 %I'm adding this because Jeff Allen (Farber's guy) struggled with this.
 Note that the edges of this network merely encode that two regions are related.
-This is binary information, there is no apportionment, no areal measurements,
-no population percentages associated with the edge. Indeed, our method also
-connects regions of the same time that share borders, representing exactly that
-they are neighbouring areas.
+This is binary information, there is no apportionment, no areal measurements, no
+population percentages, or weights of any kind associated with the edge. Indeed,
+our method also connects regions of the same time that share borders,
+representing exactly that they are neighbouring areas.
 
-In the following, we argue that this network representation allows us to study
-neighbourhood change in a way that does not require an prior interpolation. 
+In the following, we demonstrate that this network representation allows us to
+study neighbourhood change in a way that does not require prior interpolation. 

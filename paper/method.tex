@@ -2,9 +2,9 @@
 \label{sec:method}
 Figure~\ref{fig:overview} presents an overview of the processing steps of the
 proposed method, illustrating how the nodes of the network are used to represent
-the regions. The following sections elaborate this figure and explain the main
-features of the interface we built to visualise and explore the evolution of
-neighbourhoods on the basis of our proposed method.
+the regions. The following sections elaborate on this figure and explain the
+main features of the interface we built to visualise and explore the evolution
+of neighbourhoods on the basis of our proposed method.
 
 
 \begin{figure}
@@ -47,11 +47,15 @@ other nodes.
 
 \subsection{Geographic content clustering}
 Having tied the regions together into a network, we can now partition it to
-identify similar sets of regions. We start by adopting a distance function
-between the nodes, measuring the difference between the data of the regions.
-This value is then associated with the edges, leading to a weighted dynamic
-network. Every node has a collection of histograms, each representing the
-distribution of certain aspect in the population.
+identify similar sets of regions. \revision{In essence, we are performing
+temporal regionalisation by applying a regionalisation method over this
+spatio-temporal network.}
+
+We start by adopting a distance function between the nodes, measuring the
+difference between the data of the regions. This value is then associated with
+the edges, leading to a weighted dynamic network. Every node has a collection of
+histograms, each representing the distribution of certain aspect in the
+population.
 
 Let $\G=(\V,\E)$ be a network, where
 $\V=\{\vertice_1,\vertice_2,\dots,\vertice_n\}$ is the set of nodes and
@@ -81,9 +85,8 @@ parameter to this method: a maximum distance threshold for the merges, to avoid
 the early merging of outliers. We refer the reader to the original
 paper~\citep{markus2017} for more details, including a complete performance
 evaluation using several metrics. \revision{We chose this algorithm because it
-is simple and easily customisable, and while different algorithms will lead to
-different results, our methodology should work with any hierarchical clustering
-algorithm.}
+is fast, simple, and easily customisable, but our methodology should work with
+any hierarchical network clustering algorithm.}
 
 
 Each resulting cluster is contiguous in the network. This means that two
@@ -94,15 +97,17 @@ graph~\citep{scikit-learn} using only the distances between the histograms.
 These edges connect nodes with similar content, if they are not already
 connected, providing a path for the algorithm to group similar nodes.
 \revision{The regions connected by those edges will be merged on the first
-stages of the clustering, since they are very similar, leaving the remaining
+stages of the clustering, since the nodes they connect are, by definition, as
+similar as possible\footnote{This assertion relies on the euclidean distance and
+its relationship with the space where k-nn operates.}, leaving the remaining
 steps of the hierarchy to be determined only by the geographical edges. We
-explored with different numbers of augmentation edges, but the results were not
-consistent, since the distribution of the edges is data dependent. Adding two
-edges per node was the least number of edges that led to stable and consistent
-results in the scenarios available in our prototype. Since the problem of
-balancing the data space with the geographical space is relevant for
-geographical data analysis, this methodology potentially warrants further
-exploration, beyond the scope of this work.}
+experimented with different numbers of augmentation edges, but the results were
+not consistent, since the distribution of the edges is data dependent. Adding
+two edges per node was the smallest number of edges that led to stable and
+consistent results in the scenarios available in our prototype. Since the
+problem of balancing the data space with the geographical space is relevant for
+geographical data analysis, this idea potentially warrants further exploration,
+beyond the scope of this work.}
 
 
 \subsection{Cluster characterisation and variable relevance}
