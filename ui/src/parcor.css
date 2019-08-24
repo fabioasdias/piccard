@@ -1,0 +1,9 @@
+.rv-xy-plot__axis__line{
+    stroke:gray;
+    stroke-width: 1px;
+    /* stroke-dasharray: 2,5; */
+}
+.rv-xy-plot__axis__tick__line{
+    stroke:gray;
+    stroke-width: 1px;
+}
