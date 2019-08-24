@@ -35,7 +35,7 @@
 %TODO macros
 \usepackage{xargs}
 \usepackage[pdftex,dvipsnames]{xcolor} 
-\newcommand{\revision}[1]{\marginpar{\quad ---}\protect{\color{blue}{#1}}}
+\newcommand{\revision}[2]{\marginpar{{\color{blue}{\quad\  #1}}}{\color{blue}{\protect{#2}}}}
 \usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
 \newcommandx{\unsure}[2][1=]{\todo[linecolor=red,backgroundcolor=red!25,bordercolor=red,#1]{#2}}
 \newcommandx{\change}[2][1=]{\todo[linecolor=blue,backgroundcolor=blue!25,bordercolor=blue,#1]{#2}}
@@ -75,7 +75,7 @@
 
 
 \doublespacing
-\title{Keep it real! \\Handling evolving regions without artificial data points}
+\title{Sidestepping geographic harmonisation: a new method for handling data over evolving spatial regions}
 %\author{Fabio Dias, Daniel Silver\\University of Toronto}
 \author{}
 
@@ -131,18 +131,16 @@
 
 
 \begin{abstract}
-  \revision{This paper proposes a novel method for data-driven identification of
-	spatio-temporal neighbourhoods and their dynamics.  Using a simple network
-	representation, the method enables temporal regionalisation \emph{without the
-	need for geographical harmonisation}. Our proposal removes the technical
-	limitations that required the creation of artificial data points that is
-	currently used in virtually all longitudinal analysis of evolving region-based
-	data.
+  \revision{1.1/2.1}{This paper proposes a novel method for data-driven
+  identification of spatio-temporal homogeneous regions and their dynamics,
+  enabling the exploration of their composition and extents.  Using a simple
+  network representation, the method enables temporal regionalisation
+  \emph{without the need for geographical harmonisation}.q
     
   To allow for a transparent corroboration of our method, we use it as a basis
   for an interactive and intuitive interface for the progressive exploration of
   the results. The interface guides the user through the original data, enabling
-  both experts and non-experts to characterize broad patterns of stability and
+  both experts and non-experts to characterise broad patterns of stability and
   change and identify detailed local processes.
 
   
@@ -167,7 +165,7 @@
 
 
 \section{Conclusion}
-The objective of this work was to demonstrate that\revision{ temporal
+The objective of this work was to demonstrate that\revision{2.1}{ temporal
 regionalisation can be performed without geographical harmonisation}. We
 proposed an alternative methodology that robustly considers the data in its
 original geography, without the creation of arbitrary artificial data points.
@@ -182,14 +180,21 @@ The feedback from experts was positive and most of them were able to extract
 insight from the prototype while indicating interest in using it for their
 research efforts.  Since our interface can be used by non-experts as well, we
 also contributed to scientific dissemination and stakeholder transparency in
-urban sciences.
+urban sciences. \unsure{CHECK}\revision{1.12.6/2.6.5}{Building on the comments
+of the experts and other colleagues exposed to our prototype, a future iteration
+of this prototype would include a simplified interface and faster computation
+times, but more importantly the option to define the region of study and add
+more data. This would also allow for a direct comparison between original and
+harmonised data, to further validate the prototype, and explore if our approach
+offers any new insights. Methodologically, the variable matching step is the
+current manual bottleneck of the system, and the next target for removal.}
 
 
 More importantly, we introduced a new idea that, apparently, was never
 considered in the literature. While significant resources have been invested to
 improve geographical harmonisation, rarely, if at all, has anybody doubted that
-it was really necessary in the first place. \revision{We proved that it is not
-necessary for regionalisation, especially for neighbourhood effects and
+it was really necessary in the first place. \revision{2.1}{We proved that it is 
+not necessary for regionalisation, especially for neighbourhood effects and
 neighbourhood dynamics.}
 
 \censure{

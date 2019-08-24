@@ -6,7 +6,7 @@ specific sub problems: \emph{longitudinal demographic studies}, describing the
 traditional tabular approach to longitudinal studies; \emph{data
 representation}, elaborating how evolving geographic data can be represented for
 processing; \emph{data clustering and regionalisation}, briefly reviewing
-existing data clustering methods,\revision{ geographic constraints and
+existing data clustering methods,\revision{2.1}{ geographic constraints and
 regionalisation}; and \emph{cluster characterisation}, articulating how clusters
 can be visually summarised.
 
@@ -19,24 +19,22 @@ and fascinating areas in spatial statistics is the synthesis of spatial data
 collected at different spatial scales(...)"}~\citep{gotway2002combining}. While
 census tract level data is readily available for the US since at least
 1910~\citep{nhgis}, most studies consider the period between 1970 and 2010,
-using pre-harmonised data from the Longitudinal Tract Data
-Base~\citep{Logan2014}. Despite its inherent
-errors~\citep{Logan2016,Hallisey2017}, this dataset has become \revision{widely
-adopted, along with the Neighborhood Change Database~\cite{ncdb},} as source for
-longitudinal demographic data at the neighbourhood scale, with similar efforts
-appearing in other countries~\citep{Liu2015,Lee2015,Allen2018}. These datasets
-have been highly significant for the field. Yet they also limit the universe of
-data that can be used to study neighbourhood change, since any new datasets
-would need to be similarly processed in order to be rendered compatible with
-these sources. 
+\revision{1.3}{using pre-harmonised data from the Longitudinal Tract Data
+Base~\citep{Logan2014} or the Neighborhood Change Database~\citep{ncdb}, albeit
+their inherent errors~\citep{Logan2016,Hallisey2017}.} Similar harmonisation
+efforts appear in other countries~\citep{Liu2015,Lee2015,Allen2018}. These
+datasets have been highly significant for the field. Yet they also limit the
+universe of data that can be used to study neighbourhood change, since any new
+datasets would need to be similarly processed in order to be rendered compatible
+with these sources. 
 
 Another option considers the use of grid
 data~\citep{Dmowska2017,Dmowska2018,stepinski2019imperfect}. Beyond the
-potentially increased spatial precision, this approach does not require complex
-harmonisation when new data is considered, if the grids are compatible. However,
-demographic data is usually not available in this format, especially from older
-sources. Additionally, the conversion from tabulation areas can introduce
-significant errors.
+potentially increased spatial\revision{1.4}{ precision}, this approach does not
+require complex harmonisation when new data is considered, if the grids are
+compatible. However, demographic data is usually not available in this format,
+especially from older sources. Additionally, the conversion from tabulation
+areas can introduce significant errors.
 
 Given these challenges, it is worth considering new alternatives. In this work,
 we propose a novel methodology that entirely avoids the problems of geographical
@@ -73,13 +71,13 @@ literature and methods.
 Data clustering is one of the elementary processes for data analysis,
 simplifying the data into a smaller number of homogeneous sets that can be
 interpreted in the same way. There is no shortage of contributions for this
-problem~\citep{Fahad2014}\revision{, since variations of it appear in almost all
+problem~\citep{Fahad2014}\revision{}{, since variations of it appear in almost all
 scientific fields.}
 
 
-\revision{In geography, this problem is known as
+\revision{2.1}{In geography, this problem is known as
 \emph{regionalisation}~\citep{montello2003regions}, a rather old problem that
-has been throughly explored, leveraging different mathematical tools, including
+has been thoroughly explored, leveraging different mathematical tools, including
 discrete topology~\citep{brantingham1978topological} and discrete
 geometry~\citep{assunccao2006efficient}. Indeed, network-based methods are among
 the current state-of-the-art~\citep{Guo2008Redcap,maxp}. However,
@@ -88,17 +86,17 @@ demographic context, arguably due to the difficulties in dealing with
 unharmonised longitudinal data. Recent neighbourhood related applications rely
 on k-means~\citep{jain2010data,Delmelle2016}, the Louvain method for community
 detection~\citep{blondel2008Louvain,Thomas2012}, or, to a lesser extent, Self
-Organising Maps~\citep{Delmelle2017,Ling2016,Dani2013_som_maxp}.
+Organising Maps~\citep{Delmelle2017,Ling2016,Dani2013_som_maxp}.}
 
 
-Since we adopted a network-based data representation and our objectives include
+\revision{1.5/2.2}{Since we adopted a network-based data representation and our objectives include
 an interactive interface, we opted for an heuristic variation of the maximum
 weighted matching algorithm called \emph{sorted maximal
 matching}~\citep{markus2017}, because of its simplicity, customisability, and
 fast computation times. This algorithm operates on weighted networks, where a
-distance metric is between the nodes is associated with the edges. We adopted a
+distance metric between the nodes is associated with the edges. We adopted a
 distance based on the data associated with each node. The algorithm merges
-clusters based on these distances, creating an hierarchy instead of a fixed
+clusters based on these distances, creating a hierarchy instead of a fixed
 number of clusters. This hierarchical result is rendered by the interface,
 allowing the user to change the number of clusters without reprocessing.
 Changing the clustering algorithm would lead to different results, but any
@@ -108,7 +106,7 @@ framework. }
 
 \subsection{Cluster characterisation}
 While visualisation has gained prominence as a crucial component of scientific
-discovery, justification, and communication~\cite{tufte1998visual}, visually
+discovery, justification, and communication~\citep{tufte1998visual}, visually
 representing evolving spatial data is a challenging old
 problem~\citep{monmonier1990strategies,andrienko2003exploratory,ferreira2015visual,Zheng2016}.
 
@@ -131,7 +129,7 @@ its variables~\citep{Alce2018,Valdivia2015,VonLandesberger2016}. While this
 simplifies the geographic portion of the visualisation, it introduces the
 problem of how to summarise the contents of each cluster. One traditional
 approach is to use parallel coordinates plot~\citep{ferreira2015urbane}, but
-these they can get cluttered representing similar clusters over several
+they can get cluttered when representing similar clusters over several
 variables. Further, for demographic applications, the clusters are usually
 strongly characterised by a small subset of
 values~\citep{Delmelle2016,Delmelle2017}. Therefore, in the proposed method, we

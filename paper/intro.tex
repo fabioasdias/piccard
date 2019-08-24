@@ -16,50 +16,62 @@ research assumes knowledge about the nature and scope of "the neighbourhood"
 that presumably shapes individual outcomes~\citep{Kwan2018,Shelton2019}.
 Concurrently, researchers note that neighbourhoods are not necessarily fixed
 containers in which other processes occur, but themselves dynamically
-evolve~\citep{Delmelle2017,Reades2019,li2018new}. \revision{In this work, we
-consider neighbourhoods as \emph{formal regions}~\citep{montello2003regions},
-geographically continous areas with similar data characteristics, which these
-advances made more tractable to approach in a data-driven fashion.} The result
-is to open up key assumptions about neighbourhoods for theoretical and empirical
-examination: how do we appropriately define and compare neighbourhoods at a
-given time?; how do we appropriately define and compare the temporal
-trajectories of neighbourhoods?; and can we do both at once, "fully
+evolve~\citep{Delmelle2017,Reades2019,li2018new}.  The result is to open up key
+assumptions about neighbourhoods for theoretical and empirical examination: how
+do we appropriately define and compare neighbourhoods at a given time?; how do
+we appropriately define and compare the temporal trajectories of
+neighbourhoods?; and can we do both at once, "fully
 interactionally"~\citep{Abbott1997}: classify neighbourhoods now based on where
-they came from and where they are going?
+they came from and where they are going? 
 
 
 In principle, much of the recent research is committed to the proposition that
 neighbourhoods are open and evolving entities. Ironically, its empirical
 practice tends to rely on methods that require fixed geographical regions. This
-requirement is difficult to satisfy, as most longitudinal datasets are based on
-pre-defined tabulation areas that are routinely modified by data collection
-agencies, usually to follow population changes. 
+requirement is not trivial to satisfy in general, as most longitudinal datasets
+are based on pre-defined tabulation areas that are routinely modified by data
+collection agencies, usually to follow population changes. 
 
 The standard approach then is to \emph{geographically harmonise} the data. This
 involves interpolating existing measurements into a common set of
-regions~\citep{Logan2014,Hallisey2017,Allen2018}. Recent computational tools
-have somewhat simplified this process~\citep{rey2018spatio}, but it still
-involves non-trivial questions: which geometry to use as target, how to
-apportion the variables, or how to combine data from different sources. Further,
-these question do not necessarily have optimal answers. Indeed, regardless of
-how well this process is performed, it still introduces
-errors~\citep{Logan2016}, even when additional data is
+regions~\citep{Logan2014,Hallisey2017,Allen2018}. \revision{1.18}{Recent
+computational tools have somewhat simplified this
+process~\citep{rey2018spatio}}, but it still involves non-trivial questions:
+which geometry to use as target, how to apportion the variables, or how to
+combine data from different sources. Further, these question do not necessarily
+have optimal answers. Indeed, regardless of how well this process is performed,
+it still introduces errors~\citep{Logan2016}, even when additional data is
 provided~\citep{eicher2001dasymetric}. Essentially, harmonisation generates
 \emph{artificial data points} that can potentially lead to inaccurate results,
 even though they are seldom interpreted as such. Nevertheless, because there has
 been no viable alternative, and the results often appear plausible, these
-concerns are generally overlooked. The result is that the harmonisation approach
-is virtually mandatory in the current literature: \emph{"(...) tract-by-tract
+concerns are overlooked. The result is that the harmonisation approach is
+virtually mandatory in the current literature: \emph{"(...) tract-by-tract
 comparison is not possible unless data from 2000 is interpolated to 2010
 boundaries (...)"}~\citep{Dmowska2017}, \emph{"(...) This limits cross-year
 comparison since data are not representative of the same spatial units. (...)"}
 ~\citep{Allen2018}. 
 
+\unsure{CHECK blue text below}
+\revision{1.1}{In some cases, harmonisation might seem methodologically
+adequate, if a study is focused on a small subregion, fixed in time, limiting
+and modifying the data to fit that specific region of interest sounds not only
+reasonable, but recommended, albeit the creation of artificial data points.
+However, that is a simplistic view that ignores interactions beyond those
+borders: each different portion of the area of interest may belong to larger
+homogeneous processes beyond these arbitrarily defined borders. This effect,
+along with the creation of artificial points, is caused by the geometry mismatch
+between the data and the region of interest. Instead of forcing one set of
+borders into another, our method sidesteps this issue by changing how the data
+is represented and interpreted.
 
-The main contribution of this paper is a method for longitudinal data processing
-that works with the original data by leveraging a network based representation.
-It enables tract-by-tract comparison and the identification of patterns of
-demographic evolution \emph{without geographic harmonisation}. 
+The main contribution of this paper is a method for longitudinal geographical
+data representation and processing that works with the original data by
+leveraging a network based representation. It enables direct comparison and
+temporal regionalisation without the need to match arbitrarily defined borders.
+Even in the case of a small, temporally fixed, region of interest, our approach
+leads to a better understanding of its dynamics by exploring the related
+data-driven homogeneous regions. }
 
 To allow a proper examination of our method and its results, we built an online
 interactive system using this representation. It enables users to visualise,
@@ -116,10 +128,18 @@ if it commits the fallacy of division). Region F would be similarly split to
 match C, but F would be split and merged with G to match D, potentially leading
 to statistical measurements that do not properly represent either region. 
 
-Real world measurements are seldom as homogeneous and noise-free as this
-artificial example. By splitting and merging the data to fit arbitrary borders,
-that were not necessarily coherent at the time of the measurement, harmonisation
-increases the distance between measurement and reality.
+\revision{2.6.4}{While didactic, this example is not realistic because each
+building is visible in Figure~\ref{fig:intuition}, so we know each individual of
+the tabulation area, which is never the case. Further, real measurements are
+seldom as homogeneous and noise-free as this artificial example.  In this
+example, one possible harmonisation would split region A  in two to provide
+different ancestors to C ($A_C$) and D ($A_D$). Then $A_D$ would not be
+considered when analysing the evolution of C, nor $A_C$ for $D$. This is
+inaccurate, because $A$ was the original state for both evolutions, and we
+should not assume that these processes are disconnected.} Either way, by
+splitting and merging the data to fit arbitrary borders, the harmonisation
+process increases the distance between the data and reality by creating
+artificial data points.
 
 
 \begin{figure}
@@ -161,7 +181,7 @@ increases the distance between measurement and reality.
 Instead, we propose a network-based representation. A \emph{network} (also
 called a \emph{graph}) is a collection of entities (nodes) that are related to
 each other (edges). In this case, each different aggregation area is represented
-as a node and we connect nodes that have overlapping geographical areas\revision{ in
+as a node and we connect nodes that have overlapping geographical areas\revision{1.2}{ in
 different times or are neighbours in the same time}, leading to the network
 illustrated on the right of Figure~\ref{fig:intuition}. By partitioning the
 network into connected nodes that are similar, we are effectively identifying
@@ -179,6 +199,3 @@ This is binary information, there is no apportionment, no areal measurements, no
 population percentages, or weights of any kind associated with the edge. Indeed,
 our method also connects regions of the same time that share borders,
 representing exactly that they are neighbouring areas.
-
-In the following, we demonstrate that this network representation allows us to
-study neighbourhood change in a way that does not require prior interpolation. 
