@@ -76,7 +76,7 @@ class UpdateButton {
     btn.setAttribute("id", "myButton");
     btn.innerHTML="Update";
     btn.onclick=this.cb;
-    this.container.appendChild(btn)
+    this.container.appendChild(btn);
     this.container.onclick = this.cb;
     return(this.container);
   }
@@ -101,23 +101,20 @@ let MapboxMap = class MapboxMap extends React.Component {
     let {dispatch}=this.props;
     
     if ((cmaps!==undefined)&&(geometries!==undefined)&&(geometries.length>0)){
-      if (this.menu!==undefined){
-        this.map.removeControl(this.menu);
-      }
-      let ygControl = new GeomControl(cmaps, //this.props.geometries,
-          (d)=>{
-            this.setState({selected:{year:this.menu.options[d.target.value].year, geom:this.menu.options[d.target.value].geom}});
-          }
-        );
-      this.menu=ygControl;
-      this.map.addControl(ygControl);    
-      
+      if (this.map.menu===undefined){
+        let ygControl = new GeomControl(cmaps, //this.props.geometries,
+            (d)=>{
+              this.setState({selected:this.map.menu.options[d.target.value]});
+            }
+          );
+        this.map.menu=ygControl;
+        this.map.addControl(ygControl);    
+      }      
 
       
       if (selected===undefined){
-        this.setState({selected:{year:this.menu.options[0].year, geom:this.menu.options[0].geom}});
+        this.setState({selected:{year:this.map.menu.options[0].year, geom:this.map.menu.options[0].geom}});
       } else {
-        console.log((cmaps[selected.year]).hasOwnProperty(selected.geom));
         if ((cmaps.hasOwnProperty(selected.year)) && ((cmaps[selected.year]).hasOwnProperty(selected.geom))){
 
           if (
@@ -218,6 +215,7 @@ let MapboxMap = class MapboxMap extends React.Component {
   }
 
   setFill(colours){
+    console.log('setfill',this.state.selected);
     let exp=['case',
               [
                 'has',
