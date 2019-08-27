@@ -30,7 +30,7 @@ from upload import gatherInfoJsons, processUploadFolder
 cachedir = './cache/'
 if not exists(cachedir):
     makedirs(cachedir)
-memory = Memory(cachedir, verbose=0)
+memory = Memory(cachedir, verbose=20000)
 
 # same as in clustering.py! - There is probably a better way...
 NBINS = 100
@@ -90,8 +90,7 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-@memory.cache(ignore=['ds'])
-# @profile
+@memory.cache(ignore=['ds',])
 def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: float = 0.75, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
@@ -445,7 +444,9 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: floa
         for g in cl[y]:
             maxCC = max([maxCC, max(cl[y][g].values())])
 
-    return({'clustering': {**(cl[1970]), **(cl[2010]), **(cl[2015])},
+    # print(cl.keys())
+
+    return({'clustering': dict(cl), #{**(cl[1970]), **(cl[2010]), **(cl[2015])}
             'evolution': evo,
             'hist': {'aspect': aspect_hist, 'cc': cc_hist},
             'aspects': full_info_aspects,

@@ -27,7 +27,7 @@ export const actionCreators = {
     }
   };
 
-export const reducer = (state={aspects:[], selectedPaths:[], loading:true}, action)=>{
+export const reducer = (state={aspects:[], selectedPaths:[], years:[], loading:true}, action)=>{
     const { type, payload } = action;
     console.log(state, type, payload);
     switch (type){

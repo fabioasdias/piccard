@@ -15,15 +15,22 @@ const mapStateToProps = (state) => ({
 mapboxgl.accessToken = 'pk.eyJ1IjoiZGlhc2YiLCJhIjoiY2pqc243cW9wNDN6NTNxcm1jYW1jajY2NyJ9.2C0deXZ03NJyH2f51ui4Jg';
 
 class GeomControl {
-  constructor(geoms,callback){
+  constructor(clustering, callback){
     this.callbackfcn=callback;
-    this.geoms=geoms;
+    this.options=[];
+    let years=Object.keys(clustering);
+    for (let iy=0;iy<years.length;iy++){
+      let curGeoms=Object.keys(clustering[years[iy]]);
+      for (let ig=0;ig<curGeoms.length;ig++){
+        this.options.push({id:this.options.length,name:years[iy]+'-'+curGeoms[ig],year:years[iy],geom:curGeoms[ig]});
+      }
+    }
+
   }
   onAdd(map){
     this.map = map;
 
     this.container = document.createElement('div');
-    // this.container.className = 'geom-control';
     this.container.className = 'mapboxgl-ctrl';
 
 
@@ -32,14 +39,14 @@ class GeomControl {
     sel.onchange=this.callbackfcn;
     // document.body.appendChild(x);
 
-    for (let i=0;i<this.geoms.length;i++){
+    for (let i=0;i<this.options.length;i++){
       var op = document.createElement("option");
-      op.setAttribute("value", this.geoms[i].name);
-      var text = document.createTextNode(this.geoms[i].name);
+      op.setAttribute("value", this.options[i].id);
+      var text = document.createTextNode(this.options[i].name);
       op.appendChild(text);
-      sel.appendChild(op)  
+      sel.appendChild(op);  
     }
-    this.container.appendChild(sel)
+    this.container.appendChild(sel);
     // document.getElementById("mySelect").appendChild(z);
   
     // this.container.textContent = 'My custom control';
@@ -84,7 +91,7 @@ let MapboxMap = class MapboxMap extends React.Component {
   map;
   constructor(props){
     super(props);
-    this.state={loaded:false, selected:undefined, bbox:undefined}
+    this.state={loaded:false, selected:undefined, bbox:undefined};
   }
   
   componentDidUpdate(props,state) {
@@ -94,20 +101,36 @@ let MapboxMap = class MapboxMap extends React.Component {
     let {dispatch}=this.props;
     
     if ((cmaps!==undefined)&&(geometries!==undefined)&&(geometries.length>0)){
+      if (this.menu!==undefined){
+        this.map.removeControl(this.menu);
+      }
+      let ygControl = new GeomControl(cmaps, //this.props.geometries,
+          (d)=>{
+            this.setState({selected:{year:this.menu.options[d.target.value].year, geom:this.menu.options[d.target.value].geom}});
+          }
+        );
+      this.menu=ygControl;
+      this.map.addControl(ygControl);    
       
-      if (this.state.selected===undefined){
-        this.setState({selected:geometries[0].name})
+
+      
+      if (selected===undefined){
+        this.setState({selected:{year:this.menu.options[0].year, geom:this.menu.options[0].geom}});
       } else {
-        if ((cmaps.hasOwnProperty(selected)) && 
-            ((this.state.selected!==state.selected)||
-             (props.cmap===undefined)||
-             (props.highlight.length!==this.props.highlight.length)||
-             (Object.keys(cmaps[selected]).length!==Object.keys(props.cmap[selected]).length)
-             )){
+        console.log((cmaps[selected.year]).hasOwnProperty(selected.geom));
+        if ((cmaps.hasOwnProperty(selected.year)) && ((cmaps[selected.year]).hasOwnProperty(selected.geom))){
 
-            
+          if (
+              (state.selected===undefined)||
+              (selected.year!==state.selected.year)||
+              (selected.geom!==state.selected.geom)||
+              (props.cmap===undefined)||
+              (props.highlight.length!==this.props.highlight.length)||
+              (Object.keys(cmaps[selected.year][selected.geom]).length!==Object.keys(props.cmap[selected.year][selected.geom]).length)
+            ){
 
-            let cmap=cmaps[selected];
+        
+            let cmap=cmaps[selected.year][selected.geom];
             let ids=Object.keys(cmap);
           
             let cMin = cmap[ids[0]];
@@ -118,7 +141,7 @@ let MapboxMap = class MapboxMap extends React.Component {
             }
             if (this.state.loaded){
               for (let layer of geometries){
-                if (selected===layer.name){
+                if (selected.geom===layer.name){
                   if (this.map.getSource('s_'+layer.name)===undefined){
                     this.map.addSource('s_'+layer.name, {
                       type: 'vector',
@@ -165,8 +188,9 @@ let MapboxMap = class MapboxMap extends React.Component {
               }
               
             }
-          }
-      
+
+            }
+          }      
         }      
       }
 
@@ -181,17 +205,11 @@ let MapboxMap = class MapboxMap extends React.Component {
     });
 
     this.map.on('load', () => {
-      this.setState({loaded:true})
-      console.log('map loaded')
-      let geomControl = new GeomControl(this.props.geometries,
-        (d)=>{
-          this.setState({selected:d.target.value});
-        }
-        );
+      this.setState({loaded:true});
+      console.log('map loaded');
       let updbutton = new UpdateButton((d)=>{
         dispatch(requestClustering(this.props.aspects,this.state.bbox));
       });
-      this.map.addControl(geomControl);
       this.map.addControl(updbutton,'top-left');
     });
     this.map.on('moveend',()=>{
@@ -204,13 +222,13 @@ let MapboxMap = class MapboxMap extends React.Component {
               [
                 'has',
                 ['to-string', ['get', this.props.paintProp]],
-                ['literal', this.props.cmap[this.state.selected]]
+                ['literal', this.props.cmap[this.state.selected.year][this.state.selected.geom]]
               ],
               ['to-color', 
                 ["at", 
                   ['get',
                     ['to-string', ['get', this.props.paintProp]],
-                    ['literal', this.props.cmap[this.state.selected]]
+                    ['literal', this.props.cmap[this.state.selected.year][this.state.selected.geom]]
                   ],
                   ['literal', colours]
                 ]
