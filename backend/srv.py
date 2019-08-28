@@ -20,7 +20,7 @@ from joblib import Memory
 from networkx.readwrite import json_graph
 from scipy.spatial.distance import cosine, euclidean
 # from scipy.stats import wasserstein_distance,
-from sklearn.cluster import KMeans
+# from sklearn.cluster import KMeans
 from tqdm import tqdm
 
 from dataStore import dataStore
@@ -60,7 +60,7 @@ def _mergePaths(p1: dict, p2: dict, id: int):
             ret[k] = (p1[k]+p2[k])/2
     return(ret)
 
-
+# {'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
 def _bbox_create_buffer(bbox: dict) -> list:
     minX = bbox['_sw']['lng']
     minY = bbox['_sw']['lat']
@@ -136,47 +136,47 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: floa
         # # # -------------------------------------------
         # # # Merging disconnected similar clusters
 
-        aspects_in_this_year_geom = [a 
-                                for a in full_info_aspects 
-                                if (a['geom'] == g) and (a['year'] == y)]
-        nDims = [ds.getDimension(a['id']) for a in aspects_in_this_year_geom]
-        singleVar = [x == 1 for x in nDims]
-        # fixes the histogram size for scalar variables
-        nDims = [x if x > 1 else NBINS for x in nDims]
-        M = np.zeros((current_number_ccs, np.sum(nDims)))
-        for i, aspect in enumerate(aspects_in_this_year_geom):
-            a = aspect['id']
-            y = aspect['year']
+        # aspects_in_this_year_geom = [a 
+        #                         for a in full_info_aspects 
+        #                         if (a['geom'] == g) and (a['year'] == y)]
+        # nDims = [ds.getDimension(a['id']) for a in aspects_in_this_year_geom]
+        # singleVar = [x == 1 for x in nDims]
+        # # fixes the histogram size for scalar variables
+        # nDims = [x if x > 1 else NBINS for x in nDims]
+        # M = np.zeros((current_number_ccs, np.sum(nDims)))
+        # for i, aspect in enumerate(aspects_in_this_year_geom):
+        #     a = aspect['id']
+        #     y = aspect['year']
 
-            if i == 0:
-                start = 0
-            else:
-                start = sum(nDims[:i])
-            finish = start+nDims[i]
+        #     if i == 0:
+        #         start = 0
+        #     else:
+        #         start = sum(nDims[:i])
+        #     finish = start+nDims[i]
 
-            for n in tqdm(cl[y][g], desc=ds.getAspectName(a)):
-                vals = ds.getData(a, n)
-                cc = cl[y][g][n]
-                if (vals is None) or np.any(np.isnan(vals)):
-                    continue
-                if singleVar[i]:
-                    tempH, _ = np.histogram(vals, NBINS, range=(
-                        ds.getMinima(a)[0], ds.getMaxima(a)[0]))
-                else:
-                    tempH = np.array(vals)
+        #     for n in tqdm(cl[y][g], desc=ds.getAspectName(a)):
+        #         vals = ds.getData(a, n)
+        #         cc = cl[y][g][n]
+        #         if (vals is None) or np.any(np.isnan(vals)):
+        #             continue
+        #         if singleVar[i]:
+        #             tempH, _ = np.histogram(vals, NBINS, range=(
+        #                 ds.getMinima(a)[0], ds.getMaxima(a)[0]))
+        #         else:
+        #             tempH = np.array(vals)
 
-                M[cc, start:finish] += tempH
+        #         M[cc, start:finish] += tempH
 
-            # normalizing each section
-            with np.errstate(divide='ignore', invalid='ignore'):
-                M[:, start:finish] = (
-                    M[:, start:finish].T / np.sum(M[:, start:finish], axis=1)).T
+        #     # normalizing each section
+        #     with np.errstate(divide='ignore', invalid='ignore'):
+        #         M[:, start:finish] = (
+        #             M[:, start:finish].T / np.sum(M[:, start:finish], axis=1)).T
 
-        M = np.nan_to_num(M)
-        km = KMeans(n_clusters=nClusters).fit(M)
-        del(M)
-        for n in cl[y][g]:
-            cl[y][g][n] = int(km.labels_[cl[y][g][n]])
+        # M = np.nan_to_num(M)
+        # km = KMeans(n_clusters=nClusters).fit(M)
+        # del(M)
+        # for n in cl[y][g]:
+        #     cl[y][g][n] = int(km.labels_[cl[y][g][n]])
 
     # ----------------------------------------------------------
     # Match the clusters across the geometries
@@ -281,25 +281,6 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: floa
         for id_to in cl[y_to][g_to]:
             cl[y_to][g_to][id_to] = labels[cl[y_to][g_to][id_to]]
 
-        # labels = defaultdict(dict)
-        # sinks = [n for n in M if len(list(M.out_edges(n))) == 0]
-        # used = {n: False for n in M}
-        # for i, s in enumerate(sinks):
-        #     to_do = [s, ]
-        #     while to_do:
-        #         n = to_do.pop(0)
-        #         if used[n]:
-        #             continue
-        #         used[n] = True
-        #         labels[n[0]][n[1]] = i  # n[i] -> cc
-        #         to_do.extend(list(M.predecessors(n)))
-
-        # maxCC = len(sinks)
-        # for g in cl:
-        #     for n in cl[g]:
-        #         cc = labels[g][cl[g][n]]
-        #         cl[g][n] = cc
-        #         # maxCC = max([maxCC, cl[g][n]])
     # ----------------------------------------------------------------------------
     # computing the relevances for each cluster in each aspect and the histograms
     most_relevant_column = defaultdict(dict)
@@ -528,15 +509,22 @@ class server(object):
         if ('bbox' not in input_json):
             bbox = None
         else:
-            # {'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
             bbox = _bbox_create_buffer(input_json['bbox'])
+
+        bbox=[-88.0, 41.0, -87.0, 43.0]
 
         if ('nc' not in input_json):
             nc = 10
         else:
             nc = int(input_json['nc'])
-
-        return(_mapHiers(ds, sorted(to_use), nClusters=nc, bbox=bbox))
+        if to_use:
+            res=_mapHiers(ds, sorted(to_use), nClusters=nc, threshold=0.9, bbox=bbox)
+            print(res['nclusters'])            
+            return(res)
+        else:
+            return({})
+        
+        
 
     @cherrypy.expose
     def index(self):

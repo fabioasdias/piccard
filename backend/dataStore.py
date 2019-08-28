@@ -230,7 +230,7 @@ class dataStore(object):
                 G.node[n]['data'] = np.empty((ncols,))
                 G.node[n]['data'][:] = np.nan
 
-        G = ComputeClustering(G, 'data')
+        G = ComputeClustering(G, 'data', k=2)
         nx.write_gpickle(G, join(self._data_folder, aspect+'.gp'))
         # self._update_distances()
 
