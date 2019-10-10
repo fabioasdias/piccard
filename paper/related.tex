@@ -6,8 +6,8 @@ specific sub problems: \emph{longitudinal demographic studies}, describing the
 traditional tabular approach to longitudinal studies; \emph{data
 representation}, elaborating how evolving geographic data can be represented for
 processing; \emph{data clustering and regionalisation}, briefly reviewing
-existing data clustering methods,\revision{2.1}{ geographic constraints and
-regionalisation}; and \emph{cluster characterisation}, articulating how clusters
+existing data clustering methods, geographic constraints and
+regionalisation; and \emph{cluster characterisation}, articulating how clusters
 can be visually summarised.
 
 \subsection{Longitudinal demographic studies}
@@ -19,9 +19,9 @@ and fascinating areas in spatial statistics is the synthesis of spatial data
 collected at different spatial scales(...)"}~\citep{gotway2002combining}. While
 census tract level data is readily available for the US since at least
 1910~\citep{nhgis}, most studies consider the period between 1970 and 2010,
-\revision{1.3}{using pre-harmonised data from the Longitudinal Tract Data
-Base~\citep{Logan2014} or the Neighborhood Change Database~\citep{ncdb}, albeit
-their inherent errors~\citep{Logan2016,Hallisey2017}.} Similar harmonisation
+using pre-harmonised data from the Longitudinal Tract Data
+Base~\citep{Logan2014} or the Neighborhood Change Database~\citep{ncdb}, despite
+their inherent errors~\citep{Logan2016,Hallisey2017}. Similar harmonisation
 efforts appear in other countries~\citep{Liu2015,Lee2015,Allen2018}. These
 datasets have been highly significant for the field. Yet they also limit the
 universe of data that can be used to study neighbourhood change, since any new
@@ -30,11 +30,11 @@ with these sources.
 
 Another option considers the use of grid
 data~\citep{Dmowska2017,Dmowska2018,stepinski2019imperfect}. Beyond the
-potentially increased spatial\revision{1.4}{ precision}, this approach does not
-require complex harmonisation when new data is considered, if the grids are
-compatible. However, demographic data is usually not available in this format,
-especially from older sources. Additionally, the conversion from tabulation
-areas can introduce significant errors.
+potentially increased spatial precision, this approach does not require complex
+harmonisation when new data is considered, if the grids are compatible. However,
+demographic data is usually not available in this format, especially from older
+sources. Additionally, the conversion from tabulation areas can introduce
+significant errors.
 
 Given these challenges, it is worth considering new alternatives. In this work,
 we propose a novel methodology that entirely avoids the problems of geographical
@@ -71,11 +71,11 @@ literature and methods.
 Data clustering is one of the elementary processes for data analysis,
 simplifying the data into a smaller number of homogeneous sets that can be
 interpreted in the same way. There is no shortage of contributions for this
-problem~\citep{Fahad2014}\revision{}{, since variations of it appear in almost all
-scientific fields.}
+problem~\citep{Fahad2014}, since variations of it appear in almost all
+scientific fields.
 
 
-\revision{2.1}{In geography, this problem is known as
+In geography, this problem is known as
 \emph{regionalisation}~\citep{montello2003regions}, a rather old problem that
 has been thoroughly explored, leveraging different mathematical tools, including
 discrete topology~\citep{brantingham1978topological} and discrete
@@ -86,10 +86,10 @@ demographic context, arguably due to the difficulties in dealing with
 unharmonised longitudinal data. Recent neighbourhood related applications rely
 on k-means~\citep{jain2010data,Delmelle2016}, the Louvain method for community
 detection~\citep{blondel2008Louvain,Thomas2012}, or, to a lesser extent, Self
-Organising Maps~\citep{Delmelle2017,Ling2016,Dani2013_som_maxp}.}
+Organising Maps~\citep{Delmelle2017,Ling2016,Dani2013_som_maxp}.
 
 
-\revision{1.5/2.2}{Since we adopted a network-based data representation and our objectives include
+Since we adopted a network-based data representation and our objectives include
 an interactive interface, we opted for an heuristic variation of the maximum
 weighted matching algorithm called \emph{sorted maximal
 matching}~\citep{markus2017}, because of its simplicity, customisability, and
@@ -101,7 +101,7 @@ number of clusters. This hierarchical result is rendered by the interface,
 allowing the user to change the number of clusters without reprocessing.
 Changing the clustering algorithm would lead to different results, but any
 hierarchical network clustering method, and distance metric, can be used in our
-framework. }
+framework. 
 
 
 \subsection{Cluster characterisation}

@@ -9,7 +9,7 @@ of neighbourhoods on the basis of our proposed method.
 
 \begin{figure}
     \centering 
-    \includegraphics[width=0.975\linewidth]{overview.pdf}
+    \includegraphics[width=0.95\linewidth]{overview.pdf}
     \caption{Overview of the proposed method. 
         \textbf{(a)} A network is generated from the original data,
         encoding the changing geographical information. 
@@ -34,23 +34,23 @@ different total population.
 Each area of each census year is represented as a node, and edges are placed
 between nodes if the corresponding regions share geographic borders in the same
 year. Further, edges are placed between nodes if the corresponding regions
-belong to sequential years and \revision{1.6/2.6.3}{their geometries intersect.
+belong to sequential years and their geometries intersect.
 To avoid spurious connections caused by small fluctuations, one of the
-geometries is slightly shrunk before the intersection, using a buffer of -1e6.
-While the result would not change considerably by adding more connections
-between nearby regions, these extra connections would greatly increase the
-computational cost. More importantly, while weights will be associated with
-these edges before they are processed, they are not derived from the geometry,
-but from the data. The actual intersection area is not considered in this
-representation. } This approach leads to a single network representing the whole
-spatio-temporal space of the data. 
+geometries is slightly shrunk before the intersection, using a buffer of -1e-6
+degrees. While the result would not change considerably by adding more
+connections between nearby regions, these extra connections would greatly
+increase the computational cost. More importantly, while weights will be
+associated with these edges before they are processed, they are not derived from
+the geometry, but from the data. The actual intersection area is not considered
+in this representation.  This approach leads to a single network representing
+the whole spatio-temporal space of the data. 
 
 
 \subsection{Geographic content clustering}
 Having tied the regions together into a network, we can now partition it to
-identify similar sets of regions. \revision{2.3}{In essence, we are performing
+identify similar sets of regions. In essence, we are performing
 temporal regionalisation by applying a clustering method over this
-spatio-temporal network.}
+spatio-temporal network.
 
 We start by adopting a distance function between the nodes, measuring the
 difference between the data of the regions. This value is then associated with
@@ -84,14 +84,13 @@ initial watershed step is performed to create an initial clustering and reduce
 the running time of the SMM. We introduced one new parameter to this method: a
 maximum distance threshold for the merges, to avoid the early merging of
 outliers. We refer the reader to the original paper~\citep{markus2017} for more
-details, including a complete performance evaluation using several metrics.
-\revision{1.5/2.2}{We chose this algorithm because it is fast,
-simple, and easily customisable, but our methodology should work with any
-hierarchical network clustering algorithm. However, we caution against the use
-of single-linkage methods due to their tendency to form chain-like clusters with
-elements that are similar pairwise, but significantly different on the ends.
-That is also the reason we did not use a Watershed hierarchy
-directly~\citep{najman2011equivalence}.}
+details, including a complete performance evaluation using several metrics. We
+chose this algorithm because it is fast, simple, and easily customisable, but
+our methodology should work with any hierarchical network clustering algorithm.
+However, we caution against the use of single-linkage methods due to their
+tendency to form chain-like clusters with elements that are similar pairwise,
+but significantly different on the ends. That is also the reason we did not use
+a Watershed hierarchy directly~\citep{najman2011equivalence}.
 
 
 Each resulting cluster is contiguous in the network. This means that two
@@ -100,19 +99,19 @@ clusters, which can be counter-intuitive. To overcome this issue, we
 \emph{augment} the network with two new edges per node from a nearest neighbours
 graph~\citep{scikit-learn} using only the distances between the histograms.
 These edges connect nodes with similar content, if they are not already
-connected, providing a path for the algorithm to group similar nodes.
-\revision{2.4}{The regions connected by those edges will be merged on the first
-stages of the clustering, since the nodes they connect are, by definition, as
-similar as possible\footnote{This assertion relies on the euclidean distance and
-its relationship with the space where k-nn operates.}, leaving the remaining
-steps of the hierarchy to be determined only by the geographical edges. We
+connected, providing a path for the algorithm to group similar nodes. The
+regions connected by those edges will be merged on the first stages of the
+clustering, since the nodes they connect are, by definition, as similar as
+possible\footnote{This assertion relies on the euclidean distance and its
+relationship with the space where k-nn operates.}, leaving the remaining steps
+of the hierarchy to be determined only by the geographical edges. We
 experimented with different numbers of augmentation edges, but the results were
 not consistent, since the distribution of the edges is data dependent. Adding
 two edges per node was the smallest number of edges that led to stable and
 consistent results in the scenarios available in our prototype. Since the
 problem of balancing the data space with the geographical space is relevant for
 geographical data analysis, this idea potentially warrants further exploration,
-beyond the scope of this work.}
+beyond the scope of this work.
 
 
 \subsection{Cluster characterisation and variable relevance}
@@ -129,7 +128,7 @@ information about the underlying distribution.
 We also use these statistical measurements to discover what characterises each
 cluster, that is, what makes it different from the others.  We define the
 \emph{relevance} of a variable of an aspect based on the distance between the
-\revision{1.8}{interquartile} ranges (IQR) of the clusters in the same hierarchical level. If
+interquartile ranges (IQR) of the clusters in the same hierarchical level. If
 the IQRs overlap for all clusters, that variable is not relevant to the
 characterisation of the cluster, but if the IQRs are distant, it means that this
 specific range of values is something that only occurs in this cluster.
@@ -156,16 +155,18 @@ position with the rectangles of the other clusters.
 While the partition of the data into different clusters helps the user to
 understand what groups exist and where they are, we are also interested in the
 evolution of these groups. To examine this process of evolution directly, we
-introduce the concepts\revision{2.6.4}{ of \emph{temporal paths} and \emph{trajectories}. 
+introduce the concepts of \emph{temporal paths} and \emph{trajectories}. 
 
-We call a temporal path any sequence of nodes in our representation network such
-that the temporal information associated with the nodes only increases. For
-instance, in Figure~\ref{fig:intuition}, the sequences ACF, ADF, ADG, and BEH
-are temporal paths. With harmonised data, as illustrated by the path BEF, the
-time-series of each region would form a temporal path, each node would be
-connected only to its older and newer versions, and would belong to only one
-temporal path. Since our data is not harmonised, more connections are allowed
-and each node can belong to an arbitrary number of paths.
+From network theory, a \emph{path} is a sequence of nodes of the network that
+are connected pairwise by edges. As each node has associated temporal
+information, we call \emph{temporal} any path such that the temporal information
+increases along it. For instance, in Figure~\ref{fig:intuition}, the paths ACF,
+ADF, ADG, and BEH are temporal paths, but not HEB, CDE, nor FDA. With harmonised
+data, as illustrated by the path BEH, the time-series of each region would form
+a temporal path, each node would be connected only to its older and newer
+versions, and would belong to only one temporal path. Since our data is not
+harmonised, more connections are allowed and each node can belong to an
+arbitrary number of paths.
 
 Semantically, this is a generalisation of the idea of geographical time-series,
 because each temporal path is one possible option for the data to change over
@@ -181,7 +182,7 @@ Since each node in the sequence that forms the temporal paths has an associated
 cluster, we can classify the paths based on the sequence of clusters. We call
 each unique sequence of clusters present in this result a \emph{trajectory}.
 Regions on the same trajectory had the same sequence of clusters, therefore had
-similar temporal evolution.}
+similar temporal evolution.
 
 \subsection{Overview of the prototype interface}
 \label{sec:ui}
@@ -195,7 +196,7 @@ details are presented in Section~\ref{sec:study}.
 
 \begin{figure*}
     \centering 
-    \includegraphics[width=0.975\linewidth]{ui.pdf}
+    \includegraphics[width=0.95\linewidth]{ui.pdf}
     \caption{Initial interface of our method showing the demographic evolution of Chicago and identifying the objectives of each plot.
         \textbf{(what)}: Cluster overview illustrating the most relevant aspect for each cluster. 
         \textbf{(where)}: Maps illustrating the geographical location, both as an overall summary and for each year.
@@ -231,7 +232,7 @@ turn.
 
 The cluster overview panel, marked as \emph{what} in Figure~\ref{fig:ui},
 displays the most relevant aspects for each cluster, based on the distance
-between the IQRs, as detailed in Section~\ref{sec:relevance}.\revision{2.5}{This
+between the IQRs, as detailed in Section~\ref{sec:relevance}. This
 feature allows the user to quickly understand what exists in this region and
 which aspect makes each cluster unique, without going into excessive detail. In
 Chicago's example, we expect race to be relevant in general, and indeed, it is
@@ -241,12 +242,12 @@ clusters, they get more nuanced, requiring more than one aspect for their proper
 characterisation, as each cluster is divided into its composing sub-clusters.
 The \emph{View all} button opens a new panel where all aspects are included,
 while the chevron at the side lets the user expand each cluster separately,
-allowing the exploration of more details on demand.}
+allowing the exploration of more details on demand.
 
 
 \begin{figure}
     \centering 
-    \includegraphics[width=0.45\linewidth]{boxplot.pdf}
+    \includegraphics[width=0.425\linewidth]{boxplot.pdf}
     \caption{Enhanced boxplot of the clusters' characteristics allows a quick
     comparison to the other clusters.\label{fig:boxplot}}
 \end{figure}
@@ -256,34 +257,40 @@ With the knowledge of what clusters are present, we can explore where they are
 through the maps, marked as \emph{where} in Figure~\ref{fig:ui}. While the maps
 on the lower part of the interface show the location of the clusters at each
 time, the larger map shows a summarised version, based on the trajectories of
-each region. \revision{1.9}{In simplified mode the colour corresponds to the
+each region. In simplified mode the colour corresponds to the
 cluster present in that trajectory for more than half the temporal samples, and
 is grey otherwise. With simplified colours disabled, the colours are the average
 of the colours of the clusters in that trajectory in RGB colour
-space~\footnote{\url{https://gka.github.io/chroma.js/\#chroma-average}}.}
+space~\footnote{\url{https://gka.github.io/chroma.js/\#chroma-average}}.
 
-\revision{2.5}{Each trajectory represents a different temporal path through the
-clusters. Therefore the trajectories encode how the demographic characteristics
-changed over time. These changes are summarised by the two sections identified
-as \emph{how} in Figure~\ref{fig:ui}. In the left panel, there is a Sankey
-diagram where each ribbon represents a different trajectory. The widths are
-proportional to the population involved.} In our example in Figure~\ref{fig:ui},
-the orange and green clusters contain most of the population and are fairly
-stable over time. The pink cluster is small and mostly stable. The purple
-cluster is increasing, mostly by incorporating areas that were previously
-orange. Since the purple group corresponds to the emergent 'young urban' group,
-this corroborates the findings of Delmelle~\citep{Delmelle2016,Delmelle2017},
-showing that our network-based method can recover results from the traditional
-data processing approach.
+Each trajectory represents a different temporal path through the clusters.
+Therefore the trajectories encode how the demographic characteristics changed
+over time. These changes are summarised by the two sections identified as
+\emph{how} in Figure~\ref{fig:ui}. In the left panel, there is a Sankey diagram
+where each ribbon represents a different trajectory. Since the associated
+regions have different population numbers, the width of each ribbon is
+proportional to the smaller of the populations involved, pairwise. This
+approximation works well in general, but leads to small inconsistencies in some
+specific cases. For instance, in the results for Miami, which is available in
+the supplementary material, the combined width of the ribbons decreases
+slightly, despite an increase in the population numbers.
 
-\revision{2.5}{In the next panel, illustrated in the top middle of
-Figure~\ref{fig:ui}, is a transition matrix between the clusters. It indicates a
-rounded percentage of regions whose area changed between each pair of
-clusters. In this example, we can see that all clusters are fairly stable, with
-more than ninety percent of identity transitions.} This kind of table can be
-found in the related literature~\citep{Delmelle2016}, so it is familiar to the
-advanced users. It not only informs the proportional changes, but allows the
-selection of specific changes for further analysis.
+In our example in Figure~\ref{fig:ui}, the orange and green clusters contain
+most of the population and are fairly stable over time. The pink cluster is
+small and mostly stable. The purple cluster is increasing, mostly by
+incorporating areas that were previously orange. Since the purple group
+corresponds to the emergent 'young urban' group, this corroborates the findings
+of Delmelle~\citep{Delmelle2016,Delmelle2017}, showing that our network-based
+method can recover results from the traditional data processing approach.
+
+In the next panel, illustrated in the top middle of Figure~\ref{fig:ui}, is a
+transition matrix between the clusters. It indicates a rounded percentage of
+regions whose area changed between each pair of clusters. In this example, we
+can see that all clusters are fairly stable, with more than ninety percent of
+identity transitions. This kind of table can be found in the related
+literature~\citep{Delmelle2016}, so it is familiar to the advanced users. It not
+only informs the proportional changes, but allows the selection of specific
+changes for further analysis.
 
 
 The bottom part of the interface contains the details for the selected
@@ -292,20 +299,19 @@ in Figure~\ref{fig:ui}. The stacked bar plots summarise the overall demographic
 composition of these regions. In this example, the maps show the transition from
 orange to green and purple in several regions over time. Each aspect is
 represented by a stacked bar plot, where the width of each rectangle corresponds
-to \revision{1.10}{the percentage of population in that variable over the
-considered period. In this case, a little less than half of the population are
-married, and the percentage that are Widowers or Divorced is roughly similar.
-About half of the population work in Administrative jobs, a third never
-completed high-school, approximately forty percent have gross family income
-below 50,000USD per year. About sixty percent identify as white. Placing the
-mouse over one of the bars will open a small panel with the temporal evolution
-of the population percentage of that specific variable, and clicking on the
-chevron on the right side expands the corresponding aspect, showing census tract
-level statistics, with details of the temporal evolution of each variable and
-also the corresponding IQRs for the whole city. Those values differ from the
-total population percentage. While the overall population of this region is
-about sixty percent White, the average percentage of White population over the
-CTs is a little over forty percent.}
+to the percentage of population in that variable over the considered period. In
+this case, a little less than half of the population are married, and the
+percentage that are Widowers or Divorced is roughly similar. About half of the
+population work in Administrative jobs, a third never completed high-school,
+approximately forty percent have gross family income below 50,000USD per year.
+About sixty percent identify as white. Placing the mouse over one of the bars
+will open a small panel with the temporal evolution of the population percentage
+of that specific variable, and clicking on the chevron on the right side expands
+the corresponding aspect, showing census tract level statistics, with details of
+the temporal evolution of each variable and also the corresponding IQRs for the
+whole city. Those values differ from the total population percentage. While the
+overall population of this region is about sixty percent White, the average
+percentage of White population over the CTs is a little over forty percent.
 
 More importantly, this interface is fully interactive, allowing for a
 progressive exploration of the data. Clicking on a cluster in the cluster

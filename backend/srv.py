@@ -114,24 +114,24 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: floa
     # -----------------------------------
     # cutting the hierarchies
 
-    for yg in tqdm(Gs):
-        y, g = yg
+    # for yg in tqdm(Gs):
+    #     y, g = yg
 
-        base_number_ccs = nx.number_connected_components(Gs[yg])
-        Gs[yg].remove_edges_from([e[:2]
-                                  for e in Gs[yg].edges(data='level')
-                                  if e[2] >= threshold])
-        current_number_ccs = nx.number_connected_components(Gs[yg])
-        while (current_number_ccs-base_number_ccs) < nClusters:
-            E = sorted([e for e in Gs[yg].edges(data='level')],
-                       key=lambda e: e[2], reverse=True)
-            Gs[yg].remove_edges_from(
-                E[:nClusters-(base_number_ccs-base_number_ccs)])
-            current_number_ccs = nx.number_connected_components(Gs[yg])
+    #     base_number_ccs = nx.number_connected_components(Gs[yg])
+    #     Gs[yg].remove_edges_from([e[:2]
+    #                               for e in Gs[yg].edges(data='level')
+    #                               if e[2] >= threshold])
+    #     current_number_ccs = nx.number_connected_components(Gs[yg])
+    #     while (current_number_ccs-base_number_ccs) < nClusters:
+    #         E = sorted([e for e in Gs[yg].edges(data='level')],
+    #                    key=lambda e: e[2], reverse=True)
+    #         Gs[yg].remove_edges_from(
+    #             E[:nClusters-(base_number_ccs-base_number_ccs)])
+    #         current_number_ccs = nx.number_connected_components(Gs[yg])
 
-        for cc, nodes in enumerate(nx.connected_components(Gs[yg])):
-            for n in nodes:
-                cl[y][g][n[1]] = cc
+    #     for cc, nodes in enumerate(nx.connected_components(Gs[yg])):
+    #         for n in nodes:
+    #             cl[y][g][n[1]] = cc
 
         # # # -------------------------------------------
         # # # Merging disconnected similar clusters
