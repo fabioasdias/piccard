@@ -1,17 +1,18 @@
 ##
-# THIS WILL CRUMBLE UNDER LOAD! 
+# THIS WILL CRUMBLE UNDER LOAD!
 #
 # With more than MAX_CACHE simultaneous users, the cache might erase the entry
-# between _check_read and the actual read/action. 
+# between _check_read and the actual read/action.
 #
 # Not fixing it because this whole file needs to be overhauled for GUDR support.
 # Otherwise, move the whole database to a proper DBMS.
 ##
 
-import json
 from glob import glob
+import json
 from os.path import basename, exists, join
 from random import choice
+from typing import Optional
 from uuid import uuid4
 
 import matplotlib.pylab as plt
@@ -58,8 +59,7 @@ def _check_level(G: nx.Graph):
                     used[y] = True
                     # if this edge is more distant than anything in G.neighbors(x), there is no viable path
                     if G[last_node][y]['level'] < cutoff:
-                        to_do.append(
-                            p+[(y, max([maxDistance, G[last_node][y]['level']]))])
+                        to_do.append(p+[(y, max([maxDistance, G[last_node][y]['level']]))])
 
 
 def _getMaxLevel(G: nx.Graph, level: str = 'level') -> int:
@@ -107,7 +107,8 @@ class dataStore(object):
                             unused.discard(op)
                             to_add.append((current+[op, ]))
                         continue
-                done_paths.append(current) #if this line runs, (last \not\in X) or (options=\emptyset)
+                # if this line runs, (last \not\in X) or (options=\emptyset)
+                done_paths.append(current)
 
             # puts in the paths that start in this aspect
             paths = to_add+[[(-1, -1), ]*i+[n, ] for n in unused]+done_paths
@@ -270,16 +271,18 @@ class dataStore(object):
         self._check_and_read(aspectID)
         return([self._info[aspectID]['descriptions'][x] for x in self._info[aspectID]['columns']])
 
-    def getData(self, aspectID: str, id: str, normalized=False) -> list:
+    def getData(self, aspectID: str, id: str, normalized=False) -> Optional[list]:
         self._check_and_read(aspectID, data=True)
         if id in self._data[aspectID].index:
             vals = list(self._data[aspectID].loc[id])
             if normalized:
-                if len(vals)>1:
+                if len(vals) > 1:
                     with np.errstate(divide='ignore', invalid='ignore'):
-                        vals=np.nan_to_num(np.array(vals)/np.sum(vals)).tolist()
+                        vals = np.nan_to_num(
+                            np.array(vals)/np.sum(vals)).tolist()
                 else:
-                    vals=[(vals[0]-self.getMinima(aspectID)[0])/(self.getMaxima(aspectID)[0]-self.getMinima(aspectID)[0]),]    
+                    vals = [(vals[0]-self.getMinima(aspectID)[0]) /
+                            (self.getMaxima(aspectID)[0]-self.getMinima(aspectID)[0]), ]
             return(vals)
         else:
             return(None)

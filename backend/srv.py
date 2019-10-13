@@ -1,26 +1,24 @@
 """Server module for the backend"""
+from collections import defaultdict
+from itertools import product
 import json
 import os
-import pickle
-import sys
-import tempfile
-from collections import defaultdict
-from itertools import combinations
 from os import makedirs
 from os.path import exists, join
+import pickle
 from random import sample
+import sys
+import tempfile
 from time import time
 
 import cherrypy
+from joblib import Memory
 import matplotlib.pylab as plt
 import networkx as nx
+from networkx.readwrite import json_graph
 import numpy as np
 import pandas as pd
-from joblib import Memory
-from networkx.readwrite import json_graph
 from scipy.spatial.distance import cosine, euclidean
-# from scipy.stats import wasserstein_distance,
-# from sklearn.cluster import KMeans
 from tqdm import tqdm
 
 from dataStore import dataStore
@@ -61,6 +59,8 @@ def _mergePaths(p1: dict, p2: dict, id: int):
     return(ret)
 
 # {'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
+
+
 def _bbox_create_buffer(bbox: dict) -> list:
     minX = bbox['_sw']['lng']
     minY = bbox['_sw']['lat']
@@ -90,10 +90,100 @@ def cors():
         cherrypy.response.headers['Access-Control-Allow-Origin'] = '*'
 
 
-@memory.cache(ignore=['ds',])
-def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: float = 0.75, bbox: list = None):
+def _convert_name_node(n: tuple, y: int) -> tuple:
+    """ (geom,id) -> (year, geom, id)"""
+    return((y, n[0], n[1]))
+
+
+def _convert_name_graph(G: nx.Graph, y: int) -> nx.Graph:
+    """ Adds y to the names of the graphs nodes (geom,id) -> (year, geom, id)"""
+    ret = nx.Graph()
+    for n in G:
+        ret.add_node(_convert_name_node(n, y))
+    for e in G.edges():
+        n1 = _convert_name_node(e[0], y)
+        n2 = _convert_name_node(e[1], y)
+        ret.add_edge(n1, n2)
+        if 'level' in G[e[0]][e[1]]:
+            ret[n1][n2]['level'] = G[e[0]][e[1]]['level']
+    return(ret)
+
+
+def _convert_cross(X: nx.Graph, y1: int, g1: str, y2: int, g2: str) -> nx.Graph:
+    """Converts the names of the nodes of a cross graph. It's more difficult because 
+    it contains stuff from two different geoms, so if it matches g1, gets y1, otherwise y2.
+    (that way it works even g1==g2)"""
+    ret = nx.Graph()
+    for n in X:
+        if n[0] == g1:
+            ret.add_node(_convert_name_node(n, y1))
+        else:
+            ret.add_node(_convert_name_node(n, y2))
+
+    for e in X.edges():
+        if e[0][0] == g1:
+            n1 = _convert_name_node(e[0], y1)
+            n2 = _convert_name_node(e[1], y2)
+        else:
+            n1 = _convert_name_node(e[0], y2)
+            n2 = _convert_name_node(e[1], y1)
+        ret.add_edge(n1, n2)
+    return(ret)
+
+
+@memory.cache(ignore=['ds', ])
+def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = None):
 
     Gs = mapHierarchies(ds, aspects, bbox=bbox)
+
+    right_order = sorted(Gs.keys())
+    G = nx.Graph()
+    lastGeom = None
+    lastY = 0
+    for y, g in right_order:
+        print('\n\nadding ', y, g)
+        nG=_convert_name_graph(Gs[(y, g)], y)
+        G = nx.compose(G, nG)
+        print('E,V', len(G), len(G.edges()))
+        if lastGeom is None:
+            lastGeom = g
+            lastY = y
+            continue
+
+        print(list(G)[0], list(nG)[0])
+        X = _convert_cross(ds.getCrossGeometry(
+            lastGeom, g), y, g, lastY, lastGeom)
+        
+        values_added = 0
+        zero_neighbors = 0
+        not_contained = 0
+        for n1, n2 in X.edges():
+            
+            if (n1 in G) and (n2 in G):
+                values = []
+                minT = 2
+                maxT = -1
+                neighbouring_connections = [e for e in product(
+                    G.neighbors(n1), G.neighbors(n2)) if X.has_edge(e[0], e[1])]
+                if len(neighbouring_connections) == 0:
+                    zero_neighbors += 1
+                    continue
+
+                for nn1, nn2 in neighbouring_connections:
+                    minT = min(minT, G[n1][nn1]['level'], G[n2][nn2]['level'])
+                    maxT = max(maxT, G[n1][nn1]['level'], G[n2][nn2]['level'])
+                    values.append(G[n1][nn1]['level']-G[n2][nn2]['level'])
+                G.add_edge(n1, n2, level=np.median(values))
+                values_added += 1
+            else:
+                not_contained+=1
+        print('E,V', len(G), len(G.edges()))
+        print('values added', values_added, zero_neighbors, not_contained)
+        print('last',lastY,lastGeom,'current',y,g)
+        lastGeom = g
+        lastY = y
+
+    del(Gs)
 
     full_info_aspects = [{'name': ds.getAspectName(a),
                           'year': ds.getAspectYear(a),
@@ -110,240 +200,96 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: floa
     for i in range(len(full_info_aspects)):
         full_info_aspects[i]['order'] = i
 
-    cl = defaultdict(lambda: defaultdict(dict))
     # -----------------------------------
-    # cutting the hierarchies
+    # cutting the hierarchy
 
-    # for yg in tqdm(Gs):
-    #     y, g = yg
+    base_number_ccs = nx.number_connected_components(G)
+    current_number_ccs = base_number_ccs
+    vals = [e[2] for e in G.edges(data='level')]
+    plt.hist(vals)
+    plt.show()
+    s=np.std(vals)
+    m=np.mean(vals)
+    T = m+s
+    print('Threshold ',T)
+    G.remove_edges_from([e[:2] for e in G.edges(data='level') if e[2] >= T])    
+    print('end #CC', nx.number_connected_components(G))
 
-    #     base_number_ccs = nx.number_connected_components(Gs[yg])
-    #     Gs[yg].remove_edges_from([e[:2]
-    #                               for e in Gs[yg].edges(data='level')
-    #                               if e[2] >= threshold])
-    #     current_number_ccs = nx.number_connected_components(Gs[yg])
-    #     while (current_number_ccs-base_number_ccs) < nClusters:
-    #         E = sorted([e for e in Gs[yg].edges(data='level')],
-    #                    key=lambda e: e[2], reverse=True)
-    #         Gs[yg].remove_edges_from(
-    #             E[:nClusters-(base_number_ccs-base_number_ccs)])
-    #         current_number_ccs = nx.number_connected_components(Gs[yg])
+    while (current_number_ccs-base_number_ccs) < nClusters:
+        E = sorted([e for e in G.edges(data='level')],
+                   key=lambda e: e[2], reverse=True)
+        G.remove_edges_from(E[:nClusters-(base_number_ccs-base_number_ccs)])
+        current_number_ccs = nx.number_connected_components(G)
+    print('final #CC', current_number_ccs)
 
-    #     for cc, nodes in enumerate(nx.connected_components(Gs[yg])):
-    #         for n in nodes:
-    #             cl[y][g][n[1]] = cc
-
-        # # # -------------------------------------------
-        # # # Merging disconnected similar clusters
-
-        # aspects_in_this_year_geom = [a 
-        #                         for a in full_info_aspects 
-        #                         if (a['geom'] == g) and (a['year'] == y)]
-        # nDims = [ds.getDimension(a['id']) for a in aspects_in_this_year_geom]
-        # singleVar = [x == 1 for x in nDims]
-        # # fixes the histogram size for scalar variables
-        # nDims = [x if x > 1 else NBINS for x in nDims]
-        # M = np.zeros((current_number_ccs, np.sum(nDims)))
-        # for i, aspect in enumerate(aspects_in_this_year_geom):
-        #     a = aspect['id']
-        #     y = aspect['year']
-
-        #     if i == 0:
-        #         start = 0
-        #     else:
-        #         start = sum(nDims[:i])
-        #     finish = start+nDims[i]
-
-        #     for n in tqdm(cl[y][g], desc=ds.getAspectName(a)):
-        #         vals = ds.getData(a, n)
-        #         cc = cl[y][g][n]
-        #         if (vals is None) or np.any(np.isnan(vals)):
-        #             continue
-        #         if singleVar[i]:
-        #             tempH, _ = np.histogram(vals, NBINS, range=(
-        #                 ds.getMinima(a)[0], ds.getMaxima(a)[0]))
-        #         else:
-        #             tempH = np.array(vals)
-
-        #         M[cc, start:finish] += tempH
-
-        #     # normalizing each section
-        #     with np.errstate(divide='ignore', invalid='ignore'):
-        #         M[:, start:finish] = (
-        #             M[:, start:finish].T / np.sum(M[:, start:finish], axis=1)).T
-
-        # M = np.nan_to_num(M)
-        # km = KMeans(n_clusters=nClusters).fit(M)
-        # del(M)
-        # for n in cl[y][g]:
-        #     cl[y][g][n] = int(km.labels_[cl[y][g][n]])
-
-    # ----------------------------------------------------------
-    # Match the clusters across the geometries
-
-    for i in tqdm(range(1, len(full_info_aspects)), 'paths'):
-        a_from = full_info_aspects[i-1]
-        a_to = full_info_aspects[i]
-        g_from = a_from['geom']
-        y_from = a_from['year']
-        g_to = a_to['geom']
-        y_to = a_to['year']
-
-        M = nx.DiGraph()
-        # let's make sure all clusters are represented
-        for cc in set(cl[y_from][g_from].values()):
-            M.add_node((g_from, cc))
-        for cc in set(cl[y_to][g_to].values()):
-            M.add_node((g_to, cc))
-
-        X = ds.getCrossGeometry(a_from['geom'], a_to['geom'])
-        for e in X.edges():
-            g0 = e[0][0]
-            id0 = e[0][1]
-            g1 = e[1][0]
-            id1 = e[1][1]
-            if g0 == g_from:
-                if ((y_from not in cl) or (g0 not in cl[y_from]) or (id0 not in cl[y_from][g0]) or
-                        (y_to not in cl) or (g1 not in cl[y_to]) or (id1 not in cl[y_to][g1])):
-                    continue
-
-                source = (g0, cl[y_from][g_from][id0])
-                target = (g1, cl[y_to][g_to][id1])
-            else:
-                if ((y_from not in cl) or (g1 not in cl[y_from]) or (id1 not in cl[y_from][g1]) or
-                        (y_to not in cl) or (g0 not in cl[y_to]) or (id0 not in cl[y_to][g0])):
-                    continue
-
-                source = (g1, cl[y_from][g_from][id1])
-                target = (g0, cl[y_to][g_to][id0])
-
-            if not M.has_edge(source, target):
-                M.add_edge(source, target, count=0)
-
-            M[source][target]['count'] += X[e[0]][e[1]]['intersection']
-
-        if DEBUG:
-            pos = nx.spring_layout(M)
-            nx.draw_networkx_nodes(M, pos)
-            E = M.edges()
-            # maxWidth = np.log(max([e[2] for e in M.edges(data='count')]))
-            maxWidth = max([e[2] for e in M.edges(data='count')])
-            # nx.draw_networkx_edges(M, pos, edgelist=E, width=[
-            #                     5*(np.log(M[e[0]][e[1]]['count'])/maxWidth)+0.2 for e in E])
-            nx.draw_networkx_edges(M, pos, edgelist=E, width=[
-                5*(M[e[0]][e[1]]['count'])/maxWidth+0.1 for e in E])
-
-            nx.draw_networkx_labels(
-                M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M}, font_color='green')
-
-        # matching the clusters temporally based on how strongly connected they are
-        # the temporal part comes from the aspect order used to extract the paths
-        to_look = [n for n in M if M.in_degree(n) > 1 or M.out_degree(n) > 1]
-        used = {e: False for e in M.edges()}
-        while to_look:
-            # print(len(to_look), set([M.in_degree(n) for n in M]), set(
-                # [M.out_degree(n) for n in M]))
-            E = sorted([e for e in M.edges(data='count') if not used[e[:2]]],
-                       key=lambda e: e[2]/max([ee[2] for ee in M.out_edges(e[0], data='count')] +
-                                              [ee[2] for ee in M.in_edges(e[1], data='count')]), reverse=True)
-            if not E:
-                break
-
-            m = E[0][0]
-            n = E[0][1]
-            used[(m, n)] = True
-            to_remove = [[n, m], ]  # removes the link back, if it exists
-            for p in M.predecessors(n):
-                if p != m:
-                    to_remove.append([p, n])
-            for s in M.successors(m):
-                if s != n:
-                    to_remove.append([m, s])
-            M.remove_edges_from(to_remove)
-            to_look = [n
-                       for n in M
-                       if M.in_degree(n) > 1 or M.out_degree(n) > 1]
-
-        if DEBUG:
-            plt.figure()
-            nx.draw(M, pos)
-            nx.draw_networkx_labels(
-                M, pos, labels={n: '{0}-{1}'.format(n[0], n[1]) for n in M}, font_color='green')
-            plt.show()
-
-        labels = {}
-        maxCC = max(cl[y_from][g_from].values())+1
-        for n_from, n_to in M.edges():
-            labels[n_to[1]] = n_from[1]
-        for i, cc in enumerate(set(cl[y_to][g_to].values())-set(labels.keys())):
-            labels[cc] = i+maxCC
-
-        for id_to in cl[y_to][g_to]:
-            cl[y_to][g_to][id_to] = labels[cl[y_to][g_to][id_to]]
+    cl = defaultdict(lambda: defaultdict(dict))
+    for cc, nodes in enumerate(nx.connected_components(G)):
+        for n in nodes:
+            cl[n[0]][n[1]][n[2]] = cc
 
     # ----------------------------------------------------------------------------
-    # computing the relevances for each cluster in each aspect and the histograms
-    most_relevant_column = defaultdict(dict)
-    aspect_hist = dict()
-    cc_hist = defaultdict(dict)
+    # # computing the relevances for each cluster in each aspect and the histograms
+    # most_relevant_column = defaultdict(dict)
+    # aspect_hist = dict()
+    # cc_hist = defaultdict(dict)
 
-    for aspect in tqdm(full_info_aspects, desc='histograms'):
-        a = aspect['id']
-        g = aspect['geom']
-        y = aspect['year']
-        data = defaultdict(list)
-        N = ds.getDimension(a)
-        for n in tqdm(cl[y][g], desc='reading'):
-            vals = ds.getData(a, n, normalized=True)
-            if (vals is None) or np.any(np.isnan(vals)):
-                continue
-            data[cl[y][g][n]].append(vals)
+    # for aspect in tqdm(full_info_aspects, desc='histograms'):
+    #     a = aspect['id']
+    #     g = aspect['geom']
+    #     y = aspect['year']
+    #     data = defaultdict(list)
+    #     N = ds.getDimension(a)
+    #     for n in tqdm(cl[y][g], desc='reading'):
+    #         vals = ds.getData(a, n, normalized=True)
+    #         if (vals is None) or np.any(np.isnan(vals)):
+    #             continue
+    #         data[cl[y][g][n]].append(vals)
 
-        H = defaultdict(dict)
-        for cc in data:
-            data[cc] = np.array(data[cc])
-            for j in range(data[cc].shape[1]):
-                # H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
-                #     ds.getMinima(a)[j], ds.getMaxima(a)[j]))
-                H[j][cc], _ = np.histogram(np.squeeze(
-                    data[cc][:, j]), NBINS, range=(0, 1))
-            cc_hist[a][cc] = [H[j][cc] for j in H]
+    #     H = defaultdict(dict)
+    #     for cc in data:
+    #         data[cc] = np.array(data[cc])
+    #         for j in range(data[cc].shape[1]):
+    #             # H[j][cc], _ = np.histogram(np.squeeze(data[cc][:, j]), NBINS, range=(
+    #             #     ds.getMinima(a)[j], ds.getMaxima(a)[j]))
+    #             H[j][cc], _ = np.histogram(np.squeeze(
+    #                 data[cc][:, j]), NBINS, range=(0, 1))
+    #         cc_hist[a][cc] = [H[j][cc] for j in H]
 
-        aspect_hist[a] = [np.squeeze(
-            np.sum([cc_hist[a][cc][j] for cc in cc_hist[a]], axis=0)).tolist() for j in H]
-        for cc in cc_hist[a]:
-            cc_hist[a][cc] = [np.squeeze(x).tolist() for x in cc_hist[a][cc]]
+    #     aspect_hist[a] = [np.squeeze(
+    #         np.sum([cc_hist[a][cc][j] for cc in cc_hist[a]], axis=0)).tolist() for j in H]
+    #     for cc in cc_hist[a]:
+    #         cc_hist[a][cc] = [np.squeeze(x).tolist() for x in cc_hist[a][cc]]
 
-        # if scalar value, just use the median
-        if N == 1:
-            for cc in data:
-                most_relevant_column[cc][a] = np.median(data[cc])
-            continue
-        else:
-            D = defaultdict(dict)
-            for j in H:
-                for cc in H[j]:
-                    D[j][cc] = _centerMass(
-                        cc_hist[a][cc][j]) - _centerMass(aspect_hist[a][j])
+    #     # if scalar value, just use the median
+    #     if N == 1:
+    #         for cc in data:
+    #             most_relevant_column[cc][a] = np.median(data[cc])
+    #         continue
+    #     else:
+    #         D = defaultdict(dict)
+    #         for j in H:
+    #             for cc in H[j]:
+    #                 D[j][cc] = _centerMass(
+    #                     cc_hist[a][cc][j]) - _centerMass(aspect_hist[a][j])
 
-            for cc in data:
-                cur_max = 0
-                max_j = -1
-                for j in D:
-                    current_relevance = D[j][cc]
-                    if cur_max < current_relevance:
-                        cur_max = current_relevance
-                        max_j = j
-                # the ccs are consistent across geoms now
-                most_relevant_column[cc][a] = max_j
+    #         for cc in data:
+    #             cur_max = 0
+    #             max_j = -1
+    #             for j in D:
+    #                 current_relevance = D[j][cc]
+    #                 if cur_max < current_relevance:
+    #                     cur_max = current_relevance
+    #                     max_j = j
+    #             # the ccs are consistent across geoms now
+    #             most_relevant_column[cc][a] = max_j
 
-    print('exporting evolution lines')
-    evo = []
-    for cc in tqdm(most_relevant_column, desc='cc'):
-        line = {a: most_relevant_column[cc][a]
-                for a in most_relevant_column[cc]}
-        line['id'] = cc
-        evo.append(line)
+    # print('exporting evolution lines')
+    # evo = []
+    # for cc in tqdm(most_relevant_column, desc='cc'):
+    #     line = {a: most_relevant_column[cc][a]
+    #             for a in most_relevant_column[cc]}
+    #     line['id'] = cc
+    #     evo.append(line)
 
     # # ----------------------------------------------------------
     # # filling up the forest - weight == similarity
@@ -427,9 +373,10 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, threshold: floa
 
     # print(cl.keys())
 
-    return({'clustering': dict(cl), #{**(cl[1970]), **(cl[2010]), **(cl[2015])}
-            'evolution': evo,
-            'hist': {'aspect': aspect_hist, 'cc': cc_hist},
+    return({'clustering': dict(cl),
+            'evolution': [],  # evo,
+            # 'hist': {'aspect': aspect_hist, 'cc': cc_hist},
+            'hist': {'aspect': {}, 'cc': {}},
             'aspects': full_info_aspects,
             'forest':  {'nodes': [], 'links': []},  # forest_json,
             'nclusters': maxCC+1})  # 0....9 ->10
@@ -511,20 +458,18 @@ class server(object):
         else:
             bbox = _bbox_create_buffer(input_json['bbox'])
 
-        bbox=[-88.0, 41.0, -87.0, 43.0]
+        bbox = [-88.0, 41.0, -87.0, 43.0]
 
         if ('nc' not in input_json):
             nc = 10
         else:
             nc = int(input_json['nc'])
         if to_use:
-            res=_mapHiers(ds, sorted(to_use), nClusters=nc, threshold=0.9, bbox=bbox)
-            print(res['nclusters'])            
+            res = _mapHiers(ds, sorted(to_use), nClusters=nc, bbox=bbox)
+            print(res['nclusters'])
             return(res)
         else:
             return({})
-        
-        
 
     @cherrypy.expose
     def index(self):
@@ -608,26 +553,10 @@ if __name__ == '__main__':
         # }
     }
 
-    # # to_use = ['01484bfd-d853-4bc4-b5d4-7724102491f0',
-    # #           '23c57e64-e4d9-4fa8-8511-bf5541290eed',
-    # #                        '2876df13-ed66-4361-81c6-1337320b4e22',
-    # #                        '289c96f4-6463-4202-86c4-60f257eacdc6',
-    # #                        '44f0e97d-7037-4e6f-ae71-3ced55d1ad17',
-    # #                        '5412991b-e899-467a-b2eb-cd45ba91d5df',
-    # #           '54279024-99f7-4db0-b6ed-c6f7d919ce76',
-    # #                        '56158126-6589-4037-b7d3-bc8789d950b4',
-    # #                        '597d682f-79ef-4781-b3b1-4ab025b0eb4f',
-    # #                        '860eb9d4-260a-4824-b3af-f6b0a37c7168',
-    # #                        '9089406c-61d4-40b6-9f72-101767f1e0dd',
-    # #           'a_toe83ff8-6962-48aa-8740-3c250e8d3a_from3',
-    # #             'a67ec8c4-0794-4862-a_toa4-b5ba9b5401df',
-    # #             'b0d6c9b9-2935-4760-a394-68b791b12a_to2',
-    # #             'b0f43c86-8bf7-4cdb-a_fromf4-0796f6e7b80a',
-    # #             'c29fb848-8836-45df-8ef1-b78e57bf6ccf',
-    # #           'd36bd0e0-d74d-4355-a967-31c357239646']
-
-    # to_use = ['a67ec8c4-0794-4862-a2a4-b5ba9b5401df', '2876df13-ed66-4361-81c6-1337320b4e22',
-    #           '56158126-6589-4037-b7d3-bc8789d950b4', 'b0f43c86-8bf7-4cdb-a1f4-0796f6e7b80a']
+    # to_use = ['0db8b31e-2d85-4eb2-bfb2-e35abe730365', '35361c33-22ca-4911-8d33-8e4a0d4f2cce',
+    #           '65cc1fd1-67b4-44cf-b627-b2639bce1f72', '9534ca6d-202e-4a20-a135-b0dd4f007378',
+    #           'ec000dbe-958c-48d3-af62-78ccc8bf4152', '22bcd574-f533-4aec-8d7a-e2bdd3e86556',
+    #           '3e5477cd-9369-4e08-b398-b385c2ffb0e2', ]
     # _mapHiers(ds, sorted(to_use))
     # exit()
 

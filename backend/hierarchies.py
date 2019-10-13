@@ -1,14 +1,12 @@
 from collections import defaultdict
-from itertools import combinations
-from os.path import join
 
 import matplotlib.pylab as plt
 import networkx as nx
 from joblib import Memory
-from numpy import median
-from tqdm import tqdm
 
-from upload import gatherInfoJsons_AsDict
+from tqdm import tqdm
+from numpy import median
+# from dataStore import dataStore
 
 cachedir = './cache/'
 memory = Memory(cachedir, verbose=0)
@@ -25,7 +23,7 @@ def _plotHier(H, threshold: float = 0.5):
         data='level') if e[2] >= threshold], edge_color='red')
 
 
-def compareHierarchies(ds: dict, a1, a2, g1: str = None, g2: str = None, level: str = 'level') -> float:
+def compareHierarchies(ds, a1, a2, g1: str = None, g2: str = None, level: str = 'level') -> float:
     """
         Computes a distance between hierarchies/aspects a1 and a2.
 
@@ -97,12 +95,29 @@ def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph, level: str = 'level') ->
             H[e[0]][e[1]][level] = max(
                 [H[e[0]][e[1]][level], ]+[x[2] for x in G2.subgraph(otherside).edges(data=level)])
 
+    # plt.hist([e[2] for e in G1.edges(data='level')])
+    # plt.axis([0, 1, 0, len(G1.edges())])
+    # plt.title('G1')
+
+    # plt.figure()
+    # plt.hist([e[2] for e in G2.edges(data='level')])
+    # plt.axis([0, 1, 0, len(G2.edges())])
+    # plt.title('G2')
+
+    # plt.figure()
+    # plt.hist([e[2] for e in H.edges(data='level')])
+    # plt.axis([0, 1, 0, len(H.edges())])
+    # plt.title('H')
+
+    # plt.show()
+
+
     return(H)
 
 # @profile
 
 
-def _mergeAll(ds: dict, aspects: list, level: str = 'level', bbox: list = None) -> nx.Graph:
+def _mergeAll(ds, aspects: list, level: str = 'level', bbox: list = None) -> nx.Graph:
     F = None
     for a in aspects:
         G = ds.getHierarchy(a, bbox=bbox)
@@ -117,9 +132,9 @@ def _mergeAll(ds: dict, aspects: list, level: str = 'level', bbox: list = None) 
 
 
 @memory.cache(ignore=['ds'])
-def mapHierarchies(ds: dict, aspects: list, level: str = 'level', bbox: list = None) -> dict:
+def mapHierarchies(ds, aspects: list, level: str = 'level', bbox: list = None) -> dict:
     """
-    ds: datastore 
+    ds 
     aspects:  list of aspects(hierarchies) [a1,a2,...] 
     level: key for the data
     bbox: limiting bounding box to consider only regions inside it. (integers == better caching)
