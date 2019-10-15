@@ -34,16 +34,18 @@ different total population.
 Each area of each census year is represented as a node, and edges are placed
 between nodes if the corresponding regions share geographic borders in the same
 year. Further, edges are placed between nodes if the corresponding regions
-belong to sequential years and their geometries intersect.
-To avoid spurious connections caused by small fluctuations, one of the
-geometries is slightly shrunk before the intersection, using a buffer of -1e-6
-degrees. While the result would not change considerably by adding more
-connections between nearby regions, these extra connections would greatly
-increase the computational cost. More importantly, while weights will be
-associated with these edges before they are processed, they are not derived from
-the geometry, but from the data. The actual intersection area is not considered
-in this representation.  This approach leads to a single network representing
-the whole spatio-temporal space of the data. 
+belong to sequential years and their geometries intersect. To avoid spurious
+connections caused by small fluctuations, one of the geometries is slightly
+shrunk before the intersection, using a buffer of -1e-6 degrees, or about 10cm
+at the equator. As long as this buffer is not large enough to remove significant
+overlaps, its exact value will not have a significant impact on the results,
+since they also rely on the data similarity, and it could safely be set to zero.
+However, this would lead to extra connections that would increase the
+computational cost. More importantly, while weights will be associated with
+these edges before they are processed, they are not derived from the geometry,
+but from the data. The actual intersection area is not considered in this
+representation.  This approach leads to a single network representing the whole
+spatio-temporal space of the data. 
 
 
 \subsection{Geographic content clustering}
@@ -160,13 +162,13 @@ introduce the concepts of \emph{temporal paths} and \emph{trajectories}.
 From network theory, a \emph{path} is a sequence of nodes of the network that
 are connected pairwise by edges. As each node has associated temporal
 information, we call \emph{temporal} any path such that the temporal information
-increases along it. For instance, in Figure~\ref{fig:intuition}, the paths ACF,
-ADF, ADG, and BEH are temporal paths, but not HEB, CDE, nor FDA. With harmonised
-data, as illustrated by the path BEH, the time-series of each region would form
-a temporal path, each node would be connected only to its older and newer
-versions, and would belong to only one temporal path. Since our data is not
-harmonised, more connections are allowed and each node can belong to an
-arbitrary number of paths.
+increases along it, representing information advancing in time. For instance, in
+Figure~\ref{fig:intuition}, the paths ACF, ADF, ADG, and BEH are temporal paths,
+but not HEB, CDE, nor FDA. With harmonised data, as illustrated by the path BEH,
+the time-series of each region would form a temporal path, each node would be
+connected only to its older and newer versions, and would belong to only one
+temporal path. Since our data is not harmonised, more connections are allowed
+and each node can belong to an arbitrary number of paths.
 
 Semantically, this is a generalisation of the idea of geographical time-series,
 because each temporal path is one possible option for the data to change over
@@ -277,6 +279,7 @@ in the results for Miami, which is available in the supplementary material, the
 combined width of the ribbons decreases over time, despite an increase in the
 population numbers. However, the population numbers presented in the bottom part
 of the interface are correct.
+
 
 In our example in Figure~\ref{fig:ui}, the orange and green clusters contain
 most of the population and are fairly stable over time. The pink cluster is
