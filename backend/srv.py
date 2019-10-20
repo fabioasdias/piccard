@@ -2,61 +2,31 @@
 from collections import defaultdict
 from itertools import product
 import json
-import os
-from os import makedirs
-from os.path import exists, join
-import pickle
-from random import sample
+from os import makedirs, getcwd
+from os.path import exists, join, abspath
 import sys
 import tempfile
-from time import time
 
 import cherrypy
 from joblib import Memory
 import matplotlib.pylab as plt
 import networkx as nx
-from networkx.readwrite import json_graph
 import numpy as np
+# from clustering import NBINS
 import pandas as pd
-from scipy.spatial.distance import cosine, euclidean
-from tqdm import tqdm
 
 from dataStore import dataStore
-from hierarchies import compareHierarchies, mapHierarchies
+from hierarchies import mapHierarchies
 from upload import gatherInfoJsons, processUploadFolder
+from scipy.spatial.distance import euclidean
 
 cachedir = './cache/'
 if not exists(cachedir):
     makedirs(cachedir)
 memory = Memory(cachedir, verbose=20000)
 
-# same as in clustering.py! - There is probably a better way...
-NBINS = 100
-
+SQR2 = np.sqrt(2.0)
 DEBUG = False
-
-
-def _centerMass(V):
-    return(np.mean([(i*V[i])/np.sum(V) for i in range(len(V))]))
-
-
-def _mergePaths(p1: dict, p2: dict, id: int):
-    if len(p1) == 0:
-        return({**p2, 'id': id})
-    if len(p2) == 0:
-        return({**p1, 'id': id})
-    k1 = set(p1.keys())
-    k2 = set(p2.keys())
-    ret = {**{k: p1[k]
-              for k in k1.difference(p2)}, **{k: p2[k] for k in k2.difference(p1)}}
-    for k in k1.intersection(k2):
-        if p1[k] < 0:
-            ret[k] = p2[k]
-        elif p2[k] < 0:
-            ret[k] = p1[k]
-        else:
-            ret[k] = (p1[k]+p2[k])/2
-    return(ret)
 
 # {'_sw': {'lng': -97.36262426260146, 'lat': 24.36091074100848}, '_ne': {'lng': -65.39166177011971, 'lat': 33.61501866716327}}
 
@@ -104,8 +74,9 @@ def _convert_name_graph(G: nx.Graph, y: int) -> nx.Graph:
         n1 = _convert_name_node(e[0], y)
         n2 = _convert_name_node(e[1], y)
         ret.add_edge(n1, n2)
-        if 'level' in G[e[0]][e[1]]:
-            ret[n1][n2]['level'] = G[e[0]][e[1]]['level']
+        for k in G[e[0]][e[1]].keys():
+            ret[n1][n2][k] = G[e[0]][e[1]][k]
+
     return(ret)
 
 
@@ -142,7 +113,7 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
     lastY = 0
     for y, g in right_order:
         print('\n\nadding ', y, g)
-        nG=_convert_name_graph(Gs[(y, g)], y)
+        nG = _convert_name_graph(Gs[(y, g)], y)
         G = nx.compose(G, nG)
         print('E,V', len(G), len(G.edges()))
         if lastGeom is None:
@@ -153,33 +124,41 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
         print(list(G)[0], list(nG)[0])
         X = _convert_cross(ds.getCrossGeometry(
             lastGeom, g), y, g, lastY, lastGeom)
-        
+
         values_added = 0
         zero_neighbors = 0
         not_contained = 0
         for n1, n2 in X.edges():
-            
+
             if (n1 in G) and (n2 in G):
-                values = []
-                minT = 2
-                maxT = -1
-                neighbouring_connections = [e for e in product(
-                    G.neighbors(n1), G.neighbors(n2)) if X.has_edge(e[0], e[1])]
+
+                # minT = 2
+                # maxT = -1
+                neighbouring_connections = []
+                for nn1 in G.neighbors(n1):
+                    if (nn1[:2] != n1[:2]):
+                        continue
+                    for nn2 in G.neighbors(n2):
+                        if (nn2[:2] != n2[:2]):
+                            continue
+                        if X.has_edge(nn1, nn2):
+                            neighbouring_connections.append([nn1, nn2])
+
                 if len(neighbouring_connections) == 0:
                     zero_neighbors += 1
                     continue
 
+                values = []
                 for nn1, nn2 in neighbouring_connections:
-                    minT = min(minT, G[n1][nn1]['level'], G[n2][nn2]['level'])
-                    maxT = max(maxT, G[n1][nn1]['level'], G[n2][nn2]['level'])
-                    values.append(G[n1][nn1]['level']-G[n2][nn2]['level'])
-                G.add_edge(n1, n2, level=np.median(values))
+                    values.append(
+                        euclidean(G[n1][nn1]['hist'], G[n2][nn2]['hist'])/SQR2)
+                G.add_edge(n1, n2, level=np.max(values))
                 values_added += 1
             else:
-                not_contained+=1
+                not_contained += 1
         print('E,V', len(G), len(G.edges()))
         print('values added', values_added, zero_neighbors, not_contained)
-        print('last',lastY,lastGeom,'current',y,g)
+        print('last', lastY, lastGeom, 'current', y, g)
         lastGeom = g
         lastY = y
 
@@ -196,7 +175,6 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
 
     full_info_aspects = sorted(full_info_aspects, key=lambda x: x['year'])
 
-    # preparations for the domains in ParallelCoordinates (react-vis)
     for i in range(len(full_info_aspects)):
         full_info_aspects[i]['order'] = i
 
@@ -205,21 +183,25 @@ def _mapHiers(ds: dataStore, aspects: list, nClusters: int = 10, bbox: list = No
 
     base_number_ccs = nx.number_connected_components(G)
     current_number_ccs = base_number_ccs
-    vals = [e[2] for e in G.edges(data='level')]
-    plt.hist(vals)
-    plt.show()
-    s=np.std(vals)
-    m=np.mean(vals)
-    T = m+s
-    print('Threshold ',T)
-    G.remove_edges_from([e[:2] for e in G.edges(data='level') if e[2] >= T])    
-    print('end #CC', nx.number_connected_components(G))
 
+    vals = [e[2] for e in G.edges(data='level')]
+    s = np.std(vals)
+    m = np.mean(vals)
+    T = m #+ s
+    print('Threshold ', T, m, s, np.max(vals), np.min(vals))
+    # plt.hist(vals)
+    # plt.show()
+
+    G.remove_edges_from([e[:2] for e in G.edges(data='level') if e[2] >= T])
+    print('end #CC', nx.number_connected_components(G))
+    E = sorted([e for e in G.edges(data='level')],
+               key=lambda e: e[2], reverse=True)
     while (current_number_ccs-base_number_ccs) < nClusters:
-        E = sorted([e for e in G.edges(data='level')],
-                   key=lambda e: e[2], reverse=True)
-        G.remove_edges_from(E[:nClusters-(base_number_ccs-base_number_ccs)])
+        cutoff = nClusters-(base_number_ccs-base_number_ccs)
+        G.remove_edges_from(E[:cutoff])
+        E = E[cutoff:]
         current_number_ccs = nx.number_connected_components(G)
+        print('current #CC', current_number_ccs, len(G.edges()))
     print('final #CC', current_number_ccs)
 
     cl = defaultdict(lambda: defaultdict(dict))
@@ -492,7 +474,7 @@ class server(object):
         cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
         res = {'name': myFile.filename, 'ok': True}
         with tempfile.TemporaryDirectory() as tempDir:
-            fname = join(tempDir, myFile.filename)
+            fname = join(str(tempDir), myFile.filename)
             with open(fname, 'wb') as outFile:
                 while True:
                     data = myFile.file.read(8192)
@@ -543,7 +525,7 @@ if __name__ == '__main__':
     conf = {
         '/': {
             'tools.sessions.on': True,
-            'tools.staticdir.root': os.path.abspath(os.getcwd()),
+            'tools.staticdir.root': abspath(getcwd()),
             'tools.gzip.on': True,
             'tools.gzip.mime_types': ['text/*', 'application/*']
         },

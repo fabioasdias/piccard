@@ -4,24 +4,32 @@ import matplotlib.pylab as plt
 import networkx as nx
 from joblib import Memory
 
-from tqdm import tqdm
-from numpy import median
+from numpy import histogram, median
+
+import logging
 # from dataStore import dataStore
 
 cachedir = './cache/'
 memory = Memory(cachedir, verbose=0)
 
 
-def _plotHier(H, threshold: float = 0.5):
+logging.basicConfig(filename='hier.log', level=logging.DEBUG)
+
+def _plotHier(H):
     pos = {}
     for n in H:
         pos[n] = H.node[n]['pos'][:2]
-    nx.draw_networkx_nodes(H, pos=pos, node_size=2)
-    nx.draw_networkx_edges(H, pos=pos, edgelist=[e for e in H.edges(
-        data='level') if e[2] < threshold], edge_color='blue')
-    nx.draw_networkx_edges(H, pos=pos, edgelist=[e for e in H.edges(
-        data='level') if e[2] >= threshold], edge_color='red')
 
+    cmap=plt.cm.Blues
+    E = [e for e in H.edges(data='level')]
+    vmin=0
+    vmax=1
+    nx.draw_networkx_nodes(H, pos=pos, node_size=2)
+    nx.draw_networkx_edges(H, pos=pos, edgelist=E, edge_color=[e[2] for e in E], edge_cmap=cmap,
+           with_labels=False, vmin=vmin, vmax=vmax)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin = vmin, vmax=vmax))
+    sm._A = []
+    plt.colorbar(sm)
 
 def compareHierarchies(ds, a1, a2, g1: str = None, g2: str = None, level: str = 'level') -> float:
     """
@@ -70,74 +78,133 @@ def compareHierarchies(ds, a1, a2, g1: str = None, g2: str = None, level: str = 
 # @profile
 
 
-def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph, level: str = 'level') -> nx.Graph:
-    """
-    Merges two different hierarchies represented by G1 and G2. 
+# def _hierMerge(G1: nx.Graph, G2: nx.Graph, X: nx.Graph, level: str = 'level') -> nx.Graph:
+#     """
+#     Merges two different hierarchies represented by G1 and G2.
 
-    X: CrossGeometry from G1 to G2.
-    Level is the data label associated with the edge representing the hierarchical level of joining (0-1).
+#     X: CrossGeometry from G1 to G2.
+#     Level is the data label associated with the edge representing the hierarchical level of joining (0-1).
 
-    -> Always returns a new graph (same topology as G1 - unless G1 is None).
-    """
+#     -> Always returns a new graph (same topology as G1 - unless G1 is None).
+#     """
 
-    if (G1 is None) and (G2 is not None):
-        return(G2.copy())
-    if (G1 is not None) and (G2 is None):
-        return(G1.copy())
+#     if (G1 is None) and (G2 is not None):
+#         return(G2.copy())
+#     if (G1 is not None) and (G2 is None):
+#         return(G1.copy())
 
-    H = G1.copy()
-    for e in tqdm(H.edges(),desc='edges hier'):
-        otherside = []
-        for n in e:
-            if n in X:
-                otherside.extend(X.neighbors(n))
-        if otherside:
-            H[e[0]][e[1]][level] = max(
-                [H[e[0]][e[1]][level], ]+[x[2] for x in G2.subgraph(otherside).edges(data=level)])
+#     H = G1.copy()
+#     for e in tqdm(H.edges(),desc='edges hier'):
+#         otherside = []
+#         for n in e:
+#             if n in X:
+#                 otherside.extend(X.neighbors(n))
+#         if otherside:
+#             H[e[0]][e[1]][level] = max(
+#                 [H[e[0]][e[1]][level], ]+[x[2] for x in G2.subgraph(otherside).edges(data=level)])
 
-    # plt.hist([e[2] for e in G1.edges(data='level')])
-    # plt.axis([0, 1, 0, len(G1.edges())])
-    # plt.title('G1')
+#     # plt.hist([e[2] for e in G1.edges(data='level')])
+#     # plt.axis([0, 1, 0, len(G1.edges())])
+#     # plt.title('G1')
 
-    # plt.figure()
-    # plt.hist([e[2] for e in G2.edges(data='level')])
-    # plt.axis([0, 1, 0, len(G2.edges())])
-    # plt.title('G2')
+#     # plt.figure()
+#     # plt.hist([e[2] for e in G2.edges(data='level')])
+#     # plt.axis([0, 1, 0, len(G2.edges())])
+#     # plt.title('G2')
 
-    # plt.figure()
-    # plt.hist([e[2] for e in H.edges(data='level')])
-    # plt.axis([0, 1, 0, len(H.edges())])
-    # plt.title('H')
+#     # plt.figure()
+#     # plt.hist([e[2] for e in H.edges(data='level')])
+#     # plt.axis([0, 1, 0, len(H.edges())])
+#     # plt.title('H')
 
-    # plt.show()
+#     # plt.show()
 
 
-    return(H)
+#     return(H)
 
 # @profile
 
 
-def _mergeAll(ds, aspects: list, level: str = 'level', bbox: list = None) -> nx.Graph:
-    F = None
+def _mergeAll(ds, aspects: list,
+              level: str = 'level',
+              hist: str = 'hist',
+              bbox: list = None) -> nx.Graph:
+    """
+    Creates a nx.Graph output with the levels of all involved aspects associated to the edges. 
+    :param aspects: list of aspect id, ON THE SAME GEOMETRY
+    """
+    logger = logging.getLogger()
+    assert(len(set([ds.getGeometry(a) for a in aspects])) == 1)
+    logger.debug([ds.getGeometry(a) for a in aspects])
+    F = nx.Graph()
     for a in aspects:
+        logger.debug('Starting {a}:{name}'.format(a=a,name=ds.getAspectName(a)))
         G = ds.getHierarchy(a, bbox=bbox)
-        curGeometry = ds.getGeometry(a)
-        if F is None:
-            F = G
-        else:
-            cX = ds.getCrossGeometry(curGeometry, lastGeometry)
-            F = _hierMerge(F, G, cX, level=level)
-        lastGeometry = curGeometry
+
+        plt.figure()
+        _plotHier(G)
+        plt.title(ds.getAspectName(a))
+        
+        for n in G:
+            F.add_node(n)
+            for k in G.node[n]:
+                F.node[n][k]=G.node[n][k]
+        # F.add_nodes_from(G.nodes())
+        logger.debug('#F {nf}, {ef} #G {ng}, {eg}'.format(nf=len(F),ef=len(F.edges()),ng=len(G),eg=len(G.edges())))
+
+        for e in G.edges():
+            logger.debug('Looking at edge {e}'.format(e=str(e[0])+'-'+str(e[1])))
+            #Hierarchies can have different edges because of NaNs (all involved edges get removed)
+            if (not F.has_edge(e[0], e[1])):
+                logger.debug('New edge for F')
+                F.add_edge(e[0], e[1], _combined=[])
+            logger.debug('Adding {newVal} to {combined}'.format(newVal=G[e[0]][e[1]][level],combined=str(F[e[0]][e[1]]['_combined'])))
+            F[e[0]][e[1]]['_combined'].append(G[e[0]][e[1]][level])
+
+    logger.debug('----Merge finished----')
+    for e in F.edges():
+        logger.debug('Looking at edge {e}'.format(e=str(e[0])+'-'+str(e[1])))
+        combined = F[e[0]][e[1]]['_combined']
+        # try:
+        #     assert(len(combined)==len(aspects))
+        # except :
+        #     print(e)
+        #     print(len(aspects), combined)
+        #     raise
+        F[e[0]][e[1]][level] = min(combined)
+        H, _ = histogram(combined, range=(0,1))
+        F[e[0]][e[1]][hist] = list(H/sum(H))
+        logger.debug('combined '+str(combined))
+        logger.debug('hist '+str(list(F[e[0]][e[1]][hist])))
+        logger.debug('level '+str(F[e[0]][e[1]][level]))
+
+        
+        if (F[e[0]][e[1]][level] > 1):
+            # sometimes rounding can lead to 1.0000000000000002
+            F[e[0]][e[1]][level] = 1
+
+    plt.figure()
+    _plotHier(F)
+    plt.title('merged')
+
+
+    # vals = [e[2] for e in F.edges(data=level)]
+    # assert((max(vals) <= 1)and(min(vals)>=0))
+    # plt.hist(vals)
+    # plt.title('-'.join([ds.getAspectName(a) for a in aspects]))
+    plt.show()
+
     return(F)
 
 
 @memory.cache(ignore=['ds'])
-def mapHierarchies(ds, aspects: list, level: str = 'level', bbox: list = None) -> dict:
+def mapHierarchies(ds, aspects: list, level: str = 'level', hist='hist', bbox: list = None) -> dict:
     """
     ds 
-    aspects:  list of aspects(hierarchies) [a1,a2,...] 
-    level: key for the data
-    bbox: limiting bounding box to consider only regions inside it. (integers == better caching)
+    :param aspects:  list of aspects(hierarchies) [a1,a2,...] 
+    :param level: key for the data
+    :param bbox: limiting bounding box to consider only regions inside it. (integers == better caching)
+    :param hist: key for the histogram output vector associated with each edge
 
     Returns the resulting hierarchy represented in all involved geometries/years
     """
@@ -145,38 +212,13 @@ def mapHierarchies(ds, aspects: list, level: str = 'level', bbox: list = None) -
 
     aspectsByYearGeometry = defaultdict(list)
     for aspect in aspects:
-        aspectsByYearGeometry[(ds.getAspectYear(aspect), ds.getGeometry(aspect))].append(aspect)
+        aspectsByYearGeometry[(ds.getAspectYear(
+            aspect), ds.getGeometry(aspect))].append(aspect)
 
-    merged = []
-    years_geoms=sorted(aspectsByYearGeometry.keys())
+    merged = {}
+    years_geoms = sorted(aspectsByYearGeometry.keys())
     for yg in years_geoms:
-        merged.append(_mergeAll(ds, aspectsByYearGeometry[yg], level=level, bbox=bbox))
+        merged[yg] = _mergeAll(ds, aspectsByYearGeometry[yg],
+                               level=level, hist=hist, bbox=bbox)
 
-    
-
-    # holds the resulting hierarchy on each original geometry
-    # - This could be faster if the partial merges were reused
-    final = {}
-    if len(years_geoms) > 1:
-        for i in range(len(years_geoms)):
-            backwards = None
-            forwards = None
-
-            if i != (len(years_geoms)-1):
-                backwards = merged[-1]
-                for j in range(len(years_geoms)-2, i-1, -1):
-                    backwards = _hierMerge(merged[j], backwards, ds.getCrossGeometry(
-                        years_geoms[j][1], years_geoms[j+1][1]), level=level)
-
-            if i != 0:
-                forwards = merged[0]
-                for j in range(1, i+1):
-                    forwards = _hierMerge(merged[j], forwards, ds.getCrossGeometry(
-                        years_geoms[j][1], years_geoms[j-1][1]), level=level)
-
-            final[years_geoms[i]] = _hierMerge(
-                backwards, forwards, ds.getCrossGeometry(years_geoms[i][1], years_geoms[i][1]), level=level)
-    else:
-        final[years_geoms[0]] = merged[0]
-
-    return(final)
+    return(merged)
