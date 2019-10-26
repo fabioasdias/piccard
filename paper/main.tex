@@ -28,28 +28,7 @@
 \newcommand{\relevance}{\ensuremath{R}}
 \newcommand{\cluster}{\ensuremath{\mathcal{C}}}
 \newcommand{\watershed}{\ensuremath{\psi}}
-\newcommand{\censure}[1]{}
 \DeclareMathOperator*{\median}{\ensuremath{\text{median}}}
-
-
-%TODO macros
-\usepackage{xargs}
-\usepackage[pdftex,dvipsnames]{xcolor} 
-\newcommand{\revision}[2]{\marginpar{{\color{blue}{\quad\  #1}}}{\color{blue}{\protect{#2}}}}
-\usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
-\newcommandx{\unsure}[2][1=]{\todo[linecolor=red,backgroundcolor=red!25,bordercolor=red,#1]{#2}}
-\newcommandx{\change}[2][1=]{\todo[linecolor=blue,backgroundcolor=blue!25,bordercolor=blue,#1]{#2}}
-\newcommandx{\info}[2][1=]{\todo[linecolor=OliveGreen,backgroundcolor=OliveGreen!25,bordercolor=OliveGreen,#1]{#2}}
-\newcommandx{\improvement}[2][1=]{\todo[linecolor=Plum,backgroundcolor=Plum!25,bordercolor=Plum,#1]{#2}}
-\newcommandx{\thiswillnotshow}[2][1=]{\todo[disable,#1]{#2}}
-
-% \newcommandx{\unsure}[2][1=]{}
-% \newcommandx{\change}[2][1=]{}
-% \newcommandx{\info}[2][1=]{}
-% \newcommandx{\improvement}[2][1=]{}
-% \newcommandx{\thiswillnotshow}[2][1=]{}
-
-
 
 \usepackage{natbib}
 \usepackage{algpseudocode} 
@@ -59,75 +38,18 @@
 \usepackage{subfig}
 \usepackage{tikz}
 
-  
 
-\usepackage[switch]{lineno}
-\linenumbers
-
-\usepackage{setspace}
-\usepackage[margin=1.25in]{geometry}
-
+\usepackage{authblk}
+\title{Neighborhood Dynamics with Unharmonised Longitudinal Data}
+\author[1]{Fabio Dias}
+\author[2]{Daniel Silver}
+\affil[1]{Department of Mechanical \& Industrial Engineering, University of Toronto, Toronto, Canada.}
+\affil[2]{Department of Sociology, University of Toronto, Toronto, Canada.}
+\setcounter{Maxaffil}{0}
+\renewcommand\Affilfont{\itshape\small}
+\date{}
 \begin{document}
-
-% \pagestyle{empty}
-% \listoftodos[TODO]
-% \newpage
-
-
-%\doublespacing
-\title{Sidestepping geographic harmonisation: a new method for handling data over evolving spatial regions}
-%\author{Fabio Dias, Daniel Silver\\University of Toronto}
-\author{}
-
 \maketitle
-
-% ====== CFP
-% Neighborhoods are increasingly central constructs in the social sciences,
-% serving as spatio-temporal frames for the analysis of a host of questions.
-% Yet, much debate surrounds the role of neighborhood effects in many
-% socioeconomic processes and the ability of traditional notions of
-% neighborhoods to fully express context. Parallel to this, there have been
-% calls for a move away from the view of neighborhoods as fixed-static
-% containers and towards one where neighborhoods undergo dynamic evolution that
-% requires study in its own right. Despite the recent renewed interest in
-% neighborhood effects and neighborhood dynamics, these two literatures remain
-% largely separate.
-
-% This special issue seeks to redress this situation by bringing together recent
-% work at the intersection of neighborhood effects and dynamics. We are inviting
-% submissions dedicated to a special issue of Geographical Analysis on
-% Neighborhood Dynamics and Neighborhood Effects. Papers in the following areas
-% are particularly welcome, as long as they pertain to the general theme of the
-% special issue:
-
-% Neighborhood as context
-% Neighborhood change
-% Neighborhood exposure histories
-% Spatial data science approaches to the neighborhood construct
-% Neighborhood effects
-% Longitudinal analysis of neighborhoods
-% Boundary change and harmonization
-% Use of novel data sources in neighborhood analysis
-% Innovative qualitative, mixed-methods, or quantitative approaches for
-% analyzing neighborhood dynamics or effects
-% Geodemographic approaches
-% Submissions will be refereed according to the standard procedures of Geographical Analysis.
-
-% Information about the journal can be found at: https://onlinelibrary.wiley.com/journal/15384632
-
-% Import Dates
-
-% Full paper Submission: June 15, 2019
-% Initial review feedback: October 15, 2019
-% Revision due: February 15, 2020
-% Final publication decision: May 15, 2020
-
-% ==== Annotation commands
-% \todo{Thing to do}
-% \unsure{Is this correct?}
-% \change{Change this!}
-% \info{Reminder of something}
-% \improvement{This really needs to be improved!}
 
 
 \begin{abstract}
@@ -194,7 +116,7 @@ rarely, if at all, has anybody doubted that it was really necessary in the first
 place. We proved that it is not necessary for regionalisation, especially for
 neighbourhood effects and neighbourhood dynamics.
 
-\censure{
+
 \section*{Acknowledgement}
 This research was supported by a University of Toronto Connaught Global
 Challenge grant and is part of the Urban Genome Project. The authors thank Cary
@@ -202,7 +124,7 @@ Wu, Ethan Fosse, Fernando Calderón Figueroa, Patrick Adler, and James Murdoch
 for their expert opinions; Mark S. Fox, Robert M. Wright, Ultan Byrne, Matti
 Siemiatycki, Shauna Brail, Jeff Allen, Steven Farber, and Richard Florida for
 general guidance and support; and the anonymous reviewers for their constructive
-comments.}
+comments.
 
 \bibliographystyle{chicago}
 \bibliography{rev}
