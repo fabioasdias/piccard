@@ -10,28 +10,29 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="614.8905mm"
-   height="210.43753mm"
-   viewBox="0 0 614.8905 210.43753"
+   width="629.39813mm"
+   height="220.00607mm"
+   viewBox="0 0 629.39813 220.00607"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.1 r15371"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    sodipodi:docname="newTeaser.svg">
   <defs
      id="defs2">
     <marker
        inkscape:stockid="Arrow1Lstart"
        orient="auto"
-       refY="0.0"
-       refX="0.0"
+       refY="0"
+       refX="0"
        id="Arrow1Lstart"
        style="overflow:visible"
        inkscape:isstock="true">
       <path
          id="path1023"
-         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
-         style="fill-rule:evenodd;stroke:#f80000;stroke-width:1pt;stroke-opacity:1;fill:#f80000;fill-opacity:1"
-         transform="scale(0.8) translate(12.5,0)" />
+         d="M 0,0 5,-5 -12.5,0 5,5 Z"
+         style="fill:#f80000;fill-opacity:1;fill-rule:evenodd;stroke:#f80000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,10,0)"
+         inkscape:connector-curvature="0" />
     </marker>
     <marker
        inkscape:isstock="true"
@@ -162,31 +163,25 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8698792"
-     inkscape:cx="1182.8692"
-     inkscape:cy="95.083669"
+     inkscape:zoom="0.50732776"
+     inkscape:cx="1109.9774"
+     inkscape:cy="324.54132"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
-     showguides="false"
+     showguides="true"
      inkscape:guide-bbox="true"
      inkscape:measure-start="0,0"
      inkscape:measure-end="0,0"
      inkscape:window-width="1920"
-     inkscape:window-height="1021"
+     inkscape:window-height="974"
      inkscape:window-x="0"
-     inkscape:window-y="0"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      fit-margin-top="0"
      fit-margin-left="0"
      fit-margin-right="0"
-     fit-margin-bottom="0">
-    <sodipodi:guide
-       position="-136.7109,21.040922"
-       orientation="1,0"
-       id="guide6949"
-       inkscape:locked="false" />
-  </sodipodi:namedview>
+     fit-margin-bottom="0" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -195,7 +190,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -203,7 +198,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(355.53698,79.762305)">
+     transform="translate(369.56249,89.330846)">
     <image
        y="-75.874603"
        x="-261.6969"
@@ -435,7 +430,7 @@
          y="-361.52164"
          style="stroke-width:0.26458332">Identified clusters</tspan></text>
     <path
-       style="fill:none;stroke:#f80000;stroke-width:0.529;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Arrow1Lstart)"
+       style="fill:none;stroke:#f80000;stroke-width:0.52899998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Arrow1Lstart)"
        d="m 237.15117,3.0238543 c 26.12348,-4.1600276 31.82412,-42.6526073 4.17079,-55.7765753"
        id="path4648-7-7"
        inkscape:connector-curvature="0"
@@ -477,5 +472,49 @@
        sodipodi:nodetypes="cc"
        inkscape:export-xdpi="75.010002"
        inkscape:export-ydpi="75.010002" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="-148.78259"
+       y="-81.289993"
+       id="text132-3"><tspan
+         sodipodi:role="line"
+         id="tspan130-6"
+         x="-148.78259"
+         y="-81.289993"
+         style="fill:#ff0000;fill-opacity:1;stroke-width:0.26458332">how</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="-322.74805"
+       y="-80.246948"
+       id="text132-3-7"><tspan
+         sodipodi:role="line"
+         id="tspan130-6-5"
+         x="-322.74805"
+         y="-80.246948"
+         style="fill:#ff0000;fill-opacity:1;stroke-width:0.26458332">what</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="33.291321"
+       y="-80.768471"
+       id="text132-3-3"><tspan
+         sodipodi:role="line"
+         id="tspan130-6-56"
+         x="33.291321"
+         y="-80.768471"
+         style="fill:#ff0000;fill-opacity:1;stroke-width:0.26458332">where</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="164.90236"
+       y="-81.289993"
+       id="text132-3-3-2"><tspan
+         sodipodi:role="line"
+         id="tspan130-6-56-9"
+         x="164.90236"
+         y="-81.289993"
+         style="fill:#ff0000;fill-opacity:1;stroke-width:0.26458332">who</tspan></text>
   </g>
 </svg>

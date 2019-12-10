@@ -1,70 +1,35 @@
 \section{Discussion and limitations}
+\label{sec:discussion}
 
-Our objective was to leverage a graph based data representation and
-visualization methods for the exploration of geographically inconsistent
+Our objective was to leverage a network based data representation and
+visualisation methods for the exploration of geographically inconsistent
 region-based data. While we successfully replicated and corroborated results
 from the literature, this method still has significant limitations. 
 
-
-Removing the need for geographical harmonization greatly reduces the amount of
-work necessary to explore demographic data, but the method still requires
-consistent variables across the years. Matching the variables can be trivial for
-some aspects (Age), but challenging for others (Income). The divulged income
-ranges vary over time and the actual values change due to inflation. Some
-variables were not considered in earlier censuses, such as Race in Canada, or
-Hispanic population in the USA, hampering its use when they are available. Since
-this is only a prototype, we matched few aspects, but a proper demographic
-analysis would benefit from all available information.
-
-
-While using one small map for each year leads to an easier visualization that
-does not require interaction, it does not scale if more than five or six years
-are considered. In this case, it might be interesting to replace the larger map
-considering each year individually, along with a temporal control for
-navigation. Indeed, including more years would likely lead  to a stronger
-mixture of colors in the trajectory map, leading to a predominantly grey hue.
-
+We removed the need for geographical harmonisation, but the method still
+requires consistent variables across the years. Matching the variables can be
+trivial for some aspects (Age), but challenging for others (Income). The
+divulged income ranges vary over time and the actual values change due to
+inflation. Since this is only a prototype, we matched few aspects, but a proper
+demographic analysis would benefit from all available information. 
 
 The limitation on the number of displayed clusters because of the limited number
-of distinguishable colors was significant. While increasing the number of
+of distinguishable colours was significant. While increasing the number of
 clusters would further complicate an already complex analysis, it might be
-warranted for some regions. Color is a fundamental and intuitive tool for
+warranted for some regions. Colour is a fundamental and intuitive tool for
 information representation that can be coherently used across different plots,
-so we opted to use it, even if in a limited way. With eight colors, there was
-overlap between some clusters, the relevance gradient, and the color
+so we opted to use it, even if in a limited way. With eight colours, there was
+overlap between some clusters, the relevance gradient, and the colour
 combination. 
 
 
-
-Another limitation is the lack of control on how much the geographical
-information will impact the clustering result. While the adopted method met our
-needs for this work, a configurable control would add another dimension to the
-exploration, allowing for more intra-cluster variance to obtain more 'compact'
-clusters. We explored changing the number of content based augmented edges, but
-this proved to be unreliable and hard to interpret. The~\emph{ClustGeo}
-method~\cite{Chavent2017} can be a viable option for this, allowing a graph
-based input and a hierarchical output, combined using a single mixing
-parameter. Alternatively, one could cluster the changes~\cite{bian2018survey}
-instead of the stable states.
-
-
-There are also technological limitations, such as memory use on the
-visualization client. To allow for changes on the CTs over the years, we use a
-geographic file that contains all possible intersections, which can grow rather
-large if the original city was expansive and contained several CTs, like NYC or
-LA. However, the most significant technological limitation relates to parameters
-that are not immediately interactive, such as the clustering configuration.
-Since the clustering is computationally expensive and performed on the server,
-which allows for cached results, some changes can take a few minutes to be
-considered, removing any possibility of a continuous exploration. 
-
-
-Indeed, the cognitive load on the user is already significant, as we compromised
-simplicity for accuracy. While other works labelled the clusters, as 'young
-urban', 'struggling', and so on~\cite{Delmelle2016,Delmelle2017}, we show the
+The cognitive load on the user is significant, as we compromised simplicity for
+accuracy. While other works labelled the clusters, as 'young urban',
+'struggling', and so on~\citep{Delmelle2016,Delmelle2017}, we show the
 statistical characteristics of the clusters, which are harder to interpret, as
 the data may have subtle nuances that labels would otherwise hide. This also led
-to a crowded interface, mitigated somewhat the use of pop-up panels and collapsible
-sections. For some cities, especially if they are small and stable, the panels
-can appear redundant, but each provide a different way to interact with the
-information that can ease the exploration process for larger and dynamic cities.
+to a crowded interface, mitigated somewhat the use of pop-up panels and
+collapsible sections. For some cities, especially if they are small and stable,
+the panels can appear redundant, but each provide a different way to interact
+with the information that can ease the exploration process for larger and
+dynamic cities.
