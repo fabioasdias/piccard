@@ -27,7 +27,7 @@
     "react-leaflet-control": "^1.4.1",
     "react-mapbox-gl": "^3.8.0",
     "react-redux": "^5.0.7",
-    "react-scripts": "^1.1.4",
+    "react-scripts": "^5.0.1",
     "react-vis": "^1.8.3",
     "reactjs-mappletooltip": "^1.4.63",
     "redux": "^3.7.2",
